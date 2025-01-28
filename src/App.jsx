@@ -1,17 +1,15 @@
-import { fa3 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import './App.css'
+import React from 'react';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import ClanLista from './Components/ClanLista';
 
 function App() {
-
     return (
-        <div className=''>
-            <p className="text-3xl font-Raleway">hola mundo</p>
-            <FontAwesomeIcon icon={fa3} />
-            <p className="text-3xl">hola mundo</p>
-        </div>
-
-    )
+        <Router basename="/DestinyBrodas">
+            <Routes>
+                <Route path="/" element={<ClanLista />} />
+            </Routes>
+        </Router>
+    );
 }
 
-export default App
+export default App;

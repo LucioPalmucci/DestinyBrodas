@@ -6,6 +6,15 @@ import { defineConfig } from 'vite'
 export default defineConfig({
     plugins: [react(), tailwindcss()],
     base: '/DestinyBrodas/',
+    server: {
+        proxy: {
+            '/api': {
+                target: 'https://www.bungie.net', // El dominio de la API
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api/, ''), // Reescribe '/api' como '/'
+            },
+        },
+    },
 })
 
 
