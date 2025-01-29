@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-
+import MemberCard from './MemberCard';
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [error, setError] = useState(null);
@@ -32,39 +32,15 @@ export default function ClanLista() {
         fetchClanMembers();
     }, []);
 
-    const formatDate = (timestamp) => {
-        const date = new Date(timestamp * 1000);
-        return date.toLocaleString();
-    };
-
-    const getMemberType = (type) => {
-        switch (type) {
-            case 2:
-                return 'Miembro';
-            case 3:
-                return 'Moderador';
-            case 5:
-                return 'Admin';
-            default:
-                return 'Desconocido';
-        }
-    };
-
     return (
         <div>
             {error && <p>{error}</p>}
             <ul>
                 {members.map(member => (
-                    <div>
-                        <li>{member.bungieNetUserInfo.supplementalDisplayName}</li>
-                        <li>{getMemberType(member.memberType)}</li>
-                        <li>{member.isOnline ? "En linea" : "Desconectado"}</li>
-                        <li>Última conexión: {formatDate(member.lastOnlineStatusChange)}</li>
-                        <br/>
-                    </div>
-                    
+                    <MemberCard key={member.destinyUserInfo.membershipId} member={member} />
                 ))}
             </ul>
         </div>
     );
 }
+
