@@ -5,39 +5,43 @@ export default function MemberCard({ member }) {
     const [pvpWeapon, setPvpWeapon] = useState(null);
 
     const weaponTranslations = {
-        'AutoRifle': 'Fusil Automático',
-        'BeamRifle': 'Fusion de rastreo',
-        'Bow': 'Arco',
-        'FusionRifle': 'Fusil de fusion',
-        'Glaive': 'Guja',
-        'GrenadeLauncher': 'Lanzagranadas',
-        'HandCannon': 'Cañón de Mano',
-        'MachineGun': 'Ametralladora',
-        'PulseRifle': 'Fusil de pulsos',
-        'RocketLauncher': 'Lanzacohetes',
-        'ScoutRifle': 'Fusil de Explorador',
-        'Shotgun': 'Escopeta',
-        'SideArm': 'Pistola',
-        'Sniper': 'Francotirador',
-        'Submachinegun': 'Subfusil',
-        'Sword': 'Espada',
-        'TraceRifle': 'Fusion de rastreo'
+        'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
+        'BeamRifle': { name: 'Fusil de rastreo', icon: 'icon-BeamRifle' },
+        'Bow': { name: 'Arco', icon: 'icon-Bow' },
+        'FusionRifle': { name: 'Fusil de fusion', icon: 'icon-FusionRifle' },
+        'Glaive': { name: 'Guja', icon: 'icon-Glaive' },
+        'GrenadeLauncher': { name: 'Lanzagranadas', icon: 'icon-GrenadeLauncher' },
+        'HandCannon': { name: 'Cañón de Mano', icon: 'icon-HandCannon' },
+        'MachineGun': { name: 'Ametralladora', icon: 'icon-MachineGun' },
+        'PulseRifle': { name: 'Fusil de pulsos', icon: 'icon-PulseRifle' },
+        'RocketLauncher': { name: 'Lanzacohetes', icon: 'icon-RocketLauncher' },
+        'ScoutRifle': { name: 'Fusil de Explorador', icon: 'icon-ScoutRifle' },
+        'Shotgun': { name: 'Escopeta', icon: 'icon-Shotgun' },
+        'SideArm': { name: 'Pistola', icon: 'icon-SideArm' },
+        'Sniper': { name: 'Francotirador', icon: 'icon-Sniper' },
+        'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
+        'Sword': { name: 'Espada', icon: 'icon-Sword' },
+        'TraceRifle': { name: 'Fusil de rastreo', icon: 'icon-TraceRifle' },
+        'N/A': { name: 'N/A', icon: 'icon-na' }
     };
 
     const getMaxWeaponKill = (AllTime) => {
         const excludedWeapons = ['Grenade', 'Melee', 'Super'];
-        let mostKills = {statId: 'weaponKills', basic: {value: 0}};
+        let mostKills = { statId: 'weaponKills', basic: { value: 0 } };
 
         for (let atribute in AllTime) {
-            if(AllTime[atribute].statId.includes('weaponKills') && !excludedWeapons.some(weapon => AllTime[atribute].statId.includes(weapon))) {
-                if(AllTime[atribute].basic.value > mostKills.basic.value) {
+            if (AllTime[atribute].statId.includes('weaponKills') && !excludedWeapons.some(weapon => AllTime[atribute].statId.includes(weapon))) {
+                if (AllTime[atribute].basic.value > mostKills.basic.value) {
                     mostKills = AllTime[atribute];
                 }
             }
-
         };
-        const weaponType = mostKills.statId.replace('weaponKills', '');
-        return weaponTranslations[weaponType] || "No se ha encontrado el arma";
+
+        let weaponType = mostKills.statId.replace('weaponKills', '');
+        if (mostKills.basic.value === 0) {
+            weaponType = 'N/A';
+        }
+        return weaponTranslations[weaponType]
     }
 
     useEffect(() => {
@@ -86,8 +90,18 @@ export default function MemberCard({ member }) {
             <li>{member.isOnline ? "En linea" : "Desconectado"}</li>
             <li>Última conexión: {formatDate(member.lastOnlineStatusChange)}</li>
             <li>Se unió:  {new Date(member.joinDate).toLocaleDateString()}</li>
-            <li>PVP arma : {pvpWeapon}</li>
-            <li>PVE arma : {pveWeapon}</li>
+            {pveWeapon && (
+                <li>
+                    Mejor arma PVE:
+                    <i class={pveWeapon.icon} title={pveWeapon.name}></i>
+                </li>
+            )}
+            {pvpWeapon && (
+                <li>
+                    Mejor arma PVP:
+                    <i class={pvpWeapon.icon} title={pvpWeapon.name}></i>
+                </li>
+            )}
             <br />
         </div>
     )

@@ -2,4 +2,98 @@ body {
     font-family: 'Roboto', sans-serif;
 }
 
+@font-face {
+    font-family: "Destiny Symbols Common";
+    src: url(src/assets/fonts/destiny_symbols_common.otf);
+}
+
+.icon-AutoRifle::before {
+    content: "\E100";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-BeamRifle::before {
+    content: "\E001";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Bow::before {
+    content: "\E099";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-FusionRifle::before {
+    content: "\E106";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Glaive::before {
+    content: "\E156";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-GrenadeLauncher::before {
+    content: "\E113";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-HandCannon::before {
+    content: "\E103";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-MachineGun::before {
+    content: "\E154";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-PulseRifle::before {
+    content: "\E101";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-RocketLauncher::before {
+    content: "\E108";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-ScoutRifle::before {
+    content: "\E102";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Shotgun::before {
+    content: "\E104";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-SideArm::before {
+    content: "\E109";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Sniper::before {
+    content: "\E105";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Submachinegun::before {
+    content: "\E107";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-Sword::before {
+    content: "\E153";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-TraceRifle::before {
+    content: "\E007";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-na::before {
+    content: "N/A";
+}
+
 @import "tailwindcss";
