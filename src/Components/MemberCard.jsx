@@ -1,5 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { fetchCharacterIds } from './RecentActivity';
+
+
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
@@ -47,43 +50,37 @@ export default function MemberCard({ member }) {
         }
         return weaponTranslations[weaponType]
     }
-    
+
     //Llamada a la API para obtener la informacion de la cuenta
     useEffect(() => {
-        const fetchPlayTime = async () => {
+        const fetchUserInfo = async () => {
             try {
                 const responseGeneral = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Stats/`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                /*const activity = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Character/2305843009518315020/Stats/Activities/`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });*/
-                if (member.isOnline == true) {
-                    console.log("Personajes:"+ charachter.data.Response)
-                    console.log(activity.data.Response.activities[0].activityDetails.directorActivityHash);
-                    console.log(responseGeneral.data.Response);
+                if (member.isOnline == true) { //Si esta en linea, llama al metodo del .js
+                    setActivity(await fetchCharacterIds(member));
                 }
+
                 const pveWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const pvpWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 const lightlevel = responseGeneral.data.Response.mergedAllCharacters.merged.allTime.highestLightLevel.basic.value;
-                //const lastActivity = activity.data.Response.activities[0].activityDetails.directorActivityHash;
+        
                 setPveWeapon(getMaxWeaponKill(pveWeapon));
                 setPvpWeapon(getMaxWeaponKill(pvpWeapon));
                 setLight(lightlevel);
-                //setActivity(lastActivity);
 
             } catch (error) {
                 console.error('Error fetching play time:', error);
             }
         };
 
-        fetchPlayTime();
+        fetchUserInfo();
     }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOnline]);
 
+    //Ultima conexión
     const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
         const now = new Date();
         const lastOnline = new Date(lastOnlineStatusChange * 1000);
@@ -112,6 +109,7 @@ export default function MemberCard({ member }) {
     };
 
 
+    //Rol dentro del clan
     const getMemberType = (type) => {
         switch (type) {
             case 2:
@@ -129,7 +127,12 @@ export default function MemberCard({ member }) {
         <div>
             <li>{member.bungieNetUserInfo.supplementalDisplayName}</li>
             <li>{getMemberType(member.memberType)}</li>
-            <li>{member.isOnline ? `En linea jugando ${activity}` : "Desconectado"}</li>
+            <li>{member.isOnline ? `En linea` : "Desconectado"}</li>
+            {activity && (
+                <li>
+                    Última actividad: {activity.name} hace {activity.timeSinceLastPlayed} minutos
+                </li>
+            )}
             <li>Última conexión: {getTimeSinceLastConnection(member.lastOnlineStatusChange)}</li>
             <li>Se unió:  {new Date(member.joinDate).toLocaleDateString()}</li>
             {pveWeapon && (
