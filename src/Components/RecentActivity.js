@@ -3,7 +3,7 @@ import axios from 'axios';
 
 export const fetchCharacterIds = async (member) => {
     try {
-        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters`, {
+        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
@@ -28,6 +28,7 @@ export const fetchCharacterIds = async (member) => {
 
         // Obtener el nombre de la actividad usando el directorActivityHash
         const activityDetails = await fetchActivityDetails(mostRecentActivity.activityDetails.directorActivityHash);
+        console.log(mostRecentActivity.activityDetails.directorActivityHash)
 
         return {
             hash: mostRecentActivity.activityDetails.directorActivityHash,
@@ -43,20 +44,23 @@ export const fetchCharacterIds = async (member) => {
 //Obtener las actividades de un personaje
 const fetchActivities = async (characterId, member) => {
     try {
-        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Character/${characterId}/Stats/Activities/`, {
+        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Character/${characterId}/Stats/Activities/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
+        //console.log(`Activities for character /api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Character/${characterId}/Stats/Activities/`);
         return response.data.Response.activities[0];
     } catch (error) {
         console.error(`Error fetching activities for character ${characterId}:`, error);
         return null;
     }
 };
+
+//Obtiene los detalles de las actividades
 const fetchActivityDetails = async (activityHash) => {
     try {
-        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityDefinition/${activityHash}/`, {
+        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityDefinition/${activityHash}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },

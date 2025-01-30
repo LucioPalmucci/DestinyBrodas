@@ -60,6 +60,7 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
+
                 if (member.isOnline == true) { //Si esta en linea, llama al metodo del .js
                     setActivity(await fetchCharacterIds(member));
                 }
@@ -67,7 +68,7 @@ export default function MemberCard({ member }) {
                 const pveWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const pvpWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 const lightlevel = responseGeneral.data.Response.mergedAllCharacters.merged.allTime.highestLightLevel.basic.value;
-        
+
                 setPveWeapon(getMaxWeaponKill(pveWeapon));
                 setPvpWeapon(getMaxWeaponKill(pvpWeapon));
                 setLight(lightlevel);
@@ -91,9 +92,9 @@ export default function MemberCard({ member }) {
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if(member.isOnline){
+        if (member.isOnline) {
             return 'Jugando ahora';
-        }else if (days > 0 && days == 1) {
+        } else if (days > 0 && days == 1) {
             return `${days} día`;
         } else if (days > 0) {
             return `${days} días`;
@@ -103,7 +104,7 @@ export default function MemberCard({ member }) {
             return `${hours} horas`;
         } else if (minutes > 0) {
             return `${minutes} minutos`;
-        } else if (seconds > 0){
+        } else if (seconds > 0) {
             return `${seconds} segundos`;
         }
     };

@@ -6,6 +6,7 @@ export default function ClanLista() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        
         const fetchClanMembers = async () => {
             try {
                 const response = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
@@ -14,7 +15,6 @@ export default function ClanLista() {
                     },
                 });
                 setMembers(response.data.Response.results);
-                console.log(response.data.Response);
             } catch (error) {
                 if (error.response) {
                     console.error('Response data:', error.response.data);
