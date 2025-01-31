@@ -1,13 +1,14 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { getEquippedEmblem } from './EquippedEmblem';
 import { fetchCharacterIds } from './RecentActivity';
-
 
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
     const [maxLight, setLight] = useState(null);
     const [activity, setActivity] = useState(null);
+    const [equippedEmblem, setEquippedEmblem] = useState(null);
 
     //Armas e iconos
     const weaponTranslations = {
@@ -71,11 +72,13 @@ export default function MemberCard({ member }) {
 
                 setPveWeapon(getMaxWeaponKill(pveWeapon));
                 setPvpWeapon(getMaxWeaponKill(pvpWeapon));
+                setEquippedEmblem(await getEquippedEmblem(member));
                 setLight(lightlevel);
 
             } catch (error) {
                 console.error('Error fetching play time:', error);
             }
+
         };
 
         fetchUserInfo();
@@ -124,8 +127,15 @@ export default function MemberCard({ member }) {
         }
     };
 
+
+
     return (
         <div>
+            {equippedEmblem && (
+                <li>
+                    <img src={"/api/" + equippedEmblem} width={50} height={50} title='aasaas' />
+                </li>
+            )}
             <li>{member.bungieNetUserInfo.supplementalDisplayName}</li>
             <li>{getMemberType(member.memberType)}</li>
             <li>{member.isOnline ? `En linea` : "Desconectado"}</li>

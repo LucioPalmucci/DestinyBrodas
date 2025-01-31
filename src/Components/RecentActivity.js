@@ -42,7 +42,7 @@ export const fetchCharacterIds = async (member) => {
 };
 
 //Obtener las actividades de un personaje
-const fetchActivities = async (characterId, member) => {
+export const fetchActivities = async (characterId, member) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Character/${characterId}/Stats/Activities/?lc=es`, {
             headers: {
