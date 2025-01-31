@@ -9,6 +9,9 @@ export default function MemberCard({ member }) {
     const [maxLight, setLight] = useState(null);
     const [activity, setActivity] = useState(null);
     const [equippedEmblem, setEquippedEmblem] = useState(null);
+    const [killsPvE, setKillsPvE] = useState(null);
+    const [killsPvP, setKillsPvP] = useState(null);
+
 
     //Armas e iconos
     const weaponTranslations = {
@@ -29,11 +32,11 @@ export default function MemberCard({ member }) {
         'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
         'Sword': { name: 'Espada', icon: 'icon-Sword' },
         'TraceRifle': { name: 'Fusil de rastreo', icon: 'icon-TraceRifle' },
-        'N/A': { name: 'N/A', icon: 'icon-na' }
+        'N/A': { name: '', icon: 'icon-na' }
     };
 
     //Mayor cantidad de kills con arma PVP y PVE
-    const getMaxWeaponKill = (AllTime) => {
+    const getMaxWeaponKill = (AllTime, mode) => {
         const excludedWeapons = ['Grenade', 'Melee', 'Super'];
         let mostKills = { statId: 'weaponKills', basic: { value: 0 } };
 
@@ -49,7 +52,11 @@ export default function MemberCard({ member }) {
         if (mostKills.basic.value === 0) {
             weaponType = 'N/A';
         }
+
+        if(mode === 'PVE') setKillsPvE(mostKills.basic.value);
+        else setKillsPvP(mostKills.basic.value);
         return weaponTranslations[weaponType]
+        //kills: mostKills.basic.value,
     }
 
     //Llamada a la API para obtener la informacion de la cuenta
@@ -66,12 +73,13 @@ export default function MemberCard({ member }) {
                     setActivity(await fetchCharacterIds(member));
                 }
 
-                const pveWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
-                const pvpWeapon = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
+                //console.log('Response General:', responseGeneral.data.Response);
+                const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
+                const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 const lightlevel = responseGeneral.data.Response.mergedAllCharacters.merged.allTime.highestLightLevel.basic.value;
 
-                setPveWeapon(getMaxWeaponKill(pveWeapon));
-                setPvpWeapon(getMaxWeaponKill(pvpWeapon));
+                setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
+                setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
                 setEquippedEmblem(await getEquippedEmblem(member));
                 setLight(lightlevel);
 
@@ -138,24 +146,22 @@ export default function MemberCard({ member }) {
             )}
             <li>{member.bungieNetUserInfo.supplementalDisplayName}</li>
             <li>{getMemberType(member.memberType)}</li>
-            <li>{member.isOnline ? `En linea` : "Desconectado"}</li>
-            {activity && (
-                <li>
-                    Última actividad: {activity.name} hace {activity.timeSinceLastPlayed} minutos
-                </li>
-            )}
-            <li>Última conexión: {getTimeSinceLastConnection(member.lastOnlineStatusChange)}</li>
+            <li>Ultima conexión:
+                {member.isOnline ? (
+                    pveWeapon ? ` Jugando ahora ${activity.name} hace ${activity.timeSinceLastPlayed} minutos` : ' En línea'
+                ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
+            </li>
             <li>Se unió:  {new Date(member.joinDate).toLocaleDateString()}</li>
-            {pveWeapon && (
+            {pveWeapon &&(
                 <li>
                     Mejor arma PVE:
-                    <i className={pveWeapon.icon} title={pveWeapon.name}></i>
+                    <i className={pveWeapon.icon} title={killsPvE}></i> {pveWeapon.name}
                 </li>
             )}
-            {pvpWeapon && (
+            {pvpWeapon &&(
                 <li>
                     Mejor arma PVP:
-                    <i className={pvpWeapon.icon} title={pvpWeapon.name}></i>
+                    <i className={pvpWeapon.icon} title={killsPvP}></i> {pvpWeapon.name}
                 </li>
             )}
             <li>Maxima luz: {maxLight}</li>

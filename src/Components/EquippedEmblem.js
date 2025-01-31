@@ -20,15 +20,15 @@ export const getEquippedEmblem = async (member) => {
             return new Date(current.period) > new Date(latest.period) ? current : latest;
         }, activities[0]);
 
-        console.log('Most Recent Activity:', mostRecentActivity);
-        console.log('Character ID of Most Recent Activity:', mostRecentActivity.characterId);
+        /*console.log('Most Recent Activity:', mostRecentActivity);
+        console.log('Character ID of Most Recent Activity:', mostRecentActivity.characterId);*/
 
         const emblema = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentActivity.characterId}/?components=200`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
-        console.log('Emblema:', emblema.data.Response.character.data.emblemPath);
+        //console.log('Emblema:', emblema.data.Response.character.data.emblemPath);
         return emblema.data.Response.character.data.emblemPath;
     } catch (error) {
         console.error('Error al obtener el emblema:', error);

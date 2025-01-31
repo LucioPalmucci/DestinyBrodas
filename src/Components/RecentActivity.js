@@ -10,7 +10,7 @@ export const fetchCharacterIds = async (member) => {
         });
 
         const characterIds = Object.keys(response.data.Response.characters.data);
-        console.log('Character IDs:', characterIds);
+        //console.log('Character IDs:', characterIds);
 
         // Obtener el historial de actividades para cada personaje
         const activities = await Promise.all(characterIds.map(id => fetchActivities(id, member)));
@@ -20,7 +20,7 @@ export const fetchCharacterIds = async (member) => {
             return new Date(current.period) > new Date(latest.period) ? current : latest;
         }, activities[0]);
 
-        console.log('Most Recent Activity:', mostRecentActivity);
+        //console.log('Most Recent Activity:', mostRecentActivity);
 
         // Calcular el tiempo transcurrido desde la última actividad
         const lastPlayedDate = new Date(mostRecentActivity.period);
@@ -28,7 +28,7 @@ export const fetchCharacterIds = async (member) => {
 
         // Obtener el nombre de la actividad usando el directorActivityHash
         const activityDetails = await fetchActivityDetails(mostRecentActivity.activityDetails.directorActivityHash);
-        console.log(mostRecentActivity.activityDetails.directorActivityHash)
+        //console.log(mostRecentActivity.activityDetails.directorActivityHash)
 
         return {
             hash: mostRecentActivity.activityDetails.directorActivityHash,
