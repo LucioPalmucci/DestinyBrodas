@@ -1,38 +1,27 @@
 import axios from "axios";
-import { fetchActivities } from "./RecentActivity";
+
 export const getEquippedEmblem = async (member) => {
     try {
-        // Obtener los personajes del miembro
+        // Hacer una sola llamada a la API para obtener el perfil completo del miembro
         const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
 
-        const charactersIds = Object.keys(response.data.Response.characters.data);
+        const characters = response.data.Response.characters.data;
 
-        const activities = await Promise.all(charactersIds.map(async id => {
-            const activity = await fetchActivities(id, member);
-            return { characterId: id, ...activity };
-        }));
-        
-        const mostRecentActivity = activities.reduce((latest, current) => {
-            return new Date(current.period) > new Date(latest.period) ? current : latest;
-        }, activities[0]);
-
-        /*console.log('Most Recent Activity:', mostRecentActivity);
-        console.log('Character ID of Most Recent Activity:', mostRecentActivity.characterId);*/
-
-        const emblema = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentActivity.characterId}/?components=200`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
+        // Encontrar el personaje con la actividad más reciente
+        const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
+            return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
-        //console.log('Emblema:', emblema.data.Response.character.data.emblemPath);
-        return emblema.data.Response.character.data.emblemPath;
+
+        // Obtener el emblema equipado del personaje más reciente
+        const equippedEmblem = mostRecentCharacter.emblemPath;
+
+        return equippedEmblem;
     } catch (error) {
-        console.error('Error al obtener el emblema:', error);
-        throw error;
+        console.error('Error fetching equipped emblem:', error);
+        return null;
     }
 };
-

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getEquippedEmblem } from './EquippedEmblem';
 import { fetchCharacterIds } from './RecentActivity';
 
-export default function MemberCard({ member }) {
+export default function MemberCard ({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
     const [maxLight, setLight] = useState(null);
@@ -53,7 +53,7 @@ export default function MemberCard({ member }) {
             weaponType = 'N/A';
         }
 
-        if(mode === 'PVE') setKillsPvE(mostKills.basic.value);
+        if (mode === 'PVE') setKillsPvE(mostKills.basic.value);
         else setKillsPvP(mostKills.basic.value);
         return weaponTranslations[weaponType]
         //kills: mostKills.basic.value,
@@ -69,8 +69,8 @@ export default function MemberCard({ member }) {
                     },
                 });
 
-                if (member.isOnline == true) { //Si esta en linea, llama al metodo del .js
-                    setActivity(await fetchCharacterIds(member));
+                if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
+                    setActivity(fetchCharacterIds(member));
                 }
 
                 //console.log('Response General:', responseGeneral.data.Response);
@@ -80,8 +80,8 @@ export default function MemberCard({ member }) {
 
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setEquippedEmblem(await getEquippedEmblem(member));
                 setLight(lightlevel);
+                setEquippedEmblem(await getEquippedEmblem(member));
 
             } catch (error) {
                 console.error('Error fetching play time:', error);
@@ -90,20 +90,20 @@ export default function MemberCard({ member }) {
         };
 
         fetchUserInfo();
-    }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOnline]);
+    }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOntdne]);
 
     //Ultima conexión
-    const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
+    const getTimeSinceLastConnection = (lastOntdneStatusChange) => {
         const now = new Date();
-        const lastOnline = new Date(lastOnlineStatusChange * 1000);
-        const diff = now - lastOnline;
+        const lastOntdne = new Date(lastOntdneStatusChange * 1000);
+        const diff = now - lastOntdne;
 
         const seconds = Math.floor(diff / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if (member.isOnline) {
+        if (member.isOntdne) {
             return 'Jugando ahora';
         } else if (days > 0 && days == 1) {
             return `${days} día`;
@@ -127,9 +127,9 @@ export default function MemberCard({ member }) {
             case 2:
                 return 'Miembro';
             case 3:
-                return 'Moderador';
+                return 'Administrador';
             case 5:
-                return 'Admin';
+                return 'Fundador';
             default:
                 return 'Desconocido';
         }
@@ -138,35 +138,33 @@ export default function MemberCard({ member }) {
 
 
     return (
-        <div>
-            {equippedEmblem && (
-                <li>
-                    <img src={"/api/" + equippedEmblem} width={50} height={50} title='aasaas' />
-                </li>
-            )}
-            <li>{member.bungieNetUserInfo.supplementalDisplayName}</li>
-            <li>{getMemberType(member.memberType)}</li>
-            <li>Ultima conexión:
+        <tr>
+            <td>
+                <img src={"/api/" + equippedEmblem} width={50} height={50} />
+            </td>
+            <td>{member.bungieNetUserInfo.supplementalDisplayName}</td>
+            <td>{getMemberType(member.memberType)}</td>
+            <td>
                 {member.isOnline ? (
-                    pveWeapon ? ` Jugando ahora ${activity.name} hace ${activity.timeSinceLastPlayed} minutos` : ' En línea'
+                    pveWeapon ? `${activity.name} hace ${activity.timeSinceLastPlayed} minutos` : ' En línea'
                 ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
-            </li>
-            <li>Se unió:  {new Date(member.joinDate).toLocaleDateString()}</li>
-            {pveWeapon &&(
-                <li>
-                    Mejor arma PVE:
-                    <i className={pveWeapon.icon} title={killsPvE}></i> {pveWeapon.name}
-                </li>
-            )}
-            {pvpWeapon &&(
-                <li>
-                    Mejor arma PVP:
-                    <i className={pvpWeapon.icon} title={killsPvP}></i> {pvpWeapon.name}
-                </li>
-            )}
-            <li>Maxima luz: {maxLight}</li>
-            <br />
-        </div>
+            </td>
+            <td>{new Date(member.joinDate).toLocaleDateString()}</td>
+            <td>
+                {pveWeapon && (
+                    <>
+                        <i className={pveWeapon.icon} title={killsPvE + " kills"}></i> {pveWeapon.name}
+                    </>
+                )}
+            </td>
+            <td>
+                {pvpWeapon && (
+                    <>
+                        <i className={pvpWeapon.icon} title={killsPvP + " kills"}></i> {pvpWeapon.name}
+                    </>
+                )}
+            </td>
+            <td>{maxLight}</td>
+        </tr>
     )
-
 }

@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import MemberCard from './MemberCard';
+import './Tabla.css';
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        
+
         const fetchClanMembers = async () => {
             try {
                 const response = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
@@ -15,6 +16,7 @@ export default function ClanLista() {
                     },
                 });
                 setMembers(response.data.Response.results);
+                console.log('Response:', response.data.Response.results);
             } catch (error) {
                 if (error.response) {
                     console.error('Response data:', error.response.data);
@@ -34,12 +36,31 @@ export default function ClanLista() {
 
     return (
         <div>
-            {error && <p>{error}</p>}
-            <ul>
-                {members.map(member => (
-                    <MemberCard key={member.destinyUserInfo.membershipId} member={member} />
-                ))}
-            </ul>
+            <h1 className='text-2xl p-4'>Clan BRODAS</h1>
+            <div className='justify-center flex items-center flex-col'>
+                {error && <p>{error}</p>}
+                <table className='text-center'>
+                    <thead>
+                        <tr>
+                            <th>Emblema</th>
+                            <th>Nombre</th>
+                            <th>Rol</th>
+                            <th>Última Conexión</th>
+                            <th>Fecha de Ingreso</th>
+                            <th>Mejor Arma PVE</th>
+                            <th>Mejor Arma PVP</th>
+                            <th>Máximo Poder</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {members
+                            .sort((a, b) => b.lastOnlineStatusChange - a.lastOnlineStatusChange)
+                            .map(member => (
+                                <MemberCard member={member} key={member.destinyUserInfo.membershipId}/>
+                            ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
