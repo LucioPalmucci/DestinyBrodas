@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getEquippedEmblem } from './EquippedEmblem';
 import { fetchCharacterIds } from './RecentActivity';
 
-export default function MemberCard ({ member }) {
+export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
     const [maxLight, setLight] = useState(null);
@@ -14,6 +14,7 @@ export default function MemberCard ({ member }) {
 
 
     //Armas e iconos
+    
     const weaponTranslations = {
         'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
         'BeamRifle': { name: 'Fusil de rastreo', icon: 'icon-BeamRifle' },
@@ -69,9 +70,7 @@ export default function MemberCard ({ member }) {
                     },
                 });
 
-                if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
-                    setActivity(fetchCharacterIds(member));
-                }
+                
 
                 //console.log('Response General:', responseGeneral.data.Response);
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
@@ -82,6 +81,9 @@ export default function MemberCard ({ member }) {
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
                 setLight(lightlevel);
                 setEquippedEmblem(await getEquippedEmblem(member));
+                if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
+                    setActivity(await fetchCharacterIds(member));
+                }
 
             } catch (error) {
                 console.error('Error fetching play time:', error);
@@ -135,21 +137,31 @@ export default function MemberCard ({ member }) {
         }
     };
 
-
+    //Fecha de ingreso
+    const date = new Date(member.joinDate);
+    const formattedDate = date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    }).replace(/^0/, '0');
 
     return (
         <tr>
-            <td>
-                <img src={"/api/" + equippedEmblem} width={50} height={50} />
+            <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
+                <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
+                {member.destinyUserInfo.displayName}
             </td>
-            <td>{member.bungieNetUserInfo.supplementalDisplayName}</td>
+            <td>
+                {member.isOnline ?
+                    (activity ? (
+                        <>
+                            {activity}
+                        </>
+                    ) : ' En línea'
+                    ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
+            </td>
             <td>{getMemberType(member.memberType)}</td>
-            <td>
-                {member.isOnline ? (
-                    pveWeapon ? `${activity.name} hace ${activity.timeSinceLastPlayed} minutos` : ' En línea'
-                ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
-            </td>
-            <td>{new Date(member.joinDate).toLocaleDateString()}</td>
+            <td>{maxLight}</td>
             <td>
                 {pveWeapon && (
                     <>
@@ -164,7 +176,7 @@ export default function MemberCard ({ member }) {
                     </>
                 )}
             </td>
-            <td>{maxLight}</td>
+            <td>{formattedDate}</td>
         </tr>
     )
 }

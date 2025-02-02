@@ -1,7 +1,11 @@
 
 th, td{
     padding: 10px;
+    padding-left: 20px;
 }
 table{
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+}
+th{
+    text-align: left;
 }

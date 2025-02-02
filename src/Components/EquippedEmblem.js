@@ -16,6 +16,7 @@ export const getEquippedEmblem = async (member) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
 
+        //console.log("Most recent charachter id", mostRecentCharacter);
         // Obtener el emblema equipado del personaje más reciente
         const equippedEmblem = mostRecentCharacter.emblemPath;
 

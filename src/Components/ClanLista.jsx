@@ -16,7 +16,7 @@ export default function ClanLista() {
                     },
                 });
                 setMembers(response.data.Response.results);
-                console.log('Response:', response.data.Response.results);
+                console.log('Members:', response.data.Response.results);
             } catch (error) {
                 if (error.response) {
                     console.error('Response data:', error.response.data);
@@ -30,31 +30,61 @@ export default function ClanLista() {
                 }
             }
         };
+        /*
+        const fetchManifest = async () => {
+            try {
+                const manifestResponse = await axios.get(`/api/Platform/Destiny2/Manifest/`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    }
+                });
+                const jsonWorldComponentContentPaths = manifestResponse.data.Response.jsonWorldComponentContentPaths;
+                console.log('Manifest:', jsonWorldComponentContentPaths);
+                const destinyActivityDefinitionPath = jsonWorldComponentContentPaths.es.DestinyActivityTypeDefinition;
+                const activityDefinitionResponse = await axios.get("/api/" + destinyActivityDefinitionPath);
 
+                const activityDefinitions = activityDefinitionResponse.data;
+                const activitiesInSpanish = Object.keys(activityDefinitions).map(hash => ({
+                    hash,
+                    name: activityDefinitions[hash].displayProperties.name
+                }));
+
+                console.log("Activities in Spanish: ", activitiesInSpanish);
+                setActivities(activitiesInSpanish);
+            } catch (error) {
+                console.error('Error fetching manifest:', error);
+            }
+        };
+        
+        fetchManifest();*/
         fetchClanMembers();
     }, []);
 
     return (
         <div>
             <h1 className='text-2xl p-4'>Clan BRODAS</h1>
-            <div className='justify-center flex items-center flex-col'>
+            <div className='justify-center items-center flex flex-col'>
                 {error && <p>{error}</p>}
-                <table className='text-center'>
+                <table className='text-start'>
                     <thead>
                         <tr>
-                            <th>Emblema</th>
                             <th>Nombre</th>
-                            <th>Rol</th>
                             <th>Última Conexión</th>
-                            <th>Fecha de Ingreso</th>
+                            <th>Rol</th>
+                            <th>Poder</th>
                             <th>Mejor Arma PVE</th>
                             <th>Mejor Arma PVP</th>
-                            <th>Máximo Poder</th>
+                            <th>Ingreso</th>
                         </tr>
                     </thead>
                     <tbody>
                         {members
-                            .sort((a, b) => b.lastOnlineStatusChange - a.lastOnlineStatusChange)
+                            .sort((a, b) => { //Primero ordena por estado de conexión, luego por última conexión
+                                if (a.isOnline === b.isOnline) {
+                                  return b.lastOnlineStatusChange - a.lastOnlineStatusChange;
+                                }
+                                return a.isOnline ? -1 : 1;
+                            })
                             .map(member => (
                                 <MemberCard member={member} key={member.destinyUserInfo.membershipId}/>
                             ))}
