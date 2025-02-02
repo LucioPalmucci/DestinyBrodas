@@ -4,7 +4,7 @@ body {
 
 @font-face {
     font-family: "Destiny Symbols Common";
-    src: url(src/assets/fonts/destiny_symbols_common.otf);
+    src: url(./assets/fonts/destiny_symbols_common.otf) format('opentype');
 }
 
 .icon-AutoRifle::before {
