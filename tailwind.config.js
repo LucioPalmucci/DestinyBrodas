@@ -8,7 +8,7 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                Raleway: ['Raleway'],
+                Inter: ['Inter'],
             },
         },
     },

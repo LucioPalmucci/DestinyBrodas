@@ -63,7 +63,7 @@ export default function ClanLista() {
     return (
         <div>
             <h1 className='text-2xl p-4'>Clan BRODAS</h1>
-            <div className='justify-center items-center flex flex-col'>
+            <div className='justify-center items-center flex flex-col font-Inter'>
                 {error && <p>{error}</p>}
                 <table className='text-start'>
                     <thead>
@@ -72,8 +72,7 @@ export default function ClanLista() {
                             <th>Última Conexión</th>
                             <th>Rol</th>
                             <th>Poder</th>
-                            <th>Mejor Arma PVE</th>
-                            <th>Mejor Arma PVP</th>
+                            <th>Mejor arma <br/> PVE/PVP</th>
                             <th>Ingreso</th>
                         </tr>
                     </thead>

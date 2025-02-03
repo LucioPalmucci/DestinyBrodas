@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { getEquippedEmblem } from './EquippedEmblem';
 import { fetchCharacterIds } from './RecentActivity';
+import './Tabla.css';
 
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
@@ -146,7 +147,7 @@ export default function MemberCard({ member }) {
     }).replace(/^0/, '0');
 
     return (
-        <tr>
+        <tr className='font-Inter'>
             <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
                 <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
                 {member.destinyUserInfo.displayName}
@@ -163,16 +164,10 @@ export default function MemberCard({ member }) {
             <td>{getMemberType(member.memberType)}</td>
             <td>{maxLight}</td>
             <td>
-                {pveWeapon && (
+                {pveWeapon && pvpWeapon && (
                     <>
-                        <i className={pveWeapon.icon} title={killsPvE + " kills"}></i> {pveWeapon.name}
-                    </>
-                )}
-            </td>
-            <td>
-                {pvpWeapon && (
-                    <>
-                        <i className={pvpWeapon.icon} title={killsPvP + " kills"}></i> {pvpWeapon.name}
+                        <i className={pveWeapon.icon} title={pveWeapon.name + "\n" + killsPvE + " bajas"}></i> /
+                        <i className={pvpWeapon.icon} title={pvpWeapon.name + "\n" + killsPvP + " bajas"}></i>
                     </>
                 )}
             </td>
