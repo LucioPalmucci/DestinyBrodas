@@ -13,9 +13,7 @@ export default function MemberCard({ member }) {
     const [killsPvE, setKillsPvE] = useState(null);
     const [killsPvP, setKillsPvP] = useState(null);
 
-
     //Armas e iconos
-    
     const weaponTranslations = {
         'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
         'BeamRifle': { name: 'Fusil de rastreo', icon: 'icon-BeamRifle' },
@@ -70,9 +68,8 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-
                 
-
+                setEquippedEmblem(await getEquippedEmblem(member));
                 //console.log('Response General:', responseGeneral.data.Response);
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
@@ -81,32 +78,30 @@ export default function MemberCard({ member }) {
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
                 setLight(lightlevel);
-                setEquippedEmblem(await getEquippedEmblem(member));
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member));
                 }
 
+
             } catch (error) {
                 console.error('Error fetching play time:', error);
             }
-
         };
-
         fetchUserInfo();
-    }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOntdne]);
+    }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOnline]);
 
     //Ultima conexión
-    const getTimeSinceLastConnection = (lastOntdneStatusChange) => {
+    const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
         const now = new Date();
-        const lastOntdne = new Date(lastOntdneStatusChange * 1000);
-        const diff = now - lastOntdne;
+        const lastOnlinene = new Date(lastOnlineStatusChange * 1000);
+        const diff = now - lastOnlinene;
 
         const seconds = Math.floor(diff / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if (member.isOntdne) {
+        if (member.isOnline) {
             return 'Jugando ahora';
         } else if (days > 0 && days == 1) {
             return `${days} día`;
@@ -147,31 +142,35 @@ export default function MemberCard({ member }) {
     }).replace(/^0/, '0');
 
     return (
-        <tr className='font-Inter'>
-            <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
-                <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
-                {member.destinyUserInfo.displayName}
-            </td>
-            <td>
-                {member.isOnline ?
-                    (activity ? (
-                        <>
-                            {activity}
-                        </>
-                    ) : ' En línea'
-                    ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
-            </td>
-            <td>{getMemberType(member.memberType)}</td>
-            <td>{maxLight}</td>
-            <td>
-                {pveWeapon && pvpWeapon && (
-                    <>
-                        <i className={pveWeapon.icon} title={pveWeapon.name + "\n" + killsPvE + " bajas"}></i> /
-                        <i className={pvpWeapon.icon} title={pvpWeapon.name + "\n" + killsPvP + " bajas"}></i>
-                    </>
-                )}
-            </td>
-            <td>{formattedDate}</td>
-        </tr>
+        <>
+            {equippedEmblem &&  (
+                <tr className='font-Inter'>
+                    <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
+                        <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
+                        {member.destinyUserInfo.displayName}
+                    </td>
+                    <td>
+                        {member.isOnline ?
+                            (activity ? (
+                                <>
+                                    {activity}
+                                </>
+                            ) : ' En línea'
+                            ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
+                    </td>
+                    <td>{getMemberType(member.memberType)}</td>
+                    <td>{maxLight}</td>
+                    <td>
+                        {pveWeapon && pvpWeapon && (
+                            <>
+                                <i className={pveWeapon.icon} title={pveWeapon.name + "\n" + killsPvE + " bajas"}></i> /
+                                <i className={pvpWeapon.icon} title={pvpWeapon.name + "\n" + killsPvP + " bajas"}></i>
+                            </>
+                        )}
+                    </td>
+                    <td>{formattedDate}</td>
+                </tr>
+            )}
+        </>
     )
 }
