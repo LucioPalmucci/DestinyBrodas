@@ -97,7 +97,7 @@ body{
 }
 
 .icon-na::before {
-    content: "N/A";
+    content: " -";
 }
 
 @import "tailwindcss";

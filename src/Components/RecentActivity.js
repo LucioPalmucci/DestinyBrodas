@@ -42,9 +42,9 @@ export const fetchCharacterIds = async (member) => {
         })(mostRecentCharacter);
 
         if (activities.type == null && activities.name == "") return "En línea";
-        else if (activities.type == null && activities.name != "") return activities.name;
-        else if (activities.type != null && activities.name == "") return activities.type;
-        else return activities.name + " - " + activities.type;
+        else if (activities.type == null && activities.name != "") return "En línea jugando: " + activities.name;
+        else if (activities.type != null && activities.name == "") return "En línea jugando: " +activities.type;
+        else return "En línea jugando:" + "\n" + activities.name + " - " + activities.type;
 
     } catch (error) {
         console.error('Error fetching character IDs:', error);

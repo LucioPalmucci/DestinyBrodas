@@ -18,7 +18,15 @@ export default function ClanLista() {
                     },
                 });
 
-                setMembers(response.data.Response.results);
+                const unSorted = response.data.Response.results;
+                unSorted.sort((a, b) => {
+                    if (a.isOnline === b.isOnline) {
+                        return b.lastOnlineStatusChange - a.lastOnlineStatusChange;
+                    }
+                    return a.isOnline ? -1 : 1;
+                });
+                setMembers(unSorted);
+                console.log('Response:', unSorted);
 
             } catch (error) {
                 console.error(error);
@@ -46,19 +54,14 @@ export default function ClanLista() {
                             <th>Última Conexión</th>
                             <th>Rol</th>
                             <th>Poder</th>
-                            <th>Mejor arma <br /> PVE/PVP</th>
+                            <th>Mejor Arma <br /> PVE/PVP</th>
                             <th>Ingreso</th>
                         </tr>
                     </thead>
                     <tbody>
                         {members ? (
                             members
-                                .sort((a, b) => {
-                                    if (a.isOnline === b.isOnline) {
-                                        return b.lastOnlineStatusChange - a.lastOnlineStatusChange;
-                                    }
-                                    return a.isOnline ? -1 : 1;
-                                })
+
                                 .map(member => (
                                     <MemberCard
                                         member={member}

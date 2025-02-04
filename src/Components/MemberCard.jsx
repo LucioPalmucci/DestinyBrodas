@@ -16,14 +16,14 @@ export default function MemberCard({ member }) {
     //Armas e iconos
     const weaponTranslations = {
         'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
-        'BeamRifle': { name: 'Fusil de rastreo', icon: 'icon-BeamRifle' },
+        'BeamRifle': { name: 'Fusil de Rastreo', icon: 'icon-BeamRifle' },
         'Bow': { name: 'Arco', icon: 'icon-Bow' },
-        'FusionRifle': { name: 'Fusil de fusion', icon: 'icon-FusionRifle' },
+        'FusionRifle': { name: 'Fusil de Fusion', icon: 'icon-FusionRifle' },
         'Glaive': { name: 'Guja', icon: 'icon-Glaive' },
         'GrenadeLauncher': { name: 'Lanzagranadas', icon: 'icon-GrenadeLauncher' },
         'HandCannon': { name: 'Cañón de Mano', icon: 'icon-HandCannon' },
         'MachineGun': { name: 'Ametralladora', icon: 'icon-MachineGun' },
-        'PulseRifle': { name: 'Fusil de pulsos', icon: 'icon-PulseRifle' },
+        'PulseRifle': { name: 'Fusil de Pulsos', icon: 'icon-PulseRifle' },
         'RocketLauncher': { name: 'Lanzacohetes', icon: 'icon-RocketLauncher' },
         'ScoutRifle': { name: 'Fusil de Explorador', icon: 'icon-ScoutRifle' },
         'Shotgun': { name: 'Escopeta', icon: 'icon-Shotgun' },
@@ -31,7 +31,7 @@ export default function MemberCard({ member }) {
         'Sniper': { name: 'Francotirador', icon: 'icon-Sniper' },
         'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
         'Sword': { name: 'Espada', icon: 'icon-Sword' },
-        'TraceRifle': { name: 'Fusil de rastreo', icon: 'icon-TraceRifle' },
+        'TraceRifle': { name: 'Fusil de Rastreo', icon: 'icon-TraceRifle' },
         'N/A': { name: '', icon: 'icon-na' }
     };
 
@@ -81,7 +81,6 @@ export default function MemberCard({ member }) {
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member));
                 }
-
 
             } catch (error) {
                 console.error('Error fetching play time:', error);
@@ -141,6 +140,12 @@ export default function MemberCard({ member }) {
         year: 'numeric'
     }).replace(/^0/, '0');
 
+    if(member.bungieNetUserInfo.supplementalDisplayName ==  "20209201"){
+        member.bungieNetUserInfo.supplementalDisplayName = "GerSeGa#0536";
+    } else if(member.bungieNetUserInfo.supplementalDisplayName ==  "25750147"){
+        member.bungieNetUserInfo.supplementalDisplayName = "TheVagrantChaff#5160";
+    }
+
     return (
         <>
             {equippedEmblem &&  (
@@ -152,9 +157,9 @@ export default function MemberCard({ member }) {
                     <td>
                         {member.isOnline ?
                             (activity ? (
-                                <>
+                                <div style={{whiteSpace: 'pre-line'}}>
                                     {activity}
-                                </>
+                                </div>
                             ) : ' En línea'
                             ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
                     </td>
