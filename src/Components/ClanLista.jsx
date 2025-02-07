@@ -8,6 +8,12 @@ export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isConexionAscending, setConexionAscending] = useState(true);
+    const [isRoleAscending, setIsRoleAscending] = useState(true);
+    const [isPowerAscending, setIsPowerAscending] = useState(true);
+    const [isNameAscending, setIsNameAscending] = useState(true);
+    const [isJoinDateAscending, setIsJoinDateAscending] = useState(true);
+    const [typeSort, setTypeSort] = useState("LastOnline");
 
     useEffect(() => {
         const fetchClanMembers = async () => {
@@ -19,15 +25,58 @@ export default function ClanLista() {
                 });
 
                 const unSorted = response.data.Response.results;
-                unSorted.sort((a, b) => {
-                    if (a.isOnline === b.isOnline) {
-                        return b.lastOnlineStatusChange - a.lastOnlineStatusChange;
-                    }
-                    return a.isOnline ? -1 : 1;
-                });
-                setMembers(unSorted);
-                console.log('Response:', unSorted);
+                console.log('type:', typeSort);
 
+                switch (typeSort) {
+                    case "LastOnline":
+                        unSorted.sort((a, b) => {
+                            if (a.isOnline === b.isOnline) {
+                                return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                            }
+
+                            return a.isOnline ? -1 : 1;
+                        });
+                        break;
+                    case "Role":
+                        unSorted.sort((a, b) => {
+                            if (a.memberType === b.memberType) {
+                                return 0;
+                            }
+                            return isRoleAscending ? a.memberType - b.memberType : b.memberType - a.memberType;
+                        });
+                        console.log('Role');
+                        break;
+                    case "Power":
+                        unSorted.sort((a, b) => {
+                            return isPowerAscending ? b.light - a.light : a.light - b.light;
+                        });
+                        break;
+                    case "JoinDate":
+                        unSorted.sort((a, b) => {
+                            return isJoinDateAscending
+                                ? new Date(a.joinDate) - new Date(b.joinDate)
+                                : new Date(b.joinDate) - new Date(a.joinDate);
+                        });
+                        break;
+                    case "Name":
+                        unSorted.sort((a, b) => {
+                            return isNameAscending
+                                ? b.destinyUserInfo.displayName.localeCompare(a.destinyUserInfo.displayName)
+                                : a.destinyUserInfo.displayName.localeCompare(b.destinyUserInfo.displayName);
+                        });
+                        break;
+                    default:
+                        unSorted.sort((a, b) => {
+                            if (a.isOnline === b.isOnline) {
+                                return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                            }
+                            return a.isOnline ? -1 : 1;
+                        });
+                        break;
+                }
+                setMembers(unSorted);
+
+                console.log('Response:', response.data.Response.results);
             } catch (error) {
                 console.error(error);
                 setError('Error al cargar los miembros.');
@@ -36,10 +85,31 @@ export default function ClanLista() {
             }
         };
         fetchClanMembers();
-    }, []);
+    }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending]);
 
-    if (isLoading ) {
+    if (isLoading) {
         return <Spinner />;
+    }
+
+    const toggleSortOrder = () => {
+        setConexionAscending(!isConexionAscending);
+        setTypeSort("LastOnline");
+    };
+    const toggleRoleSortOrder = () => {
+        setIsRoleAscending(!isRoleAscending);
+        setTypeSort("Role");
+    };
+    const togglePowerSortOrder = () => {
+        setIsPowerAscending(!isPowerAscending);
+        setTypeSort("Power");
+    }
+    const toggleNameSortOrder = () => {
+        setIsNameAscending(!isNameAscending);
+        setTypeSort("Name");
+    }
+    const toggleJoinDateSortOrder = () => {
+        setIsJoinDateAscending(!isJoinDateAscending);
+        setTypeSort("JoinDate");
     }
 
     return (
@@ -50,24 +120,22 @@ export default function ClanLista() {
                 <table className='text-start'>
                     <thead>
                         <tr>
-                            <th>Nombre</th>
-                            <th>Última Conexión</th>
-                            <th>Rol</th>
-                            <th>Poder</th>
+                            <th><button onClick={toggleNameSortOrder}>Nombre {isNameAscending ? '↓' : '↑'}</button></th>
+                            <th><button onClick={toggleSortOrder}>Última Conexión {isConexionAscending ? '↓' : '↑'}</button></th>
+                            <th><button onClick={toggleRoleSortOrder}>Rol {isRoleAscending ? '↓' : '↑'}</button></th>
+                            <th><button onClick={togglePowerSortOrder}>Poder {isPowerAscending ? '↓' : '↑'}</button></th>
                             <th>Mejor Arma <br /> PVE/PVP</th>
-                            <th>Ingreso</th>
+                            <th><button onClick={toggleJoinDateSortOrder}>Ingreso {isJoinDateAscending ? '↓' : '↑'}</button></th>
                         </tr>
                     </thead>
                     <tbody>
                         {members ? (
-                            members
-
-                                .map(member => (
-                                    <MemberCard
-                                        member={member}
-                                        key={member.destinyUserInfo.membershipId}
-                                    />
-                                ))
+                            members.map(member => (
+                                <MemberCard
+                                    member={member}
+                                    key={member.destinyUserInfo.membershipId}
+                                />
+                            ))
                         ) : (
                             <tr>
                                 <td colSpan="6" className='mb-10'>

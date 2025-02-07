@@ -73,11 +73,10 @@ export default function MemberCard({ member }) {
                 //console.log('Response General:', responseGeneral.data.Response);
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
-                const lightlevel = responseGeneral.data.Response.mergedAllCharacters.merged.allTime.highestLightLevel.basic.value;
 
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setLight(lightlevel);
+                setLight(getLightWithArtifact(responseGeneral.data.Response.profile.data.characterIds));
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member));
                 }
@@ -144,6 +143,15 @@ export default function MemberCard({ member }) {
         member.bungieNetUserInfo.supplementalDisplayName = "GerSeGa#0536";
     } else if(member.bungieNetUserInfo.supplementalDisplayName ==  "25750147"){
         member.bungieNetUserInfo.supplementalDisplayName = "TheVagrantChaff#5160";
+    }
+
+    async function getLightWithArtifact(characterIds) {
+        const characterProgressionResponse = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${characterIds[0]}/?components=200`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        return characterProgressionResponse.data.Response.progressions.data.lightLevel;
     }
 
     return (
