@@ -24,7 +24,7 @@ export default function ClanLista() {
                     },
                 });
 
-                const unSorted = response.data.Response.results;
+                let unSorted = response.data.Response.results;
                 console.log('type:', typeSort);
 
                 switch (typeSort) {
@@ -47,9 +47,7 @@ export default function ClanLista() {
                         console.log('Role');
                         break;
                     case "Power":
-                        unSorted.sort((a, b) => {
-                            return isPowerAscending ? b.light - a.light : a.light - b.light;
-                        });
+                        unSorted = await lightLevel(unSorted);
                         break;
                     case "JoinDate":
                         unSorted.sort((a, b) => {
@@ -149,6 +147,25 @@ export default function ClanLista() {
         </div>
     );
 
+    async function lightLevel(members) {
+        const membersWithLight = await Promise.all(members.map(async (member) => {
+            try {
+                const responseGeneral = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Stats/`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
 
-
+                const light = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime.highestLightLevel.basic.value;
+                return { ...member, light };
+            } catch (error) {
+                console.error('Error fetching play time:', error);
+                return { ...member, light: 0 };
+            }
+        }));
+    
+        if (isPowerAscending) membersWithLight.sort((a, b) => a.light - b.light);
+        else membersWithLight.sort((a, b) => b.light - a.light);
+        return membersWithLight;
+    }
 }
