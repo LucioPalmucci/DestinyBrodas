@@ -33,8 +33,7 @@ export default function ClanLista() {
                             if (a.isOnline === b.isOnline) {
                                 return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                             }
-
-                            return a.isOnline ? -1 : 1;
+                            return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
                         });
                         break;
                     case "Role":
@@ -68,7 +67,7 @@ export default function ClanLista() {
                             if (a.isOnline === b.isOnline) {
                                 return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                             }
-                            return a.isOnline ? -1 : 1;
+                            return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
                         });
                         break;
                 }
@@ -118,12 +117,32 @@ export default function ClanLista() {
                 <table className='text-start'>
                     <thead>
                         <tr>
-                            <th><button onClick={toggleNameSortOrder}>Nombre {isNameAscending ? '↓' : '↑'}</button></th>
-                            <th><button onClick={toggleSortOrder}>Última Conexión {isConexionAscending ? '↓' : '↑'}</button></th>
-                            <th><button onClick={toggleRoleSortOrder}>Rol {isRoleAscending ? '↓' : '↑'}</button></th>
-                            <th><button onClick={togglePowerSortOrder}>Poder {isPowerAscending ? '↓' : '↑'}</button></th>
+                            <th>
+                                <button onClick={toggleNameSortOrder} className='hover:text-blue-500'>
+                                    Nombre {typeSort === "Name" && (isNameAscending ? '↓' : '↑')}
+                                </button>
+                            </th>
+                            <th>
+                                <button onClick={toggleSortOrder} className='hover:text-blue-500'>
+                                    Última Conexión {typeSort === "LastOnline" && (isConexionAscending ? '↓' : '↑')}
+                                </button>
+                            </th>
+                            <th>
+                                <button onClick={toggleRoleSortOrder} className='hover:text-blue-500'>
+                                    Rol {typeSort === "Role" && (isRoleAscending ? '↓' : '↑')}
+                                </button>
+                            </th>
+                            <th>
+                                <button onClick={togglePowerSortOrder} className='hover:text-blue-500'>
+                                    Poder {typeSort === "Power" && (isPowerAscending ? '↓' : '↑')}
+                                </button>
+                            </th>
                             <th>Mejor Arma <br /> PVE/PVP</th>
-                            <th><button onClick={toggleJoinDateSortOrder}>Ingreso {isJoinDateAscending ? '↓' : '↑'}</button></th>
+                            <th>
+                                <button onClick={toggleJoinDateSortOrder} className='hover:text-blue-500'>
+                                    Ingreso {typeSort === "JoinDate" && (isJoinDateAscending ? '↓' : '↑')}
+                                </button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -163,7 +182,7 @@ export default function ClanLista() {
                 return { ...member, light: 0 };
             }
         }));
-    
+
         if (isPowerAscending) membersWithLight.sort((a, b) => a.light - b.light);
         else membersWithLight.sort((a, b) => b.light - a.light);
         return membersWithLight;
