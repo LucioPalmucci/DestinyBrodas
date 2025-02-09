@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import MemberCard from './MemberCard';
+import { fetchCharacterIds } from './RecentActivity';
 import Spinner from './Spinner';
 import './Tabla.css';
-
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [error, setError] = useState(null);
@@ -169,22 +169,15 @@ export default function ClanLista() {
     async function lightLevel(members) {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
-                const responseGeneral = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Stats/`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const light = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime.highestLightLevel.basic.value;
-                return { ...member, light };
+                const characterData = await fetchCharacterIds(member, "artifact");
+                return { ...member, light: characterData };
             } catch (error) {
-                console.error('Error fetching play time:', error);
+                console.error('Error fetching light level:', error);
                 return { ...member, light: 0 };
             }
         }));
 
-        if (isPowerAscending) membersWithLight.sort((a, b) => a.light - b.light);
-        else membersWithLight.sort((a, b) => b.light - a.light);
+        membersWithLight.sort((a, b) => isPowerAscending ? a.light - b.light : b.light - a.light);
         return membersWithLight;
     }
 }

@@ -68,18 +68,17 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                
+
                 setEquippedEmblem(await getEquippedEmblem(member));
+                setLight(await fetchCharacterIds(member, "artifact"));
+
                 //console.log('Response General:', responseGeneral.data.Response);
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
-                const ligth = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime.highestLightLevel.basic.value;
-
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setLight(ligth);
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
-                    setActivity(await fetchCharacterIds(member));
+                    setActivity(await fetchCharacterIds(member, "activity"));
                 }
 
             } catch (error) {
@@ -140,15 +139,27 @@ export default function MemberCard({ member }) {
         year: 'numeric'
     }).replace(/^0/, '0');
 
-    if(member.bungieNetUserInfo.supplementalDisplayName ==  "20209201"){
+    if (member.bungieNetUserInfo.supplementalDisplayName == "20209201") {
         member.bungieNetUserInfo.supplementalDisplayName = "GerSeGa#0536";
-    } else if(member.bungieNetUserInfo.supplementalDisplayName ==  "25750147"){
+    } else if (member.bungieNetUserInfo.supplementalDisplayName == "25750147") {
         member.bungieNetUserInfo.supplementalDisplayName = "TheVagrantChaff#5160";
+    }
+
+    async function getAritfacBonusLevel() {
+        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=300`,
+            {
+                headers: {
+                    'X-API-Key': "f83a251bf2274914ab739f4781b5e710",
+                },
+            }
+        );
+        const artifactData = response.data.Response;
+        console.log("Artifact Data: ", artifactData);
     }
 
     return (
         <>
-            {equippedEmblem &&  (
+            {equippedEmblem && (
                 <tr className='font-Inter'>
                     <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
                         <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
@@ -157,7 +168,7 @@ export default function MemberCard({ member }) {
                     <td>
                         {member.isOnline ?
                             (activity ? (
-                                <div style={{whiteSpace: 'pre-line'}}>
+                                <div style={{ whiteSpace: 'pre-line' }}>
                                     {activity}
                                 </div>
                             ) : ' En línea'

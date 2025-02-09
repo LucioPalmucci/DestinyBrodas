@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const fetchCharacterIds = async (member) => {
+export const fetchCharacterIds = async (member, info) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
             headers: {
@@ -12,44 +12,52 @@ export const fetchCharacterIds = async (member) => {
         const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
-        console.log("MostRecentCharachter:",  mostRecentCharacter.characterId );
 
-        // Obtener la actividad actual para cada personaje
-        const activities = await (async function fetchCurrentActivity(mostRecentCharacter) {
-            try {
-                const activityResponse = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterActivities`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
-                const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
-                console.log("CurrentActivityHash: ", activityResponse.data.Response.activities.data.currentActivityHash);
-                const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
-                const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
-
-                return {
-                    name: name,
-                    type: type,
-                };
-
-            }
-            catch (error) {
-                console.error(`Error fetching current activity for character ${mostRecentCharacter.characterId}:`, error);
-                return null;
-            }
-        })(mostRecentCharacter);
-
-        if (activities.type == null && activities.name == "") return "En línea";
-        else if (activities.type == null && activities.name != "") return "En línea jugando: " + "\n" + activities.name;
-        else if (activities.type != null && activities.name == "") return "En línea jugando: " + "\n" + activities.type;
-        else return "En línea jugando:" + "\n" + activities.name + " - " + activities.type;
+        if (info == "activity") return fetchCurrentActivity(member, mostRecentCharacter);
+        else if (info == "artifact") {
+            return response.data.Response.characters.data[mostRecentCharacter.characterId].light;
+        }
+        else return null;
 
     } catch (error) {
         console.error('Error fetching character IDs:', error);
     }
 };
+
+export const fetchCurrentActivity = async (member, mostRecentCharacter) => {
+    // Obtener la actividad actual para cada personaje
+    const activities = await (async function fetchCurrentActivity(mostRecentCharacter) {
+        try {
+            const activityResponse = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterActivities`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
+            const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
+            console.log("CurrentActivityHash: ", activityResponse.data.Response.activities.data.currentActivityHash);
+            const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
+            const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
+
+            return {
+                name: name,
+                type: type,
+            };
+
+        }
+        catch (error) {
+            console.error(`Error fetching current activity for character ${mostRecentCharacter.characterId}:`, error);
+            return null;
+        }
+    })(mostRecentCharacter);
+
+    if (activities.type == null && activities.name == "") return "En línea";
+    else if (activities.type == null && activities.name != "") return "En línea: " + "\n" + activities.name;
+    else if (activities.type != null && activities.name == "") return "En línea: " + "\n" + activities.type;
+    else return "En línea:" + "\n" + activities.name + " - " + activities.type;
+}
+
 const fetchActivityDetails = async (activityHash, type) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
@@ -57,7 +65,7 @@ const fetchActivityDetails = async (activityHash, type) => {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
-        if(response.data.Response == null) return null;
+        if (response.data.Response == null) return null;
         else return response.data.Response.displayProperties.name;
 
     } catch (error) {
@@ -65,3 +73,13 @@ const fetchActivityDetails = async (activityHash, type) => {
         return null;
     }
 };
+
+const fetchArtifactData = async (member, mostRecentCharacter) => {
+    const characterResponse = await axios.get(`/api/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterProgressions`, {
+        headers: {
+            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+        },
+    });
+    console.log("Artifact Data: ", characterResponse.data.Response);
+    return characterResponse.data.Response.characterProgressions.data.light;
+}
