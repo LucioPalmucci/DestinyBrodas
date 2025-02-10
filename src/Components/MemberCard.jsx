@@ -8,6 +8,7 @@ export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
     const [maxLight, setLight] = useState(null);
+    const [artifactLight, setArtifactLight] = useState(null);
     const [activity, setActivity] = useState(null);
     const [equippedEmblem, setEquippedEmblem] = useState(null);
     const [killsPvE, setKillsPvE] = useState(null);
@@ -68,15 +69,17 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
+                //console.log('Response General:', responseGeneral.data.Response);
+                let totalLight = await fetchCharacterIds(member, "total")
+                setArtifactLight(await getAritfactBonusLevel())
+                setLight((totalLight - artifactLight));
 
                 setEquippedEmblem(await getEquippedEmblem(member));
-                setLight(await fetchCharacterIds(member, "artifact"));
-
-                //console.log('Response General:', responseGeneral.data.Response);
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
+
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member, "activity"));
                 }
@@ -145,16 +148,23 @@ export default function MemberCard({ member }) {
         member.bungieNetUserInfo.supplementalDisplayName = "TheVagrantChaff#5160";
     }
 
-    async function getAritfacBonusLevel() {
-        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=300`,
-            {
+    async function getAritfactBonusLevel() {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=104`, {
                 headers: {
                     'X-API-Key': "f83a251bf2274914ab739f4781b5e710",
                 },
+            });
+
+            if (member.bungieNetUserInfo.supplementalDisplayName === "LucioELRubio#2761") {
+                console.log("Artifact Data: ", response.data.Response);
             }
-        );
-        const artifactData = response.data.Response;
-        console.log("Artifact Data: ", artifactData);
+            
+            return response.data.Response.profileProgression.data.seasonalArtifact.powerBonus;
+        } catch (error) {
+            console.error('Error fetching artifact bonus level:', error);
+            return null;
+        }
     }
 
     return (
@@ -175,7 +185,7 @@ export default function MemberCard({ member }) {
                             ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
                     </td>
                     <td>{getMemberType(member.memberType)}</td>
-                    <td>{maxLight}</td>
+                    <td>{maxLight} <span className='text-blue-500 font-semibold'>+ {artifactLight}</span></td>
                     <td>
                         {pveWeapon && pvpWeapon && (
                             <>

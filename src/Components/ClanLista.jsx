@@ -25,7 +25,6 @@ export default function ClanLista() {
                 });
 
                 let unSorted = response.data.Response.results;
-                console.log('type:', typeSort);
 
                 switch (typeSort) {
                     case "LastOnline":
@@ -169,7 +168,7 @@ export default function ClanLista() {
     async function lightLevel(members) {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
-                const characterData = await fetchCharacterIds(member, "artifact");
+                const characterData = await fetchCharacterIds(member, "total");
                 return { ...member, light: characterData };
             } catch (error) {
                 console.error('Error fetching light level:', error);

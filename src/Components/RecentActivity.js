@@ -14,7 +14,7 @@ export const fetchCharacterIds = async (member, info) => {
         });
 
         if (info == "activity") return fetchCurrentActivity(member, mostRecentCharacter);
-        else if (info == "artifact") {
+        else if (info == "total") {
             return response.data.Response.characters.data[mostRecentCharacter.characterId].light;
         }
         else return null;
