@@ -39,17 +39,16 @@ export default function ClanLista() {
             }
         };
         fetchClanMembers();
-    }, []);
+    }, [members]);
 
     useEffect(() => {
         sortMembers(originalMembers, typeSort);
     }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending, typeSort]);
 
-    const sortMembers = (members, sortType) => {
-        let sortedMembers = [...members];
+    function sortMembers (members, sortType){
         switch (sortType) {
             case "LastOnline":
-                sortedMembers.sort((a, b) => {
+                members.sort((a, b) => {
                     if (a.isOnline === b.isOnline) {
                         return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                     }
@@ -57,7 +56,7 @@ export default function ClanLista() {
                 });
                 break;
             case "Role":
-                sortedMembers.sort((a, b) => {
+                members.sort((a, b) => {
                     if (a.memberType === b.memberType) {
                         return 0;
                     }
@@ -65,24 +64,24 @@ export default function ClanLista() {
                 });
                 break;
             case "Power":
-                sortedMembers.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
+                members.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
                 break;
             case "JoinDate":
-                sortedMembers.sort((a, b) => {
+                members.sort((a, b) => {
                     return isJoinDateAscending
                         ? new Date(a.joinDate) - new Date(b.joinDate)
                         : new Date(b.joinDate) - new Date(a.joinDate);
                 });
                 break;
             case "Name":
-                sortedMembers.sort((a, b) => {
+                members.sort((a, b) => {
                     return isNameAscending
                         ? b.destinyUserInfo.displayName.localeCompare(a.destinyUserInfo.displayName)
                         : a.destinyUserInfo.displayName.localeCompare(b.destinyUserInfo.displayName);
                 });
                 break;
             default:
-                sortedMembers.sort((a, b) => {
+                members.sort((a, b) => {
                     if (a.isOnline === b.isOnline) {
                         return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                     }
@@ -90,7 +89,7 @@ export default function ClanLista() {
                 });
                 break;
         }
-        setMembers(sortedMembers);
+        setMembers(members);
     };
 
     if (isLoading) {
