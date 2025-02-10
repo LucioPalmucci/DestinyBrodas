@@ -4,8 +4,10 @@ import MemberCard from './MemberCard';
 import { fetchCharacterIds } from './RecentActivity';
 import Spinner from './Spinner';
 import './Tabla.css';
+
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
+    const [originalMembers, setOriginalMembers] = useState([]); // Nuevo estado para almacenar los datos originales
     const [error, setError] = useState(null);
     const [membersWithLight, setMembersLight] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -27,55 +29,8 @@ export default function ClanLista() {
 
                 let unSorted = response.data.Response.results;
                 setMembersLight(await lightLevel(unSorted));
-
-                switch (typeSort) {
-                    case "LastOnline":
-                        unSorted.sort((a, b) => {
-                            if (a.isOnline === b.isOnline) {
-                                return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
-                            }
-                            return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
-                        });
-                        break;
-                    case "Role":
-                        unSorted.sort((a, b) => {
-                            if (a.memberType === b.memberType) {
-                                return 0;
-                            }
-                            return isRoleAscending ? a.memberType - b.memberType : b.memberType - a.memberType;
-                        });
-                        console.log('Role');
-                        break;
-                    case "Power":
-                        unSorted = membersWithLight;
-                        unSorted.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
-                        break;
-                    case "JoinDate":
-                        unSorted.sort((a, b) => {
-                            return isJoinDateAscending
-                                ? new Date(a.joinDate) - new Date(b.joinDate)
-                                : new Date(b.joinDate) - new Date(a.joinDate);
-                        });
-                        break;
-                    case "Name":
-                        unSorted.sort((a, b) => {
-                            return isNameAscending
-                                ? b.destinyUserInfo.displayName.localeCompare(a.destinyUserInfo.displayName)
-                                : a.destinyUserInfo.displayName.localeCompare(b.destinyUserInfo.displayName);
-                        });
-                        break;
-                    default:
-                        unSorted.sort((a, b) => {
-                            if (a.isOnline === b.isOnline) {
-                                return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
-                            }
-                            return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
-                        });
-                        break;
-                }
-                setMembers(unSorted);
-
-                console.log('Response:', response.data.Response.results);
+                setOriginalMembers(membersWithLight); // Almacena los datos originales
+                sortMembers(membersWithLight, typeSort);
             } catch (error) {
                 console.error(error);
                 setError('Error al cargar los miembros.');
@@ -84,7 +39,59 @@ export default function ClanLista() {
             }
         };
         fetchClanMembers();
-    }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending]);
+    }, []);
+
+    useEffect(() => {
+        sortMembers(originalMembers, typeSort);
+    }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending, typeSort]);
+
+    const sortMembers = (members, sortType) => {
+        let sortedMembers = [...members];
+        switch (sortType) {
+            case "LastOnline":
+                sortedMembers.sort((a, b) => {
+                    if (a.isOnline === b.isOnline) {
+                        return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                    }
+                    return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
+                });
+                break;
+            case "Role":
+                sortedMembers.sort((a, b) => {
+                    if (a.memberType === b.memberType) {
+                        return 0;
+                    }
+                    return isRoleAscending ? a.memberType - b.memberType : b.memberType - a.memberType;
+                });
+                break;
+            case "Power":
+                sortedMembers.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
+                break;
+            case "JoinDate":
+                sortedMembers.sort((a, b) => {
+                    return isJoinDateAscending
+                        ? new Date(a.joinDate) - new Date(b.joinDate)
+                        : new Date(b.joinDate) - new Date(a.joinDate);
+                });
+                break;
+            case "Name":
+                sortedMembers.sort((a, b) => {
+                    return isNameAscending
+                        ? b.destinyUserInfo.displayName.localeCompare(a.destinyUserInfo.displayName)
+                        : a.destinyUserInfo.displayName.localeCompare(b.destinyUserInfo.displayName);
+                });
+                break;
+            default:
+                sortedMembers.sort((a, b) => {
+                    if (a.isOnline === b.isOnline) {
+                        return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                    }
+                    return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
+                });
+                break;
+        }
+        setMembers(sortedMembers);
+    };
 
     if (isLoading) {
         return <Spinner />;
@@ -120,28 +127,28 @@ export default function ClanLista() {
                     <thead>
                         <tr>
                             <th>
-                                <button onClick={toggleNameSortOrder} className='hover:text-blue-500'>
+                                <button onClick={toggleNameSortOrder} className='hover:text-blue-500 cursor-pointer'>
                                     Nombre {typeSort === "Name" && (isNameAscending ? '↓' : '↑')}
                                 </button>
                             </th>
                             <th>
-                                <button onClick={toggleSortOrder} className='hover:text-blue-500'>
+                                <button onClick={toggleSortOrder} className='hover:text-blue-500  cursor-pointer'>
                                     Última Conexión {typeSort === "LastOnline" && (isConexionAscending ? '↓' : '↑')}
                                 </button>
                             </th>
                             <th>
-                                <button onClick={toggleRoleSortOrder} className='hover:text-blue-500'>
+                                <button onClick={toggleRoleSortOrder} className='hover:text-blue-500  cursor-pointer'>
                                     Rol {typeSort === "Role" && (isRoleAscending ? '↓' : '↑')}
                                 </button>
                             </th>
                             <th>
-                                <button onClick={togglePowerSortOrder} className='hover:text-blue-500'>
+                                <button onClick={togglePowerSortOrder} className='hover:text-blue-500  cursor-pointer'>
                                     Poder {typeSort === "Power" && (isPowerAscending ? '↓' : '↑')}
                                 </button>
                             </th>
                             <th>Mejor Arma <br /> PVE/PVP</th>
                             <th>
-                                <button onClick={toggleJoinDateSortOrder} className='hover:text-blue-500'>
+                                <button onClick={toggleJoinDateSortOrder} className='hover:text-blue-500  cursor-pointer'>
                                     Ingreso {typeSort === "JoinDate" && (isJoinDateAscending ? '↓' : '↑')}
                                 </button>
                             </th>

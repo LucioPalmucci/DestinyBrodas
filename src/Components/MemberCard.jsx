@@ -197,12 +197,12 @@ export default function MemberCard({ member }) {
                             ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
                     </td>
                     <td>{getMemberType(member.memberType)}</td>
-                    <td onClick={toggleLightDisplay} style={{ cursor: 'pointer' }}>
+                    <td onClick={toggleLightDisplay}>
                         {showBaseLight ? (
                             <>
-                                {baseLight} <span className='text-blue-500 font-semibold'>+{artifactLight}</span>
+                                {baseLight} <span className='text-blue-500 font-semibold cursor-pointer'>+{artifactLight}</span>
                             </>
-                        ) : maxLight}
+                        ) : <span className='hover:text-blue-500 cursor-pointer'>{maxLight}</span>}
                     </td>
                     <td>
                         {pveWeapon && pvpWeapon && (
