@@ -8,11 +8,13 @@ export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
     const [maxLight, setLight] = useState(null);
+    const [baseLight, setBaseLight] = useState(null);
     const [artifactLight, setArtifactLight] = useState(null);
     const [activity, setActivity] = useState(null);
     const [equippedEmblem, setEquippedEmblem] = useState(null);
     const [killsPvE, setKillsPvE] = useState(null);
     const [killsPvP, setKillsPvP] = useState(null);
+    const [showBaseLight, setShowBaseLight] = useState(false);
 
     //Armas e iconos
     const weaponTranslations = {
@@ -72,7 +74,8 @@ export default function MemberCard({ member }) {
                 //console.log('Response General:', responseGeneral.data.Response);
                 let totalLight = await fetchCharacterIds(member, "total")
                 setArtifactLight(await getAritfactBonusLevel())
-                setLight((totalLight - artifactLight));
+                setLight(totalLight);
+                console.log("Base Light: ", baseLight);
 
                 setEquippedEmblem(await getEquippedEmblem(member));
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
@@ -91,6 +94,11 @@ export default function MemberCard({ member }) {
         fetchUserInfo();
     }, [member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType, member.isOnline]);
 
+    useEffect(() => {
+        if (maxLight !== null && artifactLight !== null) {
+            setBaseLight(maxLight - artifactLight);
+        }
+    }, [maxLight, artifactLight]);
     //Ultima conexión
     const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
         const now = new Date();
@@ -159,13 +167,17 @@ export default function MemberCard({ member }) {
             if (member.bungieNetUserInfo.supplementalDisplayName === "LucioELRubio#2761") {
                 console.log("Artifact Data: ", response.data.Response);
             }
-            
+
             return response.data.Response.profileProgression.data.seasonalArtifact.powerBonus;
         } catch (error) {
             console.error('Error fetching artifact bonus level:', error);
             return null;
         }
     }
+
+    const toggleLightDisplay = () => {
+        setShowBaseLight(!showBaseLight);
+    };
 
     return (
         <>
@@ -185,7 +197,13 @@ export default function MemberCard({ member }) {
                             ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
                     </td>
                     <td>{getMemberType(member.memberType)}</td>
-                    <td>{maxLight} <span className='text-blue-500 font-semibold'>+ {artifactLight}</span></td>
+                    <td onClick={toggleLightDisplay} style={{ cursor: 'pointer' }}>
+                        {showBaseLight ? (
+                            <>
+                                {baseLight} <span className='text-blue-500 font-semibold'>+{artifactLight}</span>
+                            </>
+                        ) : maxLight}
+                    </td>
                     <td>
                         {pveWeapon && pvpWeapon && (
                             <>

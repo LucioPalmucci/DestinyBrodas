@@ -7,6 +7,7 @@ import './Tabla.css';
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [error, setError] = useState(null);
+    const [membersWithLight, setMembersLight] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isConexionAscending, setConexionAscending] = useState(true);
     const [isRoleAscending, setIsRoleAscending] = useState(true);
@@ -25,6 +26,7 @@ export default function ClanLista() {
                 });
 
                 let unSorted = response.data.Response.results;
+                setMembersLight(await lightLevel(unSorted));
 
                 switch (typeSort) {
                     case "LastOnline":
@@ -45,7 +47,8 @@ export default function ClanLista() {
                         console.log('Role');
                         break;
                     case "Power":
-                        unSorted = await lightLevel(unSorted);
+                        unSorted = membersWithLight;
+                        unSorted.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
                         break;
                     case "JoinDate":
                         unSorted.sort((a, b) => {
@@ -169,14 +172,12 @@ export default function ClanLista() {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
                 const characterData = await fetchCharacterIds(member, "total");
-                return { ...member, light: characterData };
+                return { ...member, PowerLevel: characterData };
             } catch (error) {
                 console.error('Error fetching light level:', error);
-                return { ...member, light: 0 };
+                return { ...member, PowerLevel: 0 };
             }
         }));
-
-        membersWithLight.sort((a, b) => isPowerAscending ? a.light - b.light : b.light - a.light);
         return membersWithLight;
     }
 }
