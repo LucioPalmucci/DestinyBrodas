@@ -98,7 +98,7 @@ export default function MemberCard({ member }) {
         if (maxLight !== null && artifactLight !== null) {
             setBaseLight(maxLight - artifactLight);
         }
-    }, []);
+    }, [maxLight, artifactLight]);
     //Ultima conexión
     const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
         const now = new Date();
@@ -200,7 +200,7 @@ export default function MemberCard({ member }) {
                     <td onClick={toggleLightDisplay}>
                         {showBaseLight ? (
                             <>
-                                {baseLight} <span className='text-blue-500 font-semibold cursor-pointer'>+{artifactLight}</span>
+                                <span className='text-blue-500 font-semibold cursor-pointer'>{baseLight} +{artifactLight}</span>
                             </>
                         ) : <span className='hover:text-blue-500 cursor-pointer'>{maxLight}</span>}
                     </td>
