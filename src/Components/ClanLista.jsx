@@ -31,7 +31,7 @@ export default function ClanLista() {
                 const membersWithLight = await lightLevel(unSorted);
                 setMembersLight(membersWithLight);
                 setOriginalMembers(membersWithLight); // Almacena los datos originales
-                sortMembers(membersWithLight, typeSort);
+                sortMembers(membersWithLight, typeSort, true);
             } catch (error) {
                 console.error(error);
                 setError('Error al cargar los miembros.');
@@ -48,14 +48,14 @@ export default function ClanLista() {
         }
     }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending, typeSort]);
 
-    function sortMembers(members, sortType) {
+    function sortMembers(members, sortType, isAscending) {
         switch (sortType) {
             case "LastOnline":
                 members.sort((a, b) => {
                     if (a.isOnline === b.isOnline) {
-                        return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                        return isAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                     }
-                    return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
+                    return isAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
                 });
                 break;
             case "Role":
@@ -63,22 +63,22 @@ export default function ClanLista() {
                     if (a.memberType === b.memberType) {
                         return 0;
                     }
-                    return isRoleAscending ? a.memberType - b.memberType : b.memberType - a.memberType;
+                    return isAscending ? a.memberType - b.memberType : b.memberType - a.memberType;
                 });
                 break;
             case "Power":
-                members.sort((a, b) => isPowerAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
+                members.sort((a, b) => isAscending ? a.PowerLevel - b.PowerLevel : b.PowerLevel - a.PowerLevel);
                 break;
             case "JoinDate":
                 members.sort((a, b) => {
-                    return isJoinDateAscending
+                    return isAscending
                         ? new Date(a.joinDate) - new Date(b.joinDate)
                         : new Date(b.joinDate) - new Date(a.joinDate);
                 });
                 break;
             case "Name":
                 members.sort((a, b) => {
-                    return isNameAscending
+                    return isAscending
                         ? b.destinyUserInfo.displayName.localeCompare(a.destinyUserInfo.displayName)
                         : a.destinyUserInfo.displayName.localeCompare(b.destinyUserInfo.displayName);
                 });
@@ -86,9 +86,9 @@ export default function ClanLista() {
             default:
                 members.sort((a, b) => {
                     if (a.isOnline === b.isOnline) {
-                        return isConexionAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
+                        return isAscending ? b.lastOnlineStatusChange - a.lastOnlineStatusChange : a.lastOnlineStatusChange - b.lastOnlineStatusChange;
                     }
-                    return isConexionAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
+                    return isAscending ? (a.isOnline ? -1 : 1) : (a.isOnline ? 1 : -1);
                 });
                 break;
         }
@@ -100,25 +100,49 @@ export default function ClanLista() {
     }
 
     const toggleSortOrder = () => {
-        setConexionAscending(!isConexionAscending);
-        setTypeSort("LastOnline");
-    };
+        setConexionAscending(prevState => {
+            const newOrder = !prevState;
+            setTypeSort("LastOnline");
+            sortMembers(members, "LastOnline", newOrder);
+            return newOrder;
+        });
+    }
+    
     const toggleRoleSortOrder = () => {
-        setIsRoleAscending(!isRoleAscending);
-        setTypeSort("Role");
+        setIsRoleAscending(prevState => {
+            const newOrder = !prevState;
+            setTypeSort("Role");
+            sortMembers(members, "Role", newOrder);
+            return newOrder;
+        });
     };
+    
     const togglePowerSortOrder = () => {
-        setIsPowerAscending(!isPowerAscending);
-        setTypeSort("Power");
-    }
+        setIsPowerAscending(prevState => {
+            const newOrder = !prevState;
+            setTypeSort("Power");
+            sortMembers(members, "Power", newOrder);
+            return newOrder;
+        });
+    };
+    
     const toggleNameSortOrder = () => {
-        setIsNameAscending(!isNameAscending);
-        setTypeSort("Name");
-    }
+        setIsNameAscending(prevState => {
+            const newOrder = !prevState;
+            setTypeSort("Name");
+            sortMembers(members, "Name", newOrder);
+            return newOrder;
+        });
+    };
+    
     const toggleJoinDateSortOrder = () => {
-        setIsJoinDateAscending(!isJoinDateAscending);
-        setTypeSort("JoinDate");
-    }
+        setIsJoinDateAscending(prevState => {
+            const newOrder = !prevState;
+            setTypeSort("JoinDate");
+            sortMembers(members, "JoinDate", newOrder);
+            return newOrder;
+        });
+    };
 
     return (
         <div>
