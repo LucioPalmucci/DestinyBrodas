@@ -72,7 +72,7 @@ export default function MemberCard({ member }) {
                     },
                 });
                 //console.log('Response General:', responseGeneral.data.Response);
-                let totalLight = await fetchCharacterIds(member, "total")
+                let totalLight = await fetchCharacterIds(member, "total", 2)
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);
                 console.log("Base Light: ", baseLight);
@@ -84,7 +84,7 @@ export default function MemberCard({ member }) {
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
 
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
-                    setActivity(await fetchCharacterIds(member, "activity"));
+                    setActivity(await fetchCharacterIds(member, "activity", 3));
                 }
 
             } catch (error) {
@@ -98,7 +98,7 @@ export default function MemberCard({ member }) {
         if (maxLight !== null && artifactLight !== null) {
             setBaseLight(maxLight - artifactLight);
         }
-    }, [maxLight, artifactLight]);
+    }, []);
     //Ultima conexión
     const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
         const now = new Date();

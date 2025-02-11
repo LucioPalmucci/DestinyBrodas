@@ -28,7 +28,8 @@ export default function ClanLista() {
                 });
 
                 let unSorted = response.data.Response.results;
-                setMembersLight(await lightLevel(unSorted));
+                const membersWithLight = await lightLevel(unSorted);
+                setMembersLight(membersWithLight);
                 setOriginalMembers(membersWithLight); // Almacena los datos originales
                 sortMembers(membersWithLight, typeSort);
             } catch (error) {
@@ -39,13 +40,15 @@ export default function ClanLista() {
             }
         };
         fetchClanMembers();
-    }, [members]);
+    }, []);
 
     useEffect(() => {
-        sortMembers(originalMembers, typeSort);
+        if (originalMembers.length > 0) {
+            sortMembers(originalMembers, typeSort);
+        }
     }, [isConexionAscending, isRoleAscending, isJoinDateAscending, isPowerAscending, isNameAscending, typeSort]);
 
-    function sortMembers (members, sortType){
+    function sortMembers(members, sortType) {
         switch (sortType) {
             case "LastOnline":
                 members.sort((a, b) => {
@@ -177,7 +180,7 @@ export default function ClanLista() {
     async function lightLevel(members) {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
-                const characterData = await fetchCharacterIds(member, "total");
+                const characterData = await fetchCharacterIds(member, "total", 1);
                 return { ...member, PowerLevel: characterData };
             } catch (error) {
                 console.error('Error fetching light level:', error);

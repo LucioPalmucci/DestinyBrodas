@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const fetchCharacterIds = async (member, info) => {
+export const fetchCharacterIds = async (member, info, num) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
             headers: {
@@ -8,6 +8,7 @@ export const fetchCharacterIds = async (member, info) => {
             },
         });
 
+        console.log("Type call: ", info, num);
         const characterIds = response.data.Response.characters.data;
         const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
@@ -73,13 +74,3 @@ const fetchActivityDetails = async (activityHash, type) => {
         return null;
     }
 };
-
-const fetchArtifactData = async (member, mostRecentCharacter) => {
-    const characterResponse = await axios.get(`/api/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterProgressions`, {
-        headers: {
-            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-        },
-    });
-    console.log("Artifact Data: ", characterResponse.data.Response);
-    return characterResponse.data.Response.characterProgressions.data.light;
-}
