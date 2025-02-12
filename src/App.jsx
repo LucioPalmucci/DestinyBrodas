@@ -1,12 +1,14 @@
 import React from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import ClanLista from './Components/ClanLista';
+import ClanLista from './Components/ClanLista/ClanLista';
+import MemberDetail from './Components/MemeberPage/MemeberDetail';
 
 function App() {
     return (
-        <Router basename="/DestinyBrodas">
+        <Router basename='/DestinyBrodas'>
             <Routes>
-                <Route path="/" element={<ClanLista />} />
+                <Route path="/" element={<ClanLista/>} />
+                <Route path="/member/:membershipId" element={<MemberDetail/>} />
             </Routes>
         </Router>
     );

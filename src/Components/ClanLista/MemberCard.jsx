@@ -1,9 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { getEquippedEmblem } from './EquippedEmblem';
-import { fetchCharacterIds } from './RecentActivity';
-import './Tabla.css';
-
+import { getEquippedEmblem } from '../EquippedEmblem';
+import { fetchCharacterIds } from '../RecentActivity';
+import '../Tabla.css';
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);
@@ -183,10 +182,12 @@ export default function MemberCard({ member }) {
         <>
             {equippedEmblem && (
                 <tr className='font-Inter'>
-                    <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
-                        <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
-                        {member.destinyUserInfo.displayName}
-                    </td>
+                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
+                        <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
+                            <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
+                            {member.destinyUserInfo.displayName}
+                        </td>
+                    </a>
                     <td>
                         {member.isOnline ?
                             (activity ? (

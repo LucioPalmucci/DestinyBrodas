@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { fetchCharacterIds } from '../RecentActivity';
+import Spinner from '../Spinner';
+import '../Tabla.css';
 import MemberCard from './MemberCard';
-import { fetchCharacterIds } from './RecentActivity';
-import Spinner from './Spinner';
-import './Tabla.css';
 
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
