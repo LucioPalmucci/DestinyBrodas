@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { getEquippedEmblem } from '../EquippedEmblem';
+import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import '../Tabla.css';
 export default function MemberCard({ member }) {
@@ -99,32 +100,7 @@ export default function MemberCard({ member }) {
         }
     }, [maxLight, artifactLight]);
     //Ultima conexión
-    const getTimeSinceLastConnection = (lastOnlineStatusChange) => {
-        const now = new Date();
-        const lastOnlinene = new Date(lastOnlineStatusChange * 1000);
-        const diff = now - lastOnlinene;
-
-        const seconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (member.isOnline) {
-            return 'Jugando ahora';
-        } else if (days > 0 && days == 1) {
-            return `${days} día`;
-        } else if (days > 0) {
-            return `${days} días`;
-        } else if (hours > 0 && hours == 1) {
-            return `${hours} hora`;
-        } else if (hours > 0) {
-            return `${hours} horas`;
-        } else if (minutes > 0) {
-            return `${minutes} minutos`;
-        } else if (seconds > 0) {
-            return `${seconds} segundos`;
-        }
-    };
+    
 
 
     //Rol dentro del clan
@@ -178,7 +154,7 @@ export default function MemberCard({ member }) {
         <>
             {equippedEmblem && (
                 <tr className='font-Inter'>
-                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
+                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}?member=${encodeURIComponent(JSON.stringify(member))}`} target='_blank' rel='noreferrer noopener'>
                         <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
                             <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
                             {member.destinyUserInfo.displayName}
@@ -191,7 +167,7 @@ export default function MemberCard({ member }) {
                                     {activity}
                                 </div>
                             ) : ' En línea'
-                            ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange)}`}
+                            ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange, member.isOnline)}`}
                     </td>
                     <td>{getMemberType(member.memberType)}</td>
                     <td onClick={toggleLightDisplay}>

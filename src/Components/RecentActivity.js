@@ -13,7 +13,7 @@ export const fetchCharacterIds = async (member, info, num) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
 
-        if (info == "activity") return fetchCurrentActivity(member, mostRecentCharacter);
+        if (info == "activity") return fetchCurrentActivity(member, mostRecentCharacter, num);
         else if (info == "total") {
             return response.data.Response.characters.data[mostRecentCharacter.characterId].light;
         }
@@ -24,7 +24,7 @@ export const fetchCharacterIds = async (member, info, num) => {
     }
 };
 
-export const fetchCurrentActivity = async (member, mostRecentCharacter) => {
+export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => {
     // Obtener la actividad actual para cada personaje
     const activities = await (async function fetchCurrentActivity(mostRecentCharacter) {
         try {
@@ -52,10 +52,12 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter) => {
         }
     })(mostRecentCharacter);
 
-    if (activities.type == null && activities.name == "") return "En línea";
-    else if (activities.type == null && activities.name != "") return "En línea: " + "\n" + activities.name;
-    else if (activities.type != null && activities.name == "") return "En línea: " + "\n" + activities.type;
-    else return "En línea:" + "\n" + activities.name + " - " + activities.type;
+    const onlineText = num === 'MemberDetail' ? 'En línea -' : 'En línea:';
+
+    if (activities.type == null && activities.name == "") return onlineText;
+    else if (activities.type == null && activities.name != "") return onlineText + "\n" + activities.name;
+    else if (activities.type != null && activities.name == "") return onlineText + "\n" + activities.type;
+    else return onlineText + "\n" + activities.name + " - " + activities.type;
 }
 
 const fetchActivityDetails = async (activityHash, type) => {
