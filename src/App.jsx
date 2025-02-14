@@ -8,7 +8,7 @@ function App() {
         <Router basename='/DestinyBrodas'>
             <Routes>
                 <Route path="/" element={<ClanLista/>} />
-                <Route path="/member/:membershipId" element={<MemberDetail/>} />
+                <Route path="/member/:membershipType/:membershipId" element={<MemberDetail/>} />
             </Routes>
         </Router>
     );

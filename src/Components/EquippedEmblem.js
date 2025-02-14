@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const getEquippedEmblem = async (member) => {
+export const getEquippedEmblem = async (member, type) => {
     try {
         // Hacer una sola llamada a la API para obtener el perfil completo del miembro
         const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
@@ -11,16 +11,15 @@ export const getEquippedEmblem = async (member) => {
 
         const characters = response.data.Response.characters.data;
 
-        // Encontrar el personaje con la actividad más reciente
         const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
+        console.log("Most recent", mostRecentCharacter);
 
-        //console.log("Most recent charachter id", mostRecentCharacter);
-        // Obtener el emblema equipado del personaje más reciente
-        const equippedEmblem = mostRecentCharacter.emblemPath;
+        if (type === "Large") return mostRecentCharacter.emblemBackgroundPath;
+        else if(type === "CharacterPower") return mostRecentCharacter.light;
+        else return mostRecentCharacter.emblemPath;
 
-        return equippedEmblem;
     } catch (error) {
         console.error('Error fetching equipped emblem:', error);
         return null;

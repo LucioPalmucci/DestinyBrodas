@@ -74,14 +74,14 @@ export default function MemberCard({ member }) {
                 let totalLight = await fetchCharacterIds(member, "total", 2)
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);
-                console.log("Base Light: ", baseLight);
 
-                setEquippedEmblem(await getEquippedEmblem(member));
+                
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-
+                setEquippedEmblem(await getEquippedEmblem(member));
+                
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member, "activity", 3));
                 }
@@ -163,10 +163,6 @@ export default function MemberCard({ member }) {
                 },
             });
 
-            if (member.bungieNetUserInfo.supplementalDisplayName === "LucioELRubio#2761") {
-                console.log("Artifact Data: ", response.data.Response);
-            }
-
             return response.data.Response.profileProgression.data.seasonalArtifact.powerBonus;
         } catch (error) {
             console.error('Error fetching artifact bonus level:', error);
@@ -182,9 +178,9 @@ export default function MemberCard({ member }) {
         <>
             {equippedEmblem && (
                 <tr className='font-Inter'>
-                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
+                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
                         <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
-                            <img src={"/api/" + equippedEmblem} width={45} height={45} className='pe-2' />
+                            <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
                             {member.destinyUserInfo.displayName}
                         </td>
                     </a>

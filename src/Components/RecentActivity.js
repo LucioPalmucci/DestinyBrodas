@@ -8,7 +8,6 @@ export const fetchCharacterIds = async (member, info, num) => {
             },
         });
 
-        console.log("Type call: ", info, num);
         const characterIds = response.data.Response.characters.data;
         const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
@@ -37,7 +36,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter) => {
 
             const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
             const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
-            console.log("CurrentActivityHash: ", activityResponse.data.Response.activities.data.currentActivityHash);
+            //console.log("CurrentActivityHash: ", activityResponse.data.Response.activities.data.currentActivityHash);
             const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
             const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
 

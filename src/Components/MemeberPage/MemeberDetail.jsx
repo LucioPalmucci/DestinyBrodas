@@ -80,7 +80,7 @@ function MemberDetail() {
     }
 
     return (
-        <div className=' justify-center flex mt-20 font-Inter items-center flex-col'>
+        <div className='justify-center flex mt-20 font-Inter items-center flex-col'>
             <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-10'>{userMemberships.bungieNetUser.uniqueName}</h1>
             {memberDetail && userMemberships && (
                 <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='w-3/4 p-2 px-20 text-white flex'>
@@ -95,7 +95,9 @@ function MemberDetail() {
                     </div>
                 </div>
             )}
-            <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships.bungieNetUser.displayName}/>
+            <div className='w-3/4 text-start'>
+                <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships.bungieNetUser.uniqueName} />
+            </div>
         </div>
     );
 }
