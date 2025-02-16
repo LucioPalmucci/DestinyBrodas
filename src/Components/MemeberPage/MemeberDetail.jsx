@@ -1,10 +1,12 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import '../../index.css';
 import { getEquippedEmblem } from '../EquippedEmblem';
 import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
+import '../Tabla.css';
 import ReportLinks from './ReportLinks';
 
 function MemberDetail() {
@@ -87,14 +89,16 @@ function MemberDetail() {
         <div className='justify-center flex mt-20 font-Inter items-center flex-col'>
             <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
             {memberDetail && userMemberships && (
-                <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='w-3/4 p-2 px-20 text-white flex'>
-                    <div className='ml-1 items-center'>
-                        <h2 className='text-2xl'>{userMemberships.bungieNetUser.displayName}</h2>
-                        <h1 className='text-xl'>{memberDetail.profile.data.currentGuardianRank} {guardianRank}</h1>
-                        <h1 className='font-light tracking-wider text-slate-200'>BRODAS</h1>
+                <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='w-3/4 p-2 px-20 text-white flex emblema'>
+                    <div className='ml-1 items-center '>
+                        <h2 className='text-2xl font-medium tracking-wide'>{userMemberships.bungieNetUser.displayName}</h2>
+                        <h1 className='text-xl text-neutral-100 opacity-75'><i className={`icon-${memberDetail.profile.data.currentGuardianRank} text-medium `} style={{ fontStyle: 'normal' }} />  {guardianRank}</h1>
+                        <h1 className='font-extralight tracking-wide text-gray-200 text-xl opacity-50'>BRODAS</h1>
                     </div>
                     <div>
-                        <h1 className='ml-52 text-4xl font-[500] text-yellow-200'>{currentLight}</h1>
+                        <h1 className='ml-48 text-4xl lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                            <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '2.2rem', position: 'relative', top: '-0.40rem' }} />{currentLight}
+                        </h1>
                         <p>{emblemIndicators}</p>
                     </div>
                 </div>

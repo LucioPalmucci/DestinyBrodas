@@ -9,6 +9,7 @@ module.exports = {
         extend: {
             fontFamily: {
                 Inter: ['Inter'],
+                neuehaas: ['Neue Haas Grotesk Text Pro', 'sans-serif'],
             },
         },
     },
