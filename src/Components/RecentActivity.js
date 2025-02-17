@@ -52,7 +52,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
         }
     })(mostRecentCharacter);
 
-    const onlineText = num === 'MemberDetail' ? 'En línea -' : 'En línea:';
+    const onlineText = num === 'MemberDetail' ? 'En línea -' : 'En línea';
 
     if (activities.type == null && activities.name == "") return onlineText;
     else if (activities.type == null && activities.name != "") return onlineText + "\n" + activities.name;

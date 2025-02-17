@@ -14,6 +14,7 @@ function MemberDetail() {
     const [memberDetail, setMemberDetail] = useState(null);
     const [userMemberships, setUserMemberships] = useState(null);
     const [emblemIndicators, setEmblemIndicators] = useState(null);
+    const [numRank, setNumRank] = useState(null);
     const [activity, setActivity] = useState(null);
     const [member, setMember] = useState(null);
     const [currentLight, setCurrentLight] = useState(null);
@@ -84,15 +85,17 @@ function MemberDetail() {
     if (error) {
         return <div>{error}</div>;
     }
-
+    
     return (
         <div className='justify-center flex mt-20 font-Inter items-center flex-col'>
             <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
             {memberDetail && userMemberships && (
                 <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='w-3/4 p-2 px-20 text-white flex emblema'>
-                    <div className='ml-1 items-center '>
-                        <h2 className='text-2xl font-medium tracking-wide'>{userMemberships.bungieNetUser.displayName}</h2>
-                        <h1 className='text-xl text-neutral-100 opacity-75'><i className={`icon-${memberDetail.profile.data.currentGuardianRank} text-medium `} style={{ fontStyle: 'normal' }} />  {guardianRank}</h1>
+                    <div className='ml-1 items-center'>
+                        <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
+                        <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
+                            <img src={`${import.meta.env.BASE_URL}/levels/${memberDetail.profile.data.currentGuardianRank}.fw.png`} className='w-6 h-6 mr-1'/>{guardianRank}
+                        </h1>
                         <h1 className='font-extralight tracking-wide text-gray-200 text-xl opacity-50'>BRODAS</h1>
                     </div>
                     <div>
