@@ -75,7 +75,6 @@ export default function MemberCard({ member }) {
                 let totalLight = await fetchCharacterIds(member, "total", 2)
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);
-
                 
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;

@@ -36,7 +36,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
 
             const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
             const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
-            //console.log("CurrentActivityHash: ", activityResponse.data.Response.activities.data.currentActivityHash);
+            console.log("CurrentActivityHash: ", activityResponse.data.Response);
             const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
             const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
 
@@ -60,7 +60,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
     else return onlineText + "\n" + activities.name + " - " + activities.type;
 }
 
-const fetchActivityDetails = async (activityHash, type) => {
+export const fetchActivityDetails = async (activityHash, type) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
             headers: {

@@ -7,6 +7,7 @@ import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
+import CurrentActivity from './CurrentActivity';
 import ReportLinks from './ReportLinks';
 
 function MemberDetail() {
@@ -109,6 +110,7 @@ function MemberDetail() {
             <div className='w-3/4 text-start'>
                 <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
                 <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
+                <CurrentActivity type={membershipType} id={membershipId} />
             </div>
         </div>
     );
