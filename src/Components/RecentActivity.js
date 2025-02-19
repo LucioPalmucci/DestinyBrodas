@@ -36,13 +36,16 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
 
             const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
             const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
+            const currentPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
             console.log("CurrentActivityHash: ", activityResponse.data.Response);
             const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
-            const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
+            const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition");
+            const playlist = await fetchActivityDetails(currentPlaylist, "DestinyActivityModeDefinition");
 
             return {
                 name: name,
                 type: type,
+                playlist: playlist,
             };
 
         }
@@ -52,12 +55,21 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
         }
     })(mostRecentCharacter);
 
-    const onlineText = num === 'MemberDetail' ? 'En línea -' : 'En línea';
+    const onlineText = num === 'MemberDetail' ? 'En línea -' : 'En línea:';
 
-    if (activities.type == null && activities.name == "") return onlineText;
-    else if (activities.type == null && activities.name != "") return onlineText + "\n" + activities.name;
-    else if (activities.type != null && activities.name == "") return onlineText + "\n" + activities.type;
-    else return onlineText + "\n" + activities.name + " - " + activities.type;
+    let activityText = onlineText;
+    const activityDetails = [];
+
+    if (activities.playlist) activityDetails.push(activities.playlist);
+    if (activities.type) activityDetails.push(activities.type);
+    if (activities.name) activityDetails.push(activities.name);
+
+    if (activityDetails.length > 0) {
+        activityText += `\n${activityDetails.join(' - ')}`;
+    }
+
+    if (!activities.playlist && !activities.type && !activities.name) return "En línea";
+    else return activityText;
 }
 
 export const fetchActivityDetails = async (activityHash, type) => {
