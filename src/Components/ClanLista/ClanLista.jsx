@@ -27,6 +27,13 @@ export default function ClanLista() {
                     },
                 });
 
+                const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+
+                console.log("Manifest: ", manifest.data.Response);
                 let unSorted = response.data.Response.results;
                 const membersWithLight = await lightLevel(unSorted);
                 setMembersLight(membersWithLight);

@@ -43,6 +43,7 @@ export default function CurrentActivity({ type, id }) {
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
                 const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
                 const tipo = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
+                const playlist = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition");
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
@@ -51,6 +52,7 @@ export default function CurrentActivity({ type, id }) {
                     date: minutesAgo,
                     name: name,
                     type: tipo,
+                    playlist: playlist,
                     oponentes: oponentes,
                     aliados: aliados,
                     puntosAliados: puntosAliados,
@@ -77,16 +79,16 @@ export default function CurrentActivity({ type, id }) {
                     {activity.name ? (
                         <div>
                             <p className="mb-2 font-semibold text-3xl"> {activity.name}</p>
-                            {activity.type ? <p className="mb-2"><span className="font-semibold">Dificultad:</span> {activity.type}</p> : null}
+                            {activity.playlist ? <p className="mb-2"> {activity.type}</p> : null}
                             <p className="mb-2 font-semibold">Desde hace {activity.date} minutos</p>
                             {activity.aliados ? <p className="mb-2"><span className="font-semibold">Miembros:</span> {activity.aliados}</p> : null}
                             {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
-                            {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos Aliados:</span> {activity.puntosAliados}</p> : null}
+                            {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
                             {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos Oponentes:</span> {activity.puntosOponentes}</p> : null}
                             <p className="mb-4"><span className="font-semibold">Slots Disponibles:</span> {activity.slots}</p>
                         </div>
                     ) : (
-                        <p className="text-center">En órbita</p>
+                        <p className="text-center text-3xl font-semibold">En órbita</p>
                     )}
                     <div className="">
                         <h4 className="text-xl font-bold mb-4">Escuadra:</h4>
@@ -94,7 +96,10 @@ export default function CurrentActivity({ type, id }) {
                             {partyMembers.map(member => (
                                 <li key={member.id} className="flex items-center space-x-1">
                                     <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                    <span title={member.uniqueName}>{member.displayName}</span>
+                                    <div className="flex flex-col">
+                                        <span title={member.uniqueName}>{member.displayName}</span>
+                                        <span className="text-gray-400">{member.clase} <i className={`icon-prismatico`} style={{fontStyle: "normal"}}/> - {member.light}</span>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -137,7 +142,10 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
 
         return {
             id: member.membershipId,
-            emblemPath: emblemPath,
+            emblemPath: emblemPath.emblemPath,
+            clase: emblemPath.clase,
+            light: emblemPath.light,
+            subclass: emblemPath.subclass,
             displayName: displayName,
             uniqueName: uniqueName,
             platform: successfulPlatform, // Agregar la plataforma exitosa al objeto de miembro
@@ -147,19 +155,56 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
 const getPartyEmblem = async (id, type) => {
     try {
         // Hacer una sola llamada a la API para obtener el perfil completo del miembro
-        const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters&lc=es`, {
+        const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters,CharacterEquipment&lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
 
         const characters = response.data.Response.characters.data;
+        const equipment = response.data.Response.characterEquipment.data;
 
         const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
+        console.log("Emblem: ", mostRecentCharacter);
 
-        return mostRecentCharacter.emblemPath;
+        let clase;
+        switch (mostRecentCharacter.classType) {
+            case 1:
+                clase = "Cazador";
+                break;
+            case 0:
+                clase = "Titán";
+                break;
+            case 2:
+                clase = "Hechicero";
+                break;
+            default:
+                clase = "Desconocido";
+        }
+
+        const equippedSubclass = equipment[mostRecentCharacter.characterId].items.find(item => item.bucketHash === 3284755031);
+        let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
+
+        if (subclass.includes("arc")) {
+            subclass = "arco";
+        } else if (subclass.includes("void")) {
+            subclass = "vacío";
+        } else if (subclass.includes("solar")) {
+            subclass = "solar";
+        } else if (subclass.includes("stasis")) {
+            subclass = "estasis";
+        } else if (subclass.includes("strand")) {
+            subclass = "cuerda";
+        } else if (subclass.includes("prism")) {
+            subclass = "prismatico";
+        } else {
+            subclass = "Desconocido";
+        }
+
+        console.log("Subclass: ", subclass);
+        return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass };
 
     } catch (error) {
         console.error('Error fetching equipped emblem:', error);

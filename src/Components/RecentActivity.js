@@ -72,7 +72,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
     else return activityText;
 }
 
-export const fetchActivityDetails = async (activityHash, type) => {
+export const fetchActivityDetails = async (activityHash, type, Subclase) => {
     try {
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
             headers: {
@@ -80,6 +80,7 @@ export const fetchActivityDetails = async (activityHash, type) => {
             },
         });
         if (response.data.Response == null) return null;
+        else if (Subclase === "sub") return response.data.Response.talentGrid.buildName;
         else return response.data.Response.displayProperties.name;
 
     } catch (error) {

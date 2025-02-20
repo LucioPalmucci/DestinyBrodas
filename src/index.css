@@ -108,59 +108,45 @@ body{
     font-family: "Destiny Symbols Common";
 }
 
-.icon-1::before {
-    content: "\2776";
+.icon-arco::before {
+    content: "\E143";
+    color: #79EBF3;
     font-family: "Destiny Symbols Common";
 }
 
-.icon-2::before {
-    content: "\2777";
+.icon-vacío::before {
+    content: "\E144";
+    color: #B082CB;
     font-family: "Destiny Symbols Common";
 }
 
-.icon-3::before {
-    content: "\2778";
+.icon-solar::before {
+    content: "\E140";
+    color: #F36F26;
     font-family: "Destiny Symbols Common";
 }
 
-.icon-4::before {
-    content: "\2779";
+.icon-estasis::before {
+    content: "\E139";
+    color:  #4E87FF;
     font-family: "Destiny Symbols Common";
 }
 
-.icon-5::before {
-    content: "\277A";
+.icon-cuerda::before {
+    content: "\EF0E";
+    color: #38E266;
     font-family: "Destiny Symbols Common";
 }
 
-.icon-6::before {
-    content: "\277B";
-    font-family: "Destiny Symbols Common";
-}
-
-.icon-7::before {
-    content: "\277C";
-    font-family: "Destiny Symbols Common";
-}
-
-.icon-8::before {
-    content: "\277D";
-    font-family: "Destiny Symbols Common";
-}
-
-.icon-9::before {
-    content: "\277E";
-    font-family: "Destiny Symbols Common";
-}
-
-.icon-10::before {
-    content: "\277F";
-    font-family: "Destiny Symbols Common";
-}
-
-.icon-11::before {
-    content: "\24EB";
-    font-family: "Destiny Symbols Common";
+.icon-prismatico::before {
+    content: "";
+    display: inline-block;
+    width: 20px; /* Ajusta el tamaño según sea necesario */
+    height: 20px; /* Ajusta el tamaño según sea necesario */
+    background-image: url('/prismatic.png'); /* Ruta a tu imagen */
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle; /* Alinea verticalmente con el texto */
 }
 
 @import "tailwindcss";
