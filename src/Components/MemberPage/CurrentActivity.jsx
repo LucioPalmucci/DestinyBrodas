@@ -32,7 +32,7 @@ export default function CurrentActivity({ type, id }) {
                     },
                 });
 
-                console.log("Activity data ", partyResponse.data.Response);
+                console.log("op",partyResponse.data.Response.profileTransitoryData.data.currentActivity)
                 const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
@@ -48,6 +48,11 @@ export default function CurrentActivity({ type, id }) {
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
+                console.log("Currentplayers: ", jugadores );
+
+                let aliados = jugadores - oponentes;
+                if(oponentes > 6) aliados = 6;
+
 
                 setActivity({
                     date: minutesAgo,
@@ -55,7 +60,7 @@ export default function CurrentActivity({ type, id }) {
                     type: tipo,
                     playlist: playlist,
                     oponentes: oponentes,
-                    jugadores: jugadores,
+                    jugadores: aliados,
                     puntosAliados: puntosAliados,
                     puntosOponentes: puntosOponentes,
                     slots: slots,
@@ -79,20 +84,20 @@ export default function CurrentActivity({ type, id }) {
                 <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit">
                     {activity.name ? (
                         <div>
-                            <p className="mb-0 font-semibold text-3xl"> {activity.name}</p>
-                            { activity.type ? <p> {activity.type}</p> : null}
-                            { activity.playlist ? <p> {activity.playlist}</p> : null}
+                            { activity.type ? <p className="text-4xl font-semibold mb-0">{activity.type}</p> : null}
+                            { activity.playlist ? <p className="text-3xl font-semibold mb-0"> {activity.playlist}</p> : null}
+                            <p className="mb-0 font-semibold text-xl"> {activity.name}</p>
                             <p className="mb-2 mt-2 font-semibold">Desde hace {activity.date} minutos</p>
-                            {activity.aliados ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores - activity.oponentes}</p> : null}
+                            {activity.jugadores ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
                             {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
                             {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
-                            {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos Oponentes:</span> {activity.puntosOponentes}</p> : null}
+                            {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos del enemigo:</span> {activity.puntosOponentes}</p> : null}
                         </div>
                     ) : (
                         <p className="text-center text-3xl font-semibold">En órbita</p>
                     )}
-                    <div className="">
-                        <h4 className="text-xl font-bold mb-4">Escuadra:</h4>
+                    <div className="mt-4">
+                        <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
                         <ul className="space-x-6 flex">
                             {partyMembers.map(member => (
                                 <li key={member.id} className="flex items-center space-x-1">
@@ -142,11 +147,10 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
             },
         });
 
-        console.log("Porfile data ", profileResponse.data.Response);
         const displayName = profileResponse.data.Response.profile.data.userInfo.displayName;
         const uniqueName = userResponse.data.Response.bungieNetUser.uniqueName;
         const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
-        console.log(`Data of member ${member.membershipId} on platform ${successfulPlatform}:`, displayName);
+        //console.log(`Data of member ${member.membershipId} on platform ${successfulPlatform}:`, displayName);
 
         return {
             id: member.membershipId,
