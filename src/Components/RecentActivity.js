@@ -37,7 +37,7 @@ export const fetchCurrentActivity = async (member, mostRecentCharacter, num) => 
             const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
             const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
             const currentPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
-            console.log("CurrentActivityHash: ", activityResponse.data.Response);
+            //console.log("CurrentActivityHash: ", activityResponse.data.Response);
             const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
             const type = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition");
             const playlist = await fetchActivityDetails(currentPlaylist, "DestinyActivityModeDefinition");

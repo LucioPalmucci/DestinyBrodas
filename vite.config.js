@@ -14,6 +14,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''), // Reescribe '/api' como '/'
             },
+            '/reporte': {
+                target: 'https://stats.bungie.net',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/reporte/, ''),
+            },
         },
     },
 })

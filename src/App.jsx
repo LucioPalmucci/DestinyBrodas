@@ -1,7 +1,7 @@
 import React from 'react';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import ClanLista from './Components/ClanLista/ClanLista';
-import MemberDetail from './Components/MemeberPage/MemeberDetail';
+import MemberDetail from './Components/MemberPage/MemberDetail';
 
 function App() {
     return (

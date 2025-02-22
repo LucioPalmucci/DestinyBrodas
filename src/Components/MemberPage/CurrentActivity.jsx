@@ -32,7 +32,6 @@ export default function CurrentActivity({ type, id }) {
                     },
                 });
 
-                console.log("op",partyResponse.data.Response.profileTransitoryData.data.currentActivity)
                 const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
@@ -48,11 +47,10 @@ export default function CurrentActivity({ type, id }) {
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
-                console.log("Currentplayers: ", jugadores );
 
                 let aliados = jugadores - oponentes;
                 if(oponentes > 6) aliados = 6;
-
+                if(aliados > 6) aliados = 6;
 
                 setActivity({
                     date: minutesAgo,
@@ -76,7 +74,7 @@ export default function CurrentActivity({ type, id }) {
         };
 
         fetchActivity();
-    }, []);
+    }, [activity]);
 
     return (
         <div className="container w-fit font-Inter mt-10 ">
@@ -88,10 +86,14 @@ export default function CurrentActivity({ type, id }) {
                             { activity.playlist ? <p className="text-3xl font-semibold mb-0"> {activity.playlist}</p> : null}
                             <p className="mb-0 font-semibold text-xl"> {activity.name}</p>
                             <p className="mb-2 mt-2 font-semibold">Desde hace {activity.date} minutos</p>
+                            <div className="flex justify-between">
                             {activity.jugadores ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
                             {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
+                            </div>
+                            <div className="flex justify-between">
                             {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
-                            {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos del enemigo:</span> {activity.puntosOponentes}</p> : null}
+                            {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosOponentes}</p> : null}
+                            </div>
                         </div>
                     ) : (
                         <p className="text-center text-3xl font-semibold">En órbita</p>
