@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import circleSolid from "../../assets/circle-solid.svg";
 import { fetchActivityDetails } from "../RecentActivity";
 
 export default function CurrentActivity({ type, id }) {
@@ -49,8 +50,8 @@ export default function CurrentActivity({ type, id }) {
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
 
                 let aliados = jugadores - oponentes;
-                if(oponentes > 6) aliados = 6;
-                if(aliados > 6) aliados = 6;
+                if (oponentes > 6) aliados = 6;
+                if (aliados > 6) aliados = 6;
 
                 setActivity({
                     date: minutesAgo,
@@ -82,17 +83,26 @@ export default function CurrentActivity({ type, id }) {
                 <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit">
                     {activity.name ? (
                         <div>
-                            { activity.type ? <p className="text-4xl font-semibold mb-0">{activity.type}</p> : null}
-                            { activity.playlist ? <p className="text-3xl font-semibold mb-0"> {activity.playlist}</p> : null}
-                            <p className="mb-0 font-semibold text-xl"> {activity.name}</p>
-                            <p className="mb-2 mt-2 font-semibold">Desde hace {activity.date} minutos</p>
-                            <div className="flex justify-between">
-                            {activity.jugadores ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
-                            {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
-                            </div>
-                            <div className="flex justify-between">
-                            {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
-                            {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosOponentes}</p> : null}
+                            <p className="flex items-center">
+                                Parida en curso
+                                <div className="relative ml-2">
+                                    <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                    <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                </div>
+                            </p>
+                            <div>
+                            {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
+                            {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0"> {activity.playlist}</p>}
+                                <p className="mb-0 font-semibold text-xl"> {activity.name}</p>
+                                <p className="mb-2 mt-2 font-semibold">Desde hace {activity.date} minutos</p>
+                                <div className="flex justify-between">
+                                    {activity.jugadores ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
+                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
+                                </div>
+                                <div className="flex justify-between">
+                                    {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
+                                    {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosOponentes}</p> : null}
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -106,7 +116,7 @@ export default function CurrentActivity({ type, id }) {
                                     <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                     <div className="flex flex-col">
                                         <span title={member.uniqueName}>{member.displayName}</span>
-                                        <span className="text-gray-400">{member.clase} <i className={`icon-prismatico`} style={{fontStyle: "normal"}}/> - {member.light}</span>
+                                        <span className="text-gray-400">{member.clase} <i className={`icon-prismatico`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
                                     </div>
                                 </li>
                             ))}

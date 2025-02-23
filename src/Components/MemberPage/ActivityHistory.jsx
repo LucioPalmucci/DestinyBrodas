@@ -1,5 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import circleEmpty from "../../assets/circle-empty.svg";
+import circleSolid from "../../assets/circle-solid.svg";
 import { fetchActivityDetails } from '../RecentActivity';
 
 const ActivityHistory = ({ userId, membershipType }) => {
@@ -80,6 +82,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 emblem: entry.player.destinyUserInfo.iconPath,
                 class: entry.player.characterClass,
                 power: entry.player.lightLevel,
+                membershipId: entry.player.destinyUserInfo.membershipId,
                 standing: entry.standing,
             })));
             const teams = carnageReportResponse.data.Response.teams;
@@ -87,7 +90,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
             return { people, teams };
         } catch (error) {
             console.error('Error fetching carnage report:', error);
-            return { people }; // Valores por defecto en caso de error
+            return { people, teams: [] }; // Valores por defecto en caso de error
         }
     };
 
@@ -102,6 +105,12 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 {activityDetails.map((activity, index) => {
                     const hasPoints = activity.people.some(person => person.points > 0);
                     const hasMedals = activity.people.some(person => person.medals > 0);
+
+                    const team0 = activity.people.filter(person => person.standing === 0);
+                    const team1 = activity.people.filter(person => person.standing === 1);
+
+                    const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
+                    const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
                     return (
                         <div className='w-full'>
                             <button onClick={() => toggleExpand(index)} className='cursor-pointer'>
@@ -116,7 +125,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                     {activity.teams.length > 0 ? (
                                         <div className='flex justify-between'>
                                             <div>
-                                                <h3 className='text-lg font-bold'>Equipo 1</h3>
+                                                <h3 className='text-lg font-bold flex items-center'>Equipo 1
+                                                    <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
+                                                </h3>
                                                 <table className='min-w-full bg-white'>
                                                     <thead>
                                                         <tr>
@@ -129,7 +140,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {activity.people.filter(person => person.standing == 0).map((person, idx) => (
+                                                        {team0.map((person, idx) => (
                                                             <tr key={idx} className='text-start text-sm'>
                                                                 <td className='py-2 flex items-center'>
                                                                     <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
@@ -149,7 +160,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </table>
                                             </div>
                                             <div>
-                                                <h3 className='text-lg font-bold'>Equipo 2</h3>
+                                                <h3 className='text-lg font-bold flex items-center'>Equipo 2
+                                                    <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
+                                                    </h3>
                                                 <table className='min-w-full bg-white'>
                                                     <thead>
                                                         <tr>
@@ -162,7 +175,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {activity.people.filter(person => person.standing === 1).map((person, idx) => (
+                                                        {team1.map((person, idx) => (
                                                             <tr key={idx} className='text-start text-sm'>
                                                                 <td className='py-2 flex items-center'>
                                                                     <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
@@ -223,20 +236,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
             </ul>
         </div>
     );
-};
-const getPlayerEmblem = async (emblemHash) => {
-    try {
-        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
-        //console.log("Emblem: ", response.data.Response);
-        return response.data.Response.displayProperties.icon;
-    } catch (error) {
-        console.error('Error fetching emblem path:', error);
-        return null;
-    }
 };
 
 export default ActivityHistory;
