@@ -84,7 +84,7 @@ export default function CurrentActivity({ type, id }) {
                     {activity.name ? (
                         <div>
                             <p className="flex items-center">
-                                Parida en curso
+                                Actividad en curso
                                 <div className="relative ml-2">
                                     <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
                                     <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
@@ -110,9 +110,9 @@ export default function CurrentActivity({ type, id }) {
                     )}
                     <div className="mt-4">
                         <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                        <ul className="space-x-6 flex">
+                        <ul className="space-x-6 grid-cols-2 gird-rows-3 grid">
                             {partyMembers.map(member => (
-                                <li key={member.id} className="flex items-center space-x-1">
+                                <li key={member.id} className=" items-center space-x-1 flex">
                                     <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                     <div className="flex flex-col">
                                         <span title={member.uniqueName}>{member.displayName}</span>

@@ -55,8 +55,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
         const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
         let horas = h > 1 ? 'horas' : 'hora';
-        let minutos = m > 1 ? 'minutos' : 'minuto';
-        let segundos = s > 1 ? 'segundos' : 'segundo';
+        let minutos = m != 1 ? 'minutos' : 'minuto';
+        let segundos = s != 1 ? 'segundos' : 'segundo';
         if (h > 0) {
             return `${h} ${horas} ${m} ${minutos} ${s} ${segundos}`;
         } else {
@@ -111,6 +111,13 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
                     const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
                     const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
+
+                    let winnerPoints, loserPoints;
+                    if (activity.teams.length > 0) {
+                        winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1].score.basic.value;
+                        loserPoints = activity.teams[0].standing.basic.value == 1 ? activity.teams[0].score.basic.value : activity.teams[1].score.basic.value;
+                    }
+
                     return (
                         <div className='w-full'>
                             <button onClick={() => toggleExpand(index)} className='cursor-pointer'>
@@ -120,115 +127,125 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                     <p>{activity.duration}</p>
                                 </li>
                             </button>
-                            {expandedIndex === index && (
-                                <div className='mt-2'>
-                                    {activity.teams.length > 0 ? (
-                                        <div className='flex justify-between'>
-                                            <div>
-                                                <h3 className='text-lg font-bold flex items-center'>Equipo 1
-                                                    <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
-                                                </h3>
-                                                <table className='min-w-full bg-white'>
-                                                    <thead>
-                                                        <tr>
-                                                            <th className='py-2'>Nombre</th>
-                                                            {hasPoints && <th className='py-2'>Puntos</th>}
-                                                            <th className='py-2'>Kills</th>
-                                                            <th className='py-2'>Muertes</th>
-                                                            <th className='py-2'>KD</th>
-                                                            {hasMedals && <th className='py-2'>Medallas</th>}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {team0.map((person, idx) => (
-                                                            <tr key={idx} className='text-start text-sm'>
-                                                                <td className='py-2 flex items-center'>
-                                                                    <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                    <div className='flex flex-col justify-center ml-1'>
-                                                                        <p>{person.name}</p>
-                                                                        <p>{person.class} - {person.power}</p>
-                                                                    </div>
-                                                                </td>
-                                                                {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                                <td className='py-2'>{person.kills}</td>
-                                                                <td className='py-2'>{person.deaths}</td>
-                                                                <td className='py-2'>{person.kd}</td>
-                                                                {hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            <div>
-                                                <h3 className='text-lg font-bold flex items-center'>Equipo 2
-                                                    <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
+                            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === index ? 'max-h-screen' : 'max-h-0'}`}>
+                                {expandedIndex === index && (
+                                    <div className='mt-2'>
+                                        {activity.teams.length > 0 ? (
+                                            <div className='flex justify-between'>
+                                                <div>
+                                                    <h3 className='text-lg font-bold flex items-center justify-between'>
+                                                        Equipo 1
+                                                        <span className='flex items-center'>
+                                                            {winnerPoints}
+                                                            <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
+                                                        </span>
                                                     </h3>
-                                                <table className='min-w-full bg-white'>
-                                                    <thead>
-                                                        <tr>
-                                                            <th className='py-2'>Nombre</th>
-                                                            {hasPoints && <th className='py-2'>Puntos</th>}
-                                                            <th className='py-2'>Kills</th>
-                                                            <th className='py-2'>Muertes</th>
-                                                            <th className='py-2'>KD</th>
-                                                            {hasMedals && <th className='py-2'>Medallas</th>}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {team1.map((person, idx) => (
-                                                            <tr key={idx} className='text-start text-sm'>
-                                                                <td className='py-2 flex items-center'>
-                                                                    <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                    <div className='flex flex-col justify-center ml-1'>
-                                                                        <p>{person.name}</p>
-                                                                        <p>{person.class} - {person.power}</p>
-                                                                    </div>
-                                                                </td>
-                                                                {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                                <td className='py-2'>{person.kills}</td>
-                                                                <td className='py-2'>{person.deaths}</td>
-                                                                <td className='py-2'>{person.kd}</td>
-                                                                {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                    <table className='min-w-full bg-white'>
+                                                        <thead>
+                                                            <tr>
+                                                                <th className='py-2'>Nombre</th>
+                                                                {hasPoints && <th className='py-2'>Puntos</th>}
+                                                                <th className='py-2'>Kills</th>
+                                                                <th className='py-2'>Muertes</th>
+                                                                <th className='py-2'>KD</th>
+                                                                {hasMedals && <th className='py-2'>Medallas</th>}
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            {team0.map((person, idx) => (
+                                                                <tr key={idx} className='text-start text-sm'>
+                                                                    <td className='py-2 flex items-center'>
+                                                                        <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
+                                                                        <div className='flex flex-col justify-center ml-1'>
+                                                                            <p>{person.name}</p>
+                                                                            <p>{person.class} - {person.power}</p>
+                                                                        </div>
+                                                                    </td>
+                                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                                    <td className='py-2'>{person.kills}</td>
+                                                                    <td className='py-2'>{person.deaths}</td>
+                                                                    <td className='py-2'>{person.kd}</td>
+                                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div>
+                                                    <h3 className='text-lg font-bold flex items-center justify-between'>
+                                                        <span className='flex items-center'>
+                                                            <img className='w-4 h-4 mr-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
+                                                            {loserPoints}
+                                                        </span>
+                                                        Equipo 2
+                                                    </h3>
+                                                    <table className='min-w-full bg-white'>
+                                                        <thead>
+                                                            <tr>
+                                                                <th className='py-2'>Nombre</th>
+                                                                {hasPoints && <th className='py-2'>Puntos</th>}
+                                                                <th className='py-2'>Kills</th>
+                                                                <th className='py-2'>Muertes</th>
+                                                                <th className='py-2'>KD</th>
+                                                                {hasMedals && <th className='py-2'>Medallas</th>}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {team1.map((person, idx) => (
+                                                                <tr key={idx} className='text-start text-sm'>
+                                                                    <td className='py-2 flex items-center'>
+                                                                        <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
+                                                                        <div className='flex flex-col justify-center ml-1'>
+                                                                            <p>{person.name}</p>
+                                                                            <p>{person.class} - {person.power}</p>
+                                                                        </div>
+                                                                    </td>
+                                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                                    <td className='py-2'>{person.kills}</td>
+                                                                    <td className='py-2'>{person.deaths}</td>
+                                                                    <td className='py-2'>{person.kd}</td>
+                                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <table className='min-w-full bg-white'>
-                                            <thead>
-                                                <tr>
-                                                    <th className='py-2'>Nombre</th>
-                                                    {hasPoints && <th className='py-2'>Puntos</th>}
-                                                    <th className='py-2'>Kills</th>
-                                                    <th className='py-2'>Muertes</th>
-                                                    <th className='py-2'>KD</th>
-                                                    {hasMedals && <th className='py-2'>Medallas</th>}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {activity.people.map((person, idx) => (
-                                                    <tr key={idx} className='text-start text-sm'>
-                                                        <td className='py-2 flex items-center'>
-                                                            <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                            <div className='flex flex-col justify-center ml-1'>
-                                                                <p>{person.name}</p>
-                                                                <p>{person.class} - {person.power}</p>
-                                                            </div>
-                                                        </td>
-                                                        {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                        <td className='py-2'>{person.kills}</td>
-                                                        <td className='py-2'>{person.deaths}</td>
-                                                        <td className='py-2'>{person.kd}</td>
-                                                        {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                        ) : (
+                                            <table className='min-w-full bg-white'>
+                                                <thead>
+                                                    <tr>
+                                                        <th className='py-2'>Nombre</th>
+                                                        {hasPoints && <th className='py-2'>Puntos</th>}
+                                                        <th className='py-2'>Kills</th>
+                                                        <th className='py-2'>Muertes</th>
+                                                        <th className='py-2'>KD</th>
+                                                        {hasMedals && <th className='py-2'>Medallas</th>}
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    )}
-                                </div>
-                            )}
+                                                </thead>
+                                                <tbody>
+                                                    {activity.people.map((person, idx) => (
+                                                        <tr key={idx} className='text-start text-sm'>
+                                                            <td className='py-2 flex items-center'>
+                                                                <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
+                                                                <div className='flex flex-col justify-center ml-1'>
+                                                                    <p>{person.name}</p>
+                                                                    <p>{person.class} - {person.power}</p>
+                                                                </div>
+                                                            </td>
+                                                            {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                            <td className='py-2'>{person.kills}</td>
+                                                            <td className='py-2'>{person.deaths}</td>
+                                                            <td className='py-2'>{person.kd}</td>
+                                                            {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <hr />
                         </div>
                     );

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import arrowLeft from '../../assets/arrow-left-solid.svg';
 import '../../index.css';
 import { getEquippedEmblem } from '../EquippedEmblem';
 import { getTimeSinceLastConnection } from '../LastConexion';
@@ -10,7 +11,6 @@ import '../Tabla.css';
 import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
 import ReportLinks from './ReportLinks';
-
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
     const [memberDetail, setMemberDetail] = useState(null);
@@ -89,32 +89,40 @@ function MemberDetail() {
     }
 
     return (
-        <div className='justify-start flex mt-20 font-Inter items-center flex-col w-3/4'>
-            <div className='w-3/4 text-start'>
-                <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
-                {memberDetail && userMemberships && (
-                    <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
-                        <div className='ml-1 items-center'>
-                            <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
-                            <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
-                                <img src={`${import.meta.env.BASE_URL}/levels/${memberDetail.profile.data.currentGuardianRank}.fw.png`} className='w-6 h-6 mr-1' />{guardianRank}
-                            </h1>
-                            <h1 className='font-extralight tracking-wide text-gray-200 text-xl opacity-50'>BRODAS</h1>
+        <div>
+            <button className='bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4 ml-4 '>
+                <a href='/DestinyBrodas/' className='items-center flex'>
+                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2' style={{filter: 'invert(100%)'}}/>
+                    Volver al inicio
+                </a>
+            </button>
+            <div className='justify-start flex mt-20 font-Inter items-center flex-col w-3/4'>
+                <div className='w-3/4 text-start'>
+                    <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
+                    {memberDetail && userMemberships && (
+                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
+                            <div className='ml-1 items-center'>
+                                <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
+                                <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
+                                    <img src={`${import.meta.env.BASE_URL}/levels/${memberDetail.profile.data.currentGuardianRank}.fw.png`} className='w-6 h-6 mr-1' />{guardianRank}
+                                </h1>
+                                <h1 className='font-extralight tracking-wide text-gray-200 text-xl opacity-50'>BRODAS</h1>
+                            </div>
+                            <div>
+                                <h1 className='text-4xl lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '2.2rem', position: 'relative', top: '-0.40rem' }} />{currentLight}
+                                </h1>
+                                <p>{emblemIndicators}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className='text-4xl lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '2.2rem', position: 'relative', top: '-0.40rem' }} />{currentLight}
-                            </h1>
-                            <p>{emblemIndicators}</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className='w-3/4 text-start'>
-                <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
-                <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
-                <CurrentActivity type={membershipType} id={membershipId} />
-                <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                    )}
+                </div>
+                <div className='w-3/4 text-start'>
+                    <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
+                    <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
+                    <CurrentActivity type={membershipType} id={membershipId} />
+                    <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                </div>
             </div>
         </div>
     );
