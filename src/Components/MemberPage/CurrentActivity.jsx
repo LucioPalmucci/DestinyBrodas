@@ -33,6 +33,7 @@ export default function CurrentActivity({ type, id }) {
                     },
                 });
 
+                console.log(`Activity response:`, activityResponse.data.Response);
                 const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
@@ -42,27 +43,41 @@ export default function CurrentActivity({ type, id }) {
                 const puntosAliados = partyResponse.data.Response.profileTransitoryData.data.currentActivity.score;
                 const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
-                const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition");
+                const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "name");
                 const tipo = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
                 const playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
+                const planeta = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "planetaHash");
+                let mapaDePVP = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "mapaDePVP");
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
 
+                mapaDePVP = mapaDePVP.substring(mapaDePVP.indexOf(",")).trim();
+
                 let aliados = jugadores - oponentes;
                 if (oponentes > 6) aliados = 6;
                 if (aliados > 6) aliados = 6;
+
+                let PVPoPVE;
+                if(activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
+                    PVPoPVE = "orbita";
+                }else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
+                    PVPoPVE = "PVP"
+                } else PVPoPVE = "PVE";
 
                 setActivity({
                     date: minutesAgo,
                     name: name,
                     type: tipo,
                     playlist: playlist,
+                    planeta: planeta,
+                    PVPoPVE: PVPoPVE,
                     oponentes: oponentes,
                     jugadores: aliados,
                     puntosAliados: puntosAliados,
                     puntosOponentes: puntosOponentes,
                     slots: slots,
+                    mapaDePVP: mapaDePVP,
                 });
 
                 const partyMembersData = partyResponse.data.Response.profileTransitoryData.data.partyMembers;
@@ -82,21 +97,35 @@ export default function CurrentActivity({ type, id }) {
             {activity ? (
                 <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit">
                     {activity.name ? (
-                        <div>
-                            <p className="flex items-center">
-                                Actividad en curso
-                                <div className="relative ml-2">
-                                    <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
-                                    <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
-                                </div>
-                            </p>
+                        <div className="gap-0">
                             <div>
-                            {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
-                            {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0"> {activity.playlist}</p>}
-                                <p className="mb-0 font-semibold text-xl"> {activity.name}</p>
-                                <p className="mb-2 mt-2 font-semibold">Desde hace {activity.date} minutos</p>
+                                <p className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
+                                    Actividad en curso
+                                    <div className="relative ml-2">
+                                        <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                        <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                    </div>
+                                </p>
+                                <p className="mb-4 italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
+                            </div>
+                            <div>
+                                {activity.PVPoPVE === "PVP" || activity.PVPoPVE === "orbita" ? (
+                                    <>
+                                        {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
+                                        {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
+                                        <p className="mb-0 font-semibold text-xl">{activity.name}
+                                            {activity.planeta && activity.name !== activity.planeta && <span> - {activity.planeta}, {activity.mapaDePVP}</span>}<br/>
+                                        </p>
+                                    </>
+                                ) : <>
+                                    {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.name}</p>}
+                                    {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
+                                    <p className="mb-0 font-semibold text-xl">{activity.type}
+                                        {activity.planeta && activity.name !== activity.planeta && <span> - {activity.planeta}</span>}
+                                    </p>
+                                </>}
                                 <div className="flex justify-between">
-                                    {activity.jugadores ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
+                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
                                     {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
                                 </div>
                                 <div className="flex justify-between">
@@ -116,7 +145,7 @@ export default function CurrentActivity({ type, id }) {
                                     <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                     <div className="flex flex-col">
                                         <span title={member.uniqueName}>{member.displayName}</span>
-                                        <span className="text-gray-400">{member.clase} <i className={`icon-prismatico`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
+                                        <span className="text-gray-400">{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
                                     </div>
                                 </li>
                             ))}
@@ -210,11 +239,12 @@ const getPartyEmblem = async (id, type) => {
         const equippedSubclass = equipment[mostRecentCharacter.characterId].items.find(item => item.bucketHash === 3284755031);
         let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
 
+
         if (subclass.includes("arc")) {
             subclass = "arco";
         } else if (subclass.includes("void")) {
             subclass = "vacío";
-        } else if (subclass.includes("solar")) {
+        } else if (subclass.includes("thermal")) {
             subclass = "solar";
         } else if (subclass.includes("stasis")) {
             subclass = "estasis";

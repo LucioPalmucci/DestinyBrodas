@@ -79,8 +79,14 @@ export const fetchActivityDetails = async (activityHash, type, Subclase) => {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
+
+        console.log("Response: ", response.data.Response);
         if (response.data.Response == null) return null;
         else if (Subclase === "sub") return response.data.Response.talentGrid.buildName;
+        else if (Subclase === "name") return response.data.Response.displayProperties.name;
+        else if (Subclase === "planetaHash") return await fetchActivityDetails(response.data.Response.placeHash, "DestinyDestinationDefinition", "planetaNombre");
+        else if (Subclase === "planetaNombre") return response.data.Response.displayProperties.name;
+        else if (Subclase === "mapaDePVP") return response.data.Response.displayProperties.description;
         else return response.data.Response.displayProperties.name;
 
     } catch (error) {

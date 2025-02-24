@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
 import { fetchActivityDetails } from '../RecentActivity';
+import Spinner from '../Spinner';
 
 const ActivityHistory = ({ userId, membershipType }) => {
     const [activityDetails, setActivityDetails] = useState([]);
@@ -71,7 +72,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
-            console.log("Carnage Report: ", carnageReportResponse.data.Response);
+            //console.log("Carnage Report: ", carnageReportResponse.data.Response);
             const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
@@ -102,7 +103,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
         <div>
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
             <ul>
-                {activityDetails.map((activity, index) => {
+                {activityDetails.length > 0 ? activityDetails.map((activity, index) => {
                     const hasPoints = activity.people.some(person => person.points > 0);
                     const hasMedals = activity.people.some(person => person.medals > 0);
 
@@ -249,7 +250,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             <hr />
                         </div>
                     );
-                })}
+                }) : (
+                    <div className='top-0'><Spinner/></div>
+                )}
             </ul>
         </div>
     );
