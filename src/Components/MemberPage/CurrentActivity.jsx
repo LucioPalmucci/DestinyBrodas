@@ -6,11 +6,12 @@ import { fetchActivityDetails } from "../RecentActivity";
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
+    const [numPlayers, setNumMemebers] = useState(0);
 
     useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters&lc=es`, {
+                const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters&lc=es-mx`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
@@ -44,24 +45,30 @@ export default function CurrentActivity({ type, id }) {
                 const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
                 const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "name");
-                const tipo = await fetchActivityDetails(currentActivityMode, "DestinyActivityTypeDefinition");
+                const tipo = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition");
                 const playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
-                const planeta = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "planetaHash");
+                let planeta = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "planetaHash");
+                let destinación = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "destinacionHash");
                 let mapaDePVP = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "mapaDePVP");
+                const tieneIcono = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "tieneIcono");
+
+                const actividadImg = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "img");
+                const actividadLogo = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "logo");
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
 
                 mapaDePVP = mapaDePVP.substring(mapaDePVP.indexOf(",")).trim();
 
+                if (planeta == "El Crisol") planeta = "Crisol";
                 let aliados = jugadores - oponentes;
-                if (oponentes > 6) aliados = 6;
+                if (oponentes > 6) oponentes = 6;
                 if (aliados > 6) aliados = 6;
 
                 let PVPoPVE;
-                if(activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
+                if (activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
                     PVPoPVE = "orbita";
-                }else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
+                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
                     PVPoPVE = "PVP"
                 } else PVPoPVE = "PVE";
 
@@ -71,6 +78,7 @@ export default function CurrentActivity({ type, id }) {
                     type: tipo,
                     playlist: playlist,
                     planeta: planeta,
+                    destinación: destinación,
                     PVPoPVE: PVPoPVE,
                     oponentes: oponentes,
                     jugadores: aliados,
@@ -78,6 +86,9 @@ export default function CurrentActivity({ type, id }) {
                     puntosOponentes: puntosOponentes,
                     slots: slots,
                     mapaDePVP: mapaDePVP,
+                    imagen: actividadImg,
+                    logo: actividadLogo,
+                    tieneIcono: tieneIcono,
                 });
 
                 const partyMembersData = partyResponse.data.Response.profileTransitoryData.data.partyMembers;
@@ -92,65 +103,83 @@ export default function CurrentActivity({ type, id }) {
         fetchActivity();
     }, [activity]);
 
+    const numColumns = 2; // Número máximo de columnas
+    const numRows = Math.ceil(partyMembers.length / numColumns);
+
     return (
         <div className="container w-fit font-Inter mt-10 ">
             {activity ? (
-                <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit">
-                    {activity.name ? (
-                        <div className="gap-0">
-                            <div>
-                                <p className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
-                                    Actividad en curso
-                                    <div className="relative ml-2">
-                                        <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
-                                        <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
-                                    </div>
-                                </p>
-                                <p className="mb-4 italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
-                            </div>
-                            <div>
-                                {activity.PVPoPVE === "PVP" || activity.PVPoPVE === "orbita" ? (
-                                    <>
-                                        {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
-                                        {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
-                                        <p className="mb-0 font-semibold text-xl">{activity.name}
-                                            {activity.planeta && activity.name !== activity.planeta && <span> - {activity.planeta}, {activity.mapaDePVP}</span>}<br/>
-                                        </p>
-                                    </>
-                                ) : <>
-                                    {activity.type && activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.name}</p>}
-                                    {activity.playlist && activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
-                                    <p className="mb-0 font-semibold text-xl">{activity.type}
-                                        {activity.planeta && activity.name !== activity.planeta && <span> - {activity.planeta}</span>}
+                <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit justify-between flex object-fill bg-center bg-cover" style={{ backgroundImage: `url(/api${activity.imagen})`, filter: 'grayscale(50%)' }}>
+                    <div>
+                        {activity.name ? (
+                            <div className="gap-0">
+                                <div className="bg-black/25 p-2 rounded-lg w-fit">
+                                    <p className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
+                                        Actividad en curso
+                                        <div className="relative ml-2">
+                                            <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                            <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                        </div>
                                     </p>
-                                </>}
-                                <div className="flex justify-between">
-                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
-                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Oponentes:</span> {activity.oponentes}</p> : null}
+                                    <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                 </div>
-                                <div className="flex justify-between">
-                                    {activity.puntosAliados ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosAliados}</p> : null}
-                                    {activity.puntosOponentes ? <p className="mb-2"><span className="font-semibold">Puntos:</span> {activity.puntosOponentes}</p> : null}
+                                <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
+                                    {activity.PVPoPVE === "PVP" || activity.PVPoPVE === "orbita" ? (
+                                        <>
+                                            {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
+                                            {/*{activity.playlist && !activity.playlist.includes(activity.name) && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}*/}
+                                            <p className="mb-0 font-semibold text-xl">{activity.planeta}
+                                                {activity.planeta && activity.name !== activity.planeta && <span> - {activity.name}{activity.mapaDePVP}</span>}<br />
+                                            </p>
+                                        </>
+                                    ) : <>
+                                        {activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.name}</p>}
+                                        {activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
+                                        <p className="mb-0 font-semibold text-xl">
+                                            {!activity.playlist.includes(activity.type) && activity.type}
+                                            {activity.planeta && activity.name !== activity.destinación && <span> - {activity.destinación}</span>}
+                                        </p>
+                                    </>}
+                                    <div className="flex justify-evenly mt-4">
+                                        <div className="flex flex-col text-center items-center">
+                                            {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
+                                            {activity.puntosAliados ? <div className="w-[50px] border-1 border-white items-center flex justify-center">
+                                                <p className="text-xl">{activity.puntosAliados}</p>
+                                            </div> : null}
+                                        </div>
+                                        <div className="border-l border-gray-100 mx-4"></div>
+                                        <div className="flex flex-col text-center items-center">
+                                            {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
+                                            {activity.puntosOponentes ? <div className="w-[50px] border-1 border-white items-center flex justify-center">
+                                                <p className="text-xl">{activity.puntosOponentes}</p>
+                                            </div> : null}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        ) : (
+                            <p className="text-center text-3xl font-semibold">En órbita</p>
+                        )}
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
+                            <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
+                            <ul className={`space-x-6 grid grid-cols-${numColumns} grid-rows-${numRows} gap-4`}>
+                                {partyMembers.map(member => (
+                                    <li key={member.id} className=" items-center space-x-1 flex">
+                                        <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
+                                        <div className="flex flex-col">
+                                            <span title={member.uniqueName}>{member.displayName}</span>
+                                            <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                    ) : (
-                        <p className="text-center text-3xl font-semibold">En órbita</p>
-                    )}
-                    <div className="mt-4">
-                        <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                        <ul className="space-x-6 grid-cols-2 gird-rows-3 grid">
-                            {partyMembers.map(member => (
-                                <li key={member.id} className=" items-center space-x-1 flex">
-                                    <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                    <div className="flex flex-col">
-                                        <span title={member.uniqueName}>{member.displayName}</span>
-                                        <span className="text-gray-400">{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
                     </div>
+                    {activity.logo && !activity.logo.includes("missing") ?
+                        <div className="opacity-50">
+                            <img src={`/api${activity.logo}`} width={80} height={80} />
+                        </div>
+                        : null}
                 </div>
             ) : (
                 <p className="text-center text-gray-500">No está jugando ahora</p>

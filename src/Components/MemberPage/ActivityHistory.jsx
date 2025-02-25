@@ -4,6 +4,7 @@ import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
 import { fetchActivityDetails } from '../RecentActivity';
 import Spinner from '../Spinner';
+import "../Tabla.css";
 
 const ActivityHistory = ({ userId, membershipType }) => {
     const [activityDetails, setActivityDetails] = useState([]);
@@ -132,7 +133,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                 {expandedIndex === index && (
                                     <div className='mt-2'>
                                         {activity.teams.length > 0 ? (
-                                            <div className='flex justify-between'>
+                                            <div className='flex justify-between space-x-4'>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
                                                         Equipo 1
@@ -154,10 +155,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team0.map((person, idx) => (
-                                                                <tr key={idx} className='text-start text-sm'>
-                                                                    <td className='py-2 flex items-center'>
+                                                                <tr key={idx} className='text-start '>
+                                                                    <td className='py-2 flex items-center text-xs p-1'>
                                                                         <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                        <div className='flex flex-col justify-center ml-1'>
+                                                                        <div className='flex flex-col justify-center ml-1 '>
                                                                             <p>{person.name}</p>
                                                                             <p>{person.class} - {person.power}</p>
                                                                         </div>
@@ -193,7 +194,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team1.map((person, idx) => (
-                                                                <tr key={idx} className='text-start text-sm'>
+                                                                <tr key={idx} className='text-start text-xs'>
                                                                     <td className='py-2 flex items-center'>
                                                                         <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
                                                                         <div className='flex flex-col justify-center ml-1'>
