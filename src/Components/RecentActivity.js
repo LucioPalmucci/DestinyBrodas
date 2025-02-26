@@ -83,14 +83,8 @@ export const fetchActivityDetails = async (activityHash, type, Subclase) => {
         console.log("Response: ", response.data.Response);
         if (response.data.Response == null) return null;
         else if (Subclase === "sub") return response.data.Response.talentGrid.buildName;
-        else if (Subclase === "name") return response.data.Response.displayProperties.name;
-        else if (Subclase === "planetaHash") return await fetchActivityDetails(response.data.Response.placeHash, "DestinyDestinationDefinition", "Nombre");
-        else if (Subclase === "destinacionHash") return await fetchActivityDetails(response.data.Response.destinationHash, "DestinyDestinationDefinition", "Nombre");
         else if (Subclase === "Nombre") return response.data.Response.displayProperties.name;
-        else if (Subclase === "mapaDePVP") return response.data.Response.displayProperties.description;
-        else if (Subclase === "img") return response.data.Response.pgcrImage;
-        else if (Subclase === "logo") return response.data.Response.displayProperties.icon;
-        else if (Subclase === "tieneIcono") return response.data.Response.displayProperties.hasIcon;
+        else if (Subclase === "general") return response.data.Response;
         else return response.data.Response.displayProperties.name;
 
     } catch (error) {

@@ -6,7 +6,7 @@ import { fetchActivityDetails } from "../RecentActivity";
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
-    const [numPlayers, setNumMemebers] = useState(0);
+    const [numColumns, setColums] = useState(0);
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -34,7 +34,6 @@ export default function CurrentActivity({ type, id }) {
                     },
                 });
 
-                console.log(`Activity response:`, activityResponse.data.Response);
                 const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
@@ -44,16 +43,24 @@ export default function CurrentActivity({ type, id }) {
                 const puntosAliados = partyResponse.data.Response.profileTransitoryData.data.currentActivity.score;
                 const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
-                const name = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "name");
-                const tipo = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition");
-                const playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
-                let planeta = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "planetaHash");
-                let destinación = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "destinacionHash");
-                let mapaDePVP = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "mapaDePVP");
-                const tieneIcono = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "tieneIcono");
+                
+                let datosGenerales = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "general");
+                let planeta = await fetchActivityDetails(datosGenerales.placeHash, "DestinyDestinationDefinition", "Nombre");
+                let destinación = await fetchActivityDetails(datosGenerales.destinationHash, "DestinyDestinationDefinition", "Nombre");
 
-                const actividadImg = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "img");
-                const actividadLogo = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "logo");
+                let name = datosGenerales.displayProperties.name;
+                let mapaDePVP = datosGenerales.displayProperties.description;
+                const actividadImg = datosGenerales.pgcrImage;
+
+                let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition", "Nombre");
+
+                console.log("CurrentActivityMode: ", currentActivityMode);
+                let modoDatos = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "general");
+                console.log("ModoDatos: ", modoDatos);
+                const tipo = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.name : null;
+                const tieneIcono = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.hasIcon : null;
+                const actividadLogo = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.icon : null;
+
                 const now = new Date();
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
@@ -65,13 +72,17 @@ export default function CurrentActivity({ type, id }) {
                 if (oponentes > 6) oponentes = 6;
                 if (aliados > 6) aliados = 6;
 
-                let PVPoPVE;
+                let PVPoPVE ;
                 if (activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
-                    PVPoPVE = "orbita";
+                    PVPoPVE = "PVE";
                 } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
                     PVPoPVE = "PVP"
-                } else PVPoPVE = "PVE";
-
+                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 63)) {
+                    PVPoPVE = "PVP"; // Gambito
+                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 6)) {
+                    PVPoPVE = "PVP"; // Patrulla
+                }
+                
                 setActivity({
                     date: minutesAgo,
                     name: name,
@@ -95,6 +106,11 @@ export default function CurrentActivity({ type, id }) {
                 const partyMembersDetails = await fetchPartyMembersDetails(partyMembersData);
                 setPartyMembers(partyMembersDetails);
 
+                if(partyMembers.length > 2){
+                    setColums(2)
+                } else setColums(1)
+
+
             } catch (error) {
                 console.error(`Error fetching current activity:`, error);
             }
@@ -103,8 +119,6 @@ export default function CurrentActivity({ type, id }) {
         fetchActivity();
     }, [activity]);
 
-    const numColumns = 2; // Número máximo de columnas
-    const numRows = Math.ceil(partyMembers.length / numColumns);
 
     return (
         <div className="container w-fit font-Inter mt-10 ">
@@ -124,37 +138,45 @@ export default function CurrentActivity({ type, id }) {
                                     <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                 </div>
                                 <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
-                                    {activity.PVPoPVE === "PVP" || activity.PVPoPVE === "orbita" ? (
+                                    {activity.PVPoPVE === "PVP" ? (
                                         <>
                                             {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
-                                            {/*{activity.playlist && !activity.playlist.includes(activity.name) && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}*/}
                                             <p className="mb-0 font-semibold text-xl">{activity.planeta}
                                                 {activity.planeta && activity.name !== activity.planeta && <span> - {activity.name}{activity.mapaDePVP}</span>}<br />
                                             </p>
                                         </>
                                     ) : <>
-                                        {activity.type !== activity.name && <p className="text-4xl font-semibold mb-0">{activity.name}</p>}
-                                        {activity.playlist !== activity.name && <p className="text-3xl font-semibold mb-0">{activity.playlist}</p>}
+                                        {<p className="text-4xl font-semibold">{activity.name}</p>}
+                                        {activity.playlist && !activity.name.includes(activity.playlist) && <p className="text-3xl font-semibold">{activity.playlist}</p>}
                                         <p className="mb-0 font-semibold text-xl">
-                                            {!activity.playlist.includes(activity.type) && activity.type}
-                                            {activity.planeta && activity.name !== activity.destinación && <span> - {activity.destinación}</span>}
+                                            {activity.type && (activity.destinación === activity.name || activity.destinación === null) && <p>{activity.type}</p>}
+                                            {activity.destinación && activity.type == null && <p>{activity.destinación}</p>}
+                                            {activity.destinación && activity.type && activity.destinación !== activity.name && (
+                                                <span> {activity.type} - {activity.destinación}</span>
+                                            )}
                                         </p>
                                     </>}
-                                    <div className="flex justify-evenly mt-4">
-                                        <div className="flex flex-col text-center items-center">
-                                            {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
-                                            {activity.puntosAliados ? <div className="w-[50px] border-1 border-white items-center flex justify-center">
-                                                <p className="text-xl">{activity.puntosAliados}</p>
-                                            </div> : null}
+                                    {activity.PVPoPVE === "PVP" ? (
+                                        <div className="flex justify-evenly ">
+                                            <div className="flex flex-col text-center items-center">
+                                                {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
+                                                {activity.puntosAliados ? <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                    <p className="text-xl">{activity.puntosAliados}</p>
+                                                </div> : null}
+                                            </div>
+                                            <div className="border-l border-gray-100 mx-4"></div>
+                                            <div className="flex flex-col text-center items-center">
+                                                {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
+                                                {activity.puntosOponentes ? <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                    <p className="text-xl">{activity.puntosOponentes}</p>
+                                                </div> : null}
+                                            </div>
+                                        </div>) : (
+                                        <div>
+                                            {activity.puntosAliados || activity.puntosAliados !== 0 && <p className="text-start mb-0">Puntos: {activity.puntosAliados}</p>}
                                         </div>
-                                        <div className="border-l border-gray-100 mx-4"></div>
-                                        <div className="flex flex-col text-center items-center">
-                                            {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
-                                            {activity.puntosOponentes ? <div className="w-[50px] border-1 border-white items-center flex justify-center">
-                                                <p className="text-xl">{activity.puntosOponentes}</p>
-                                            </div> : null}
-                                        </div>
-                                    </div>
+                                    )}
+
                                 </div>
                             </div>
                         ) : (
@@ -162,7 +184,7 @@ export default function CurrentActivity({ type, id }) {
                         )}
                         <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            <ul className={`space-x-6 grid grid-cols-${numColumns} grid-rows-${numRows} gap-4`}>
+                            <ul className={`space-x-6 grid ${numColumns > 3 ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
                                 {partyMembers.map(member => (
                                     <li key={member.id} className=" items-center space-x-1 flex">
                                         <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
@@ -175,7 +197,7 @@ export default function CurrentActivity({ type, id }) {
                             </ul>
                         </div>
                     </div>
-                    {activity.logo && !activity.logo.includes("missing") ?
+                    {activity.logo && !activity.logo.includes("missing")?
                         <div className="opacity-50">
                             <img src={`/api${activity.logo}`} width={80} height={80} />
                         </div>

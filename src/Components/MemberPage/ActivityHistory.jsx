@@ -194,6 +194,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team1.map((person, idx) => (
+                                                                console.log("Person: ", idx),
                                                                 <tr key={idx} className='text-start text-xs'>
                                                                     <td className='py-2 flex items-center'>
                                                                         <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
