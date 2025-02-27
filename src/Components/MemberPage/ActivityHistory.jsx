@@ -2,6 +2,8 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
+import Completed from "../../assets/Completed.png";
+import NotCompleted from "../../assets/notCompleted.png";
 import { fetchActivityDetails } from '../RecentActivity';
 import Spinner from '../Spinner';
 import "../Tabla.css";
@@ -9,6 +11,8 @@ import "../Tabla.css";
 const ActivityHistory = ({ userId, membershipType }) => {
     const [activityDetails, setActivityDetails] = useState([]);
     const [expandedIndex, setExpandedIndex] = useState(null);
+    const [filteredActivities, setFilteredActivities] = useState([]);
+    const [currentActivityType, setCurrentActivityType] = useState('Todas');
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -29,22 +33,38 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                //console.log("Lista de las actividades: ", response.data.Response.activities);
+                console.log("Lista de las actividades: ", response.data.Response.activities);
 
                 const details = await Promise.all(response.data.Response.activities.map(async (activity) => {
                     const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                     const date = new Date(activity.period).toLocaleString();
                     const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
                     const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
+                    const modoDeLaActividad = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition", "general");
+                    let datosDelModo;
+                    if(!modoDeLaActividad.directActivityModeHash) datosDelModo == null;
+                    else datosDelModo = await fetchActivityDetails(modoDeLaActividad.directActivityModeHash, "DestinyActivityModeDefinition", "general");
+
+                    let activityType;
+                    if(activity.activityDetails.modes.includes(7)) {
+                        activityType = "PvE";
+                    } else if(activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
+                        activityType = "PvP";
+                    } else if(activity.activityDetails.modes.includes(63)){
+                        activityType = "Gambito";
+                    } else activityType = "PvE";
 
                     return {
                         activityName,
+                        activityIcon: datosDelModo?.displayProperties?.icon || null,
+                        activityType,
                         date,
                         duration,
                         ...carnageReport,
                     };
                 }));
                 setActivityDetails(details);
+                filterActivities(details, 'Todas');
             } catch (error) {
                 console.error('Error fetching activity history:', error);
             }
@@ -73,7 +93,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
-            //console.log("Carnage Report: ", carnageReportResponse.data.Response);
             const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
@@ -86,14 +105,25 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 power: entry.player.lightLevel,
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 standing: entry.standing,
+                completed: entry.values.completed.basic.value,
             })));
             const teams = carnageReportResponse.data.Response.teams;
 
             return { people, teams };
         } catch (error) {
-            console.error('Error fetching carnage report:', error);
+            //console.error('Error fetching carnage report:', error);
             return { people, teams: [] }; // Valores por defecto en caso de error
         }
+    };
+
+    const filterActivities = (activities, type) => {
+        if(type === "Todas"){
+            setFilteredActivities(activities);
+        } else{
+            const filtered = activities.filter(activity => activity.activityType === type);
+            setFilteredActivities(filtered);
+        }
+        setCurrentActivityType(type);
     };
 
     const toggleExpand = (index) => {
@@ -103,8 +133,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
     return (
         <div>
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
+            <div className="flex mb-4">
+                <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
+                <button onClick={() => filterActivities(activityDetails, 'PvE')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 'PvE' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
+                <button onClick={() => filterActivities(activityDetails, 'PvP')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 'PvP' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
+                <button onClick={() => filterActivities(activityDetails, 'Gambito')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 'Gambito' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
+            </div>
             <ul>
-                {activityDetails.length > 0 ? activityDetails.map((activity, index) => {
+                {filteredActivities.length > 0 ? filteredActivities.map((activity, index) => {
                     const hasPoints = activity.people.some(person => person.points > 0);
                     const hasMedals = activity.people.some(person => person.medals > 0);
 
@@ -114,6 +150,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
                     const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
 
+                    const userCompleted = activity.people.some(person => person.membershipId === userId && person.completed === 1);
+                    let symbol;
+                    if (!userCompleted || userInTeam1) symbol = NotCompleted;
+                    else symbol = Completed;
+
                     let winnerPoints, loserPoints;
                     if (activity.teams.length > 0) {
                         winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1].score.basic.value;
@@ -121,12 +162,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     }
 
                     return (
-                        <div className='w-full'>
-                            <button onClick={() => toggleExpand(index)} className='cursor-pointer'>
-                                <li key={index} className='flex space-x-6 p-4 text-xl '>
-                                    <p>{activity.activityName}</p>
+                        <div className={`w-full bg-gray-300 rounded-lg mt-4 border-1`} key={index}>
+                            <button onClick={() => toggleExpand(index)} className='cursor-pointer w-full'>
+                                <li key={index} className={`p-4 text-medium justify-evenly flex items-center `}>
                                     <p>{activity.date}</p>
+                                    {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-12 h-12' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                    <p>{activity.activityName}</p>
                                     <p>{activity.duration}</p>
+                                    <img src={symbol} className='w-6 h-6' />
                                 </li>
                             </button>
                             <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === index ? 'max-h-screen' : 'max-h-0'}`}>
@@ -194,7 +237,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team1.map((person, idx) => (
-                                                                console.log("Person: ", idx),
                                                                 <tr key={idx} className='text-start text-xs'>
                                                                     <td className='py-2 flex items-center'>
                                                                         <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
@@ -249,7 +291,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                     </div>
                                 )}
                             </div>
-                            <hr />
                         </div>
                     );
                 }) : (

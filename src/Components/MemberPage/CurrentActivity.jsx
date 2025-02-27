@@ -45,18 +45,16 @@ export default function CurrentActivity({ type, id }) {
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
                 
                 let datosGenerales = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "general");
-                let planeta = await fetchActivityDetails(datosGenerales.placeHash, "DestinyDestinationDefinition", "Nombre");
-                let destinación = await fetchActivityDetails(datosGenerales.destinationHash, "DestinyDestinationDefinition", "Nombre");
+                let planeta = await fetchActivityDetails(datosGenerales.placeHash, "DestinyDestinationDefinition");
+                let destinación = await fetchActivityDetails(datosGenerales.destinationHash, "DestinyDestinationDefinition");
 
                 let name = datosGenerales.displayProperties.name;
                 let mapaDePVP = datosGenerales.displayProperties.description;
                 const actividadImg = datosGenerales.pgcrImage;
 
-                let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition", "Nombre");
+                let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
 
-                console.log("CurrentActivityMode: ", currentActivityMode);
                 let modoDatos = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "general");
-                console.log("ModoDatos: ", modoDatos);
                 const tipo = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.name : null;
                 const tieneIcono = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.hasIcon : null;
                 const actividadLogo = modoDatos && modoDatos.displayProperties ? modoDatos.displayProperties.icon : null;
@@ -173,7 +171,7 @@ export default function CurrentActivity({ type, id }) {
                                             </div>
                                         </div>) : (
                                         <div>
-                                            {activity.puntosAliados || activity.puntosAliados !== 0 && <p className="text-start mb-0">Puntos: {activity.puntosAliados}</p>}
+                                            {!activity.puntosAliados || activity.puntosAliados == 0 && <p className="text-start mb-0">Puntos: {activity.puntosAliados}</p>}
                                         </div>
                                     )}
 

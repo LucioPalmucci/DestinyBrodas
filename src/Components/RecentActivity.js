@@ -80,10 +80,8 @@ export const fetchActivityDetails = async (activityHash, type, Subclase) => {
             },
         });
 
-        console.log("Response: ", response.data.Response);
         if (response.data.Response == null) return null;
         else if (Subclase === "sub") return response.data.Response.talentGrid.buildName;
-        else if (Subclase === "Nombre") return response.data.Response.displayProperties.name;
         else if (Subclase === "general") return response.data.Response;
         else return response.data.Response.displayProperties.name;
 

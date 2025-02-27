@@ -8,6 +8,7 @@ import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
+import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
 import ReportLinks from './ReportLinks';
 function MemberDetail() {
