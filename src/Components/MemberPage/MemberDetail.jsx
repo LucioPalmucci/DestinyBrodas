@@ -16,7 +16,6 @@ function MemberDetail() {
     const [memberDetail, setMemberDetail] = useState(null);
     const [userMemberships, setUserMemberships] = useState(null);
     const [emblemIndicators, setEmblemIndicators] = useState(null);
-    const [numRank, setNumRank] = useState(null);
     const [activity, setActivity] = useState(null);
     const [member, setMember] = useState(null);
     const [currentLight, setCurrentLight] = useState(null);

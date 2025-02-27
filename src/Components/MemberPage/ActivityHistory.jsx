@@ -4,6 +4,7 @@ import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
 import Completed from "../../assets/Completed.png";
 import NotCompleted from "../../assets/notCompleted.png";
+import "../../index.css";
 import { fetchActivityDetails } from '../RecentActivity';
 import Spinner from '../Spinner';
 import "../Tabla.css";
@@ -13,6 +14,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [expandedIndex, setExpandedIndex] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
     const [currentActivityType, setCurrentActivityType] = useState('Todas');
+    const [isOpen, setIsOpen] = useState(false);
+    const [weaponDetails, setWeaponDetails] = useState([]);
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -42,15 +45,15 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
                     const modoDeLaActividad = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition", "general");
                     let datosDelModo;
-                    if(!modoDeLaActividad.directActivityModeHash) datosDelModo == null;
+                    if (!modoDeLaActividad.directActivityModeHash) datosDelModo == null;
                     else datosDelModo = await fetchActivityDetails(modoDeLaActividad.directActivityModeHash, "DestinyActivityModeDefinition", "general");
 
                     let activityType;
-                    if(activity.activityDetails.modes.includes(7)) {
+                    if (activity.activityDetails.modes.includes(7)) {
                         activityType = "PvE";
-                    } else if(activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
+                    } else if (activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
                         activityType = "PvP";
-                    } else if(activity.activityDetails.modes.includes(63)){
+                    } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
 
@@ -80,7 +83,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
         let minutos = m != 1 ? 'minutos' : 'minuto';
         let segundos = s != 1 ? 'segundos' : 'segundo';
         if (h > 0) {
-            return `${h} ${horas} ${m} ${minutos} ${s} ${segundos}`;
+            return `${h} ${horas} ${m} ${minutos}`;
         } else {
             return `${m} ${minutos} ${s} ${segundos}`;
         }
@@ -93,6 +96,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
+            console.log("Carnage Report: ", carnageReportResponse.data.Response);
             const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
@@ -106,6 +110,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
+                values: entry.extended?.values,
+                weapons: entry.extended?.weapons,
+                timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
+                assists: entry.values.assists.basic.value,
             })));
             const teams = carnageReportResponse.data.Response.teams;
 
@@ -117,9 +125,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
     };
 
     const filterActivities = (activities, type) => {
-        if(type === "Todas"){
+        if (type === "Todas") {
             setFilteredActivities(activities);
-        } else{
+        } else {
             const filtered = activities.filter(activity => activity.activityType === type);
             setFilteredActivities(filtered);
         }
@@ -130,8 +138,31 @@ const ActivityHistory = ({ userId, membershipType }) => {
         setExpandedIndex(expandedIndex === index ? null : index);
     };
 
+    useEffect(() => {
+        if (isOpen != false) {
+            getWeaponDetails();
+        }
+    }, [isOpen]);
+
+    const getWeaponDetails = async () => {
+        if (isOpen != false) {
+            const weaponD = await Promise.all(isOpen.weapons.map(async (weapon) => {
+                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition", "general");
+                console.log("Weapon Info: ", weaponInfo);
+                return {
+                    name: weaponInfo.displayProperties.name,
+                    icon: weaponInfo.displayProperties.icon,
+                    archetype: weaponInfo.itemTypeDisplayName,
+                    kills: weapon.values.uniqueWeaponKills.basic.value,
+                    precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
+                    precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
+                };
+            }));
+            setWeaponDetails(weaponD);
+        }
+    }
     return (
-        <div>
+        <div className='w-2/3'>
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
             <div className="flex mb-4">
                 <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
@@ -164,9 +195,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     return (
                         <div className={`w-full bg-gray-300 rounded-lg mt-4 border-1`} key={index}>
                             <button onClick={() => toggleExpand(index)} className='cursor-pointer w-full'>
-                                <li key={index} className={`p-4 text-medium justify-evenly flex items-center `}>
+                                <li key={index} className={`p-2 text-sm justify-evenly flex items-center`}>
                                     <p>{activity.date}</p>
-                                    {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-12 h-12' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                    {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-8 h-8' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                     <p>{activity.activityName}</p>
                                     <p>{activity.duration}</p>
                                     <img src={symbol} className='w-6 h-6' />
@@ -200,11 +231,13 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                             {team0.map((person, idx) => (
                                                                 <tr key={idx} className='text-start '>
                                                                     <td className='py-2 flex items-center text-xs p-1'>
-                                                                        <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                        <div className='flex flex-col justify-center ml-1 '>
-                                                                            <p>{person.name}</p>
-                                                                            <p>{person.class} - {person.power}</p>
-                                                                        </div>
+                                                                        <button onClick={() => setIsOpen(person)}>
+                                                                            <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
+                                                                            <div className='flex flex-col justify-center ml-1 '>
+                                                                                <p>{person.name}</p>
+                                                                                <p>{person.class} - {person.power}</p>
+                                                                            </div>
+                                                                        </button>
                                                                     </td>
                                                                     {hasPoints && <td className='py-2'>{person.points}</td>}
                                                                     <td className='py-2'>{person.kills}</td>
@@ -271,7 +304,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 <tbody>
                                                     {activity.people.map((person, idx) => (
                                                         <tr key={idx} className='text-start text-sm'>
-                                                            <td className='py-2 flex items-center'>
+                                                            <td className='py-2 flex items-center cursor-pointer' onClick={() => setIsOpen(person)}>
                                                                 <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
                                                                 <div className='flex flex-col justify-center ml-1'>
                                                                     <p>{person.name}</p>
@@ -291,10 +324,61 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                     </div>
                                 )}
                             </div>
+                            {isOpen && weaponDetails && (
+                                console.log("Weapon Details: ", isOpen),
+                                <div className="fixed inset-0 flex items-center justify-center w-full p-8 " onClick={() => setIsOpen(false)}>
+                                    <div className="p-4 rounded-lg relative bg-neutral-600 text-white" onClick={(e) => e.stopPropagation()}>
+                                        <button onClick={() => setIsOpen(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-700">
+                                            &times;
+                                        </button>
+                                        <div className='space-y-2'>
+                                            <div className='flex items-center'>
+                                                <img src={`/api/${isOpen.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
+                                                <div className='ml-4'>
+                                                    <p>{isOpen.name}</p>
+                                                    <p>{isOpen.class} - {isOpen.power}</p>
+                                                </div>
+                                            </div>
+                                            <div className='flex justify-between space-x-6'>
+                                                <p>Tiempo jugado: {isOpen.timePlayedSeconds}</p>
+                                                <p>Bajas: {isOpen.kills}</p>
+                                                <p>Muertes: {isOpen.deaths}</p>
+                                                <p>Asistencias: {isOpen.assists}</p>
+                                            </div>
+                                            <div>
+                                                <p className='italic'>Bajas de Precisión: {isOpen.values.precisionKills.basic.value}</p>
+                                                <p className='italic'>Bajas de habilidad: {isOpen.values.weaponKillsAbility.basic.value}</p>
+                                                <p className='italic'>Bajas de granada: {isOpen.values.weaponKillsGrenade.basic.value}</p>
+                                                <p className='italic'>Bajas de melee: {isOpen.values.weaponKillsMelee.basic.value}</p>
+                                                <p className='italic'>Bajas de Súper: {isOpen.values.weaponKillsSuper.basic.value}</p>
+                                            </div>
+                                            <div className='grid grid-cols-3 gap-4'>
+                                                {weaponDetails.map((weapon, idx) => (
+                                                    <div key={idx}>
+                                                        <div className='flex items-center'>
+                                                            <img src={`/api/${weapon.icon}`} width={40} height={40} alt="Weapon Icon" className='rounded' />
+                                                            <div className='ml-4 space-y-1'>
+                                                                <div>
+                                                                    <p className='text-sm'>{weapon.name}</p>
+                                                                    <p className='text-xs'>{weapon.archetype}</p>
+                                                                </div>
+                                                                <div className='flex space-x-2 items-center text-xs'>
+                                                                    <p className='items-center'><i className='icon-kills' /> {weapon.kills}</p>
+                                                                    <p className='items-center' title={`${weapon.precisionKills} bajas`}><i className='icon-precision' style={{fontStyle: "normal"}} />{weapon.precisionKillsPercentage}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     );
                 }) : (
-                    <div className='top-0'><Spinner/></div>
+                    <div className='top-0'><Spinner /></div>
                 )}
             </ul>
         </div>

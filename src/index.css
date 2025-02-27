@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import url("https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro");
+
 body{
     font-family: 'Inter', sans-serif;
     font-size: 16px;
@@ -9,9 +10,14 @@ body{
 .emblema{
     font-family: 'Neue Haas Grotesk Text Pro', sans-serif
 }
+
 @font-face {
     font-family: "Destiny Symbols Common";
     src: url(./assets/fonts/destiny_symbols_common.otf) format('opentype');
+}
+@font-face {
+    font-family: "Destiny Symbols Common 2";
+    src: url(./assets/fonts/icomoon.ttf) format('opentype');
 }
 
 .icon-AutoRifle::before {
@@ -141,12 +147,28 @@ body{
 .icon-prismatico::before {
     content: "";
     display: inline-block;
-    width: 20px; /* Ajusta el tamaño según sea necesario */
-    height: 20px; /* Ajusta el tamaño según sea necesario */
-    background-image: url('/prismatic.png'); /* Ruta a tu imagen */
+    width: 20px;
+    height: 20px;
+    background-image: url('/prismatic.png');
     background-size: contain;
     background-repeat: no-repeat;
-    vertical-align: middle; /* Alinea verticalmente con el texto */
+    vertical-align: middle;
+}
+
+.icon-kills::before{
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-image: url('/kill-tracker.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.icon-precision::before{
+    content: "\E142";
+    font-family: "Destiny Symbols Common 2";
 }
 
 @import "tailwindcss";

@@ -34,6 +34,7 @@ export default function CurrentActivity({ type, id }) {
                     },
                 });
 
+                //console.log("Current activity response:", activityResponse.data.Response);
                 const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
@@ -63,7 +64,8 @@ export default function CurrentActivity({ type, id }) {
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
 
-                mapaDePVP = mapaDePVP.substring(mapaDePVP.indexOf(",")).trim();
+                if(!mapaDePVP.includes(",")) mapaDePVP = null;
+                else mapaDePVP = mapaDePVP.substring(mapaDePVP.indexOf(",")).trim();
 
                 if (planeta == "El Crisol") planeta = "Crisol";
                 let aliados = jugadores - oponentes;
