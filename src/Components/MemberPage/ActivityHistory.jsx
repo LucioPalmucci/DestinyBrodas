@@ -7,15 +7,17 @@ import NotCompleted from "../../assets/notCompleted.png";
 import "../../index.css";
 import { fetchActivityDetails } from '../RecentActivity';
 import Spinner from '../Spinner';
-import "../Tabla.css";
+import '../Tab.css';
+import PopUp from './PopUp';
+
 
 const ActivityHistory = ({ userId, membershipType }) => {
     const [activityDetails, setActivityDetails] = useState([]);
     const [expandedIndex, setExpandedIndex] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
     const [currentActivityType, setCurrentActivityType] = useState('Todas');
-    const [isOpen, setIsOpen] = useState(false);
     const [weaponDetails, setWeaponDetails] = useState([]);
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -325,55 +327,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                 )}
                             </div>
                             {isOpen && weaponDetails && (
-                                console.log("Weapon Details: ", isOpen),
-                                <div className="fixed inset-0 flex items-center justify-center w-full p-8 " onClick={() => setIsOpen(false)}>
-                                    <div className="p-4 rounded-lg relative bg-neutral-600 text-white" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => setIsOpen(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-700">
-                                            &times;
-                                        </button>
-                                        <div className='space-y-2'>
-                                            <div className='flex items-center'>
-                                                <img src={`/api/${isOpen.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                <div className='ml-4'>
-                                                    <p>{isOpen.name}</p>
-                                                    <p>{isOpen.class} - {isOpen.power}</p>
-                                                </div>
-                                            </div>
-                                            <div className='flex justify-between space-x-6'>
-                                                <p>Tiempo jugado: {isOpen.timePlayedSeconds}</p>
-                                                <p>Bajas: {isOpen.kills}</p>
-                                                <p>Muertes: {isOpen.deaths}</p>
-                                                <p>Asistencias: {isOpen.assists}</p>
-                                            </div>
-                                            <div>
-                                                <p className='italic'>Bajas de Precisión: {isOpen.values.precisionKills.basic.value}</p>
-                                                <p className='italic'>Bajas de habilidad: {isOpen.values.weaponKillsAbility.basic.value}</p>
-                                                <p className='italic'>Bajas de granada: {isOpen.values.weaponKillsGrenade.basic.value}</p>
-                                                <p className='italic'>Bajas de melee: {isOpen.values.weaponKillsMelee.basic.value}</p>
-                                                <p className='italic'>Bajas de Súper: {isOpen.values.weaponKillsSuper.basic.value}</p>
-                                            </div>
-                                            <div className='grid grid-cols-3 gap-4'>
-                                                {weaponDetails.map((weapon, idx) => (
-                                                    <div key={idx}>
-                                                        <div className='flex items-center'>
-                                                            <img src={`/api/${weapon.icon}`} width={40} height={40} alt="Weapon Icon" className='rounded' />
-                                                            <div className='ml-4 space-y-1'>
-                                                                <div>
-                                                                    <p className='text-sm'>{weapon.name}</p>
-                                                                    <p className='text-xs'>{weapon.archetype}</p>
-                                                                </div>
-                                                                <div className='flex space-x-2 items-center text-xs'>
-                                                                    <p className='items-center'><i className='icon-kills' /> {weapon.kills}</p>
-                                                                    <p className='items-center' title={`${weapon.precisionKills} bajas`}><i className='icon-precision' style={{fontStyle: "normal"}} />{weapon.precisionKillsPercentage}</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <PopUp isOpen={isOpen} weaponDetails={weaponDetails} setIsOpen={setIsOpen}/>
                             )}
                         </div>
                     );

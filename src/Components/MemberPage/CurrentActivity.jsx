@@ -39,7 +39,7 @@ export default function CurrentActivity({ type, id }) {
                 const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
                 const fecha = partyResponse.data.Response.profileTransitoryData.data.currentActivity.startTime;
-                const oponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.numberOfOpponents;
+                let oponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.numberOfOpponents;
                 const jugadores = partyResponse.data.Response.profileTransitoryData.data.currentActivity.numberOfPlayers;
                 const puntosAliados = partyResponse.data.Response.profileTransitoryData.data.currentActivity.score;
                 const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;

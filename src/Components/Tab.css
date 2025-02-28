@@ -1,0 +1,42 @@
+.tab-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.tab-button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    margin: 0 0.25rem;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.tab-button.active {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.tab-button.inactive {
+    background-color: #d1d5db;
+    color: black;
+}
+
+.tab-line {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    background-color: #3b82f6;
+    transition: left 0.3s, width 0.3s;
+}
+
+.tab-content-container {
+    display: flex;
+    transition: transform 0.3s ease-in-out;
+}
+
+.tab-content {
+    min-width: 100%;
+    transition: opacity 0.3s;
+}
