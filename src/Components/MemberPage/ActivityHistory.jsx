@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
 import Completed from "../../assets/Completed.png";
+import medal from "../../assets/medal-solid.svg";
 import NotCompleted from "../../assets/notCompleted.png";
+import skull from "../../assets/skull-solid.svg";
 import "../../index.css";
 import { fetchActivityDetails } from '../RecentActivity';
 import Spinner from '../Spinner';
@@ -207,9 +209,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             </button>
                             <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === index ? 'max-h-screen' : 'max-h-0'}`}>
                                 {expandedIndex === index && (
-                                    <div className='mt-2'>
+                                    <div className='mt-2 p-6 bg-white'>
                                         {activity.teams.length > 0 ? (
-                                            <div className='flex justify-between space-x-4'>
+                                            <div className='justify-between space-y-2 w-full'>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
                                                         Equipo 1
@@ -218,24 +220,24 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                             <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
                                                         </span>
                                                     </h3>
-                                                    <table className='min-w-full bg-white'>
+                                                    <table className='bg-white tablapartida'>
                                                         <thead>
                                                             <tr>
                                                                 <th className='py-2'>Nombre</th>
                                                                 {hasPoints && <th className='py-2'>Puntos</th>}
-                                                                <th className='py-2'>Kills</th>
-                                                                <th className='py-2'>Muertes</th>
+                                                                <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
+                                                                <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                                 <th className='py-2'>KD</th>
-                                                                {hasMedals && <th className='py-2'>Medallas</th>}
+                                                                {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {team0.map((person, idx) => (
-                                                                <tr key={idx} className='text-start '>
-                                                                    <td className='py-2 flex items-center text-xs p-1'>
-                                                                        <button onClick={() => setIsOpen(person)}>
-                                                                            <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                            <div className='flex flex-col justify-center ml-1 '>
+                                                                <tr key={idx} className='text-start'>
+                                                                    <td className='py-2 text-xs w-fit'>
+                                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start '>
+                                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                            <div className='flex flex-col justify-start ml-1'>
                                                                                 <p>{person.name}</p>
                                                                                 <p>{person.class} - {person.power}</p>
                                                                             </div>
@@ -253,32 +255,34 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </div>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                        <span className='flex items-center'>
-                                                            <img className='w-4 h-4 mr-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
-                                                            {loserPoints}
-                                                        </span>
                                                         Equipo 2
+                                                        <span className='flex items-center'>
+                                                            {loserPoints}
+                                                            <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
+                                                        </span>
                                                     </h3>
-                                                    <table className='min-w-full bg-white'>
+                                                    <table className='bg-white tablapartida'>
                                                         <thead>
                                                             <tr>
                                                                 <th className='py-2'>Nombre</th>
                                                                 {hasPoints && <th className='py-2'>Puntos</th>}
-                                                                <th className='py-2'>Kills</th>
-                                                                <th className='py-2'>Muertes</th>
+                                                                <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
+                                                                <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                                 <th className='py-2'>KD</th>
-                                                                {hasMedals && <th className='py-2'>Medallas</th>}
+                                                                {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {team1.map((person, idx) => (
-                                                                <tr key={idx} className='text-start text-xs'>
-                                                                    <td className='py-2 flex items-center'>
-                                                                        <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                        <div className='flex flex-col justify-center ml-1'>
-                                                                            <p>{person.name}</p>
-                                                                            <p>{person.class} - {person.power}</p>
-                                                                        </div>
+                                                                <tr key={idx} className={`text-start ${person.id === userId ? "font-bold" : ""}`}>
+                                                                    <td className='py-2 text-xs w-fit'>
+                                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
+                                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                            <div className='flex flex-col justify-center ml-1'>
+                                                                                <p>{person.name}</p>
+                                                                                <p>{person.class} - {person.power}</p>
+                                                                            </div>
+                                                                        </button>
                                                                     </td>
                                                                     {hasPoints && <td className='py-2'>{person.points}</td>}
                                                                     <td className='py-2'>{person.kills}</td>
@@ -292,15 +296,15 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <table className='min-w-full bg-white'>
+                                            <table className='min-w-full bg-white tablapartida'>
                                                 <thead>
                                                     <tr>
                                                         <th className='py-2'>Nombre</th>
                                                         {hasPoints && <th className='py-2'>Puntos</th>}
-                                                        <th className='py-2'>Kills</th>
-                                                        <th className='py-2'>Muertes</th>
+                                                        <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
+                                                        <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                         <th className='py-2'>KD</th>
-                                                        {hasMedals && <th className='py-2'>Medallas</th>}
+                                                        {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -313,11 +317,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                                     <p>{person.class} - {person.power}</p>
                                                                 </div>
                                                             </td>
-                                                            {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                            <td className='py-2'>{person.kills}</td>
-                                                            <td className='py-2'>{person.deaths}</td>
-                                                            <td className='py-2'>{person.kd}</td>
-                                                            {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                            {hasPoints && <td>{person.points}</td>}
+                                                            <td>{person.kills}</td>
+                                                            <td>{person.deaths}</td>
+                                                            <td>{person.kd}</td>
+                                                            {hasMedals && <td>{person.medals}</td>}
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -327,7 +331,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                 )}
                             </div>
                             {isOpen && weaponDetails && (
-                                <PopUp isOpen={isOpen} weaponDetails={weaponDetails} setIsOpen={setIsOpen}/>
+                                <PopUp isOpen={isOpen} weaponDetails={weaponDetails} setIsOpen={setIsOpen} />
                             )}
                         </div>
                     );

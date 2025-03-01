@@ -166,9 +166,31 @@ body{
     vertical-align: middle;
 }
 
+.icon-kills2::before{
+    content: "";
+    display: inline-block;
+    width: 15px;
+    height: 18px;
+    background-image: url('/kill-tracker.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
 .icon-precision::before{
     content: "\E142";
     font-family: "Destiny Symbols Common 2";
+}
+
+.icon-clock::before{
+    content: "";
+    display: inline-block;
+    width: 15px;
+    height: 25px;
+    background-image: url('/clock.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
 }
 
 @import "tailwindcss";
