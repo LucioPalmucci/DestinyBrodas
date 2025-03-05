@@ -50,21 +50,13 @@
 
 .table-custom th,
 .table-custom td {
-    border: 1px solid #000;
     padding: 8px;
-    text-align: left;
 }
 
 .table-custom th {
-    background-color: #1f1f1f;
     font-display: normal;
     font-weight: 500;
 }
-
-.table-custom tr {
-    background-color: oklch(0.439 0 0);
-}
-
 
 .tablapartida td, .tablapartida th{
     padding: 5px;

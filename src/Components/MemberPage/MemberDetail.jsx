@@ -8,8 +8,8 @@ import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
-import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
+import FavouriteWeapons from './FavouriteWeapons';
 import ReportLinks from './ReportLinks';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -120,7 +120,8 @@ function MemberDetail() {
                     <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
                     <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
                     <CurrentActivity type={membershipType} id={membershipId} />
-                    <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                    {/*<ActivityHistory userId={membershipId} membershipType={membershipType} />*/}
+                    <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                 </div>
             </div>
         </div>

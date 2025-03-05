@@ -71,7 +71,7 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                //console.log('Response General:', responseGeneral.data.Response);
+                console.log('Response General:', responseGeneral.data.Response);
                 let totalLight = await fetchCharacterIds(member, "total", 2)
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);

@@ -83,8 +83,8 @@ const PopUp = ({ isOpen, setIsOpen, weaponDetails }) => {
                                     transition={{ duration: 0.3 }}
                                     className="absolute w-full"
                                 >
-                                    <div className="flex justify-center">
-                                        <table className="text-black border-1">
+                                    <div className="flex">
+                                        <table className="text-black border-1 table-custom">
                                             <thead>
                                                 <tr >
                                                     <th className="border-1">Precisión</th>

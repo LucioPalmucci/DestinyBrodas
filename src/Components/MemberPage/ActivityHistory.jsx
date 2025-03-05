@@ -211,7 +211,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                 {expandedIndex === index && (
                                     <div className='mt-2 p-6 bg-white'>
                                         {activity.teams.length > 0 ? (
-                                            <div className='justify-between space-y-2 w-full'>
+                                            <div className='justify-between space-y-4 w-full'>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
                                                         Equipo 1
@@ -233,7 +233,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team0.map((person, idx) => (
-                                                                <tr key={idx} className='text-start'>
+                                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
                                                                     <td className='py-2 text-xs w-fit'>
                                                                         <button onClick={() => setIsOpen(person)} className='flex items-center text-start '>
                                                                             <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
@@ -274,7 +274,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                         </thead>
                                                         <tbody>
                                                             {team1.map((person, idx) => (
-                                                                <tr key={idx} className={`text-start ${person.id === userId ? "font-bold" : ""}`}>
+                                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
                                                                     <td className='py-2 text-xs w-fit'>
                                                                         <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
                                                                             <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
@@ -309,13 +309,15 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </thead>
                                                 <tbody>
                                                     {activity.people.map((person, idx) => (
-                                                        <tr key={idx} className='text-start text-sm'>
-                                                            <td className='py-2 flex items-center cursor-pointer' onClick={() => setIsOpen(person)}>
-                                                                <img src={`/api/${person.emblem}`} width={40} height={40} alt="Emblem" className='rounded' />
-                                                                <div className='flex flex-col justify-center ml-1'>
-                                                                    <p>{person.name}</p>
-                                                                    <p>{person.class} - {person.power}</p>
-                                                                </div>
+                                                        <tr key={idx} className={`text-start text-sm ${person.membershipId == userId ? "font-bold" : ""}`}>
+                                                            <td className='py-2 text-xs w-fit ' onClick={() => setIsOpen(person)}>
+                                                                <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
+                                                                    <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                    <div className='flex flex-col justify-center ml-1'>
+                                                                        <p>{person.name}</p>
+                                                                        <p>{person.class} - {person.power}</p>
+                                                                    </div>
+                                                                </button>
                                                             </td>
                                                             {hasPoints && <td>{person.points}</td>}
                                                             <td>{person.kills}</td>
