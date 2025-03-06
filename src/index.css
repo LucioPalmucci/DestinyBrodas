@@ -193,4 +193,14 @@ body{
     vertical-align: middle;
 }
 
+.icon-kills-black::before{
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-image: url('/kill-tracker-black.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
 @import "tailwindcss";
