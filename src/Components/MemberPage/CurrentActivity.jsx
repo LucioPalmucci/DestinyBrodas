@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import circleSolid from "../../assets/circle-solid.svg";
+import orbit from "../../assets/orbit.png";
 import { fetchActivityDetails } from "../RecentActivity";
 
 export default function CurrentActivity({ type, id }) {
@@ -44,14 +45,15 @@ export default function CurrentActivity({ type, id }) {
                 const puntosAliados = partyResponse.data.Response.profileTransitoryData.data.currentActivity.score;
                 const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;
                 const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
-                
+
                 let datosGenerales = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "general");
                 let planeta = await fetchActivityDetails(datosGenerales.placeHash, "DestinyDestinationDefinition");
                 let destinación = await fetchActivityDetails(datosGenerales.destinationHash, "DestinyDestinationDefinition");
 
                 let name = datosGenerales.displayProperties.name;
                 let mapaDePVP = datosGenerales.displayProperties.description;
-                const actividadImg = datosGenerales.pgcrImage;
+                const actividadImg = datosGenerales.pgcrImage || orbit;
+                console.log("Current activity hash:", actividadImg);
 
                 console.log("Current activity hash:", datosGenerales);
 
@@ -66,7 +68,7 @@ export default function CurrentActivity({ type, id }) {
                 const activityDate = new Date(fecha);
                 const minutesAgo = Math.floor((now - activityDate) / 60000);
 
-                if(!mapaDePVP.includes(",")) mapaDePVP = null;
+                if (!mapaDePVP.includes(",")) mapaDePVP = null;
                 else mapaDePVP = mapaDePVP.substring(mapaDePVP.indexOf(",")).trim();
 
                 if (planeta == "El Crisol") planeta = "Crisol";
@@ -74,7 +76,7 @@ export default function CurrentActivity({ type, id }) {
                 if (oponentes > 6) oponentes = 6;
                 if (aliados > 6) aliados = 6;
 
-                let PVPoPVE ;
+                let PVPoPVE;
                 if (activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
                     PVPoPVE = "PVE";
                 } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
@@ -84,7 +86,7 @@ export default function CurrentActivity({ type, id }) {
                 } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 6)) {
                     PVPoPVE = "PVP"; // Patrulla
                 }
-                
+
                 setActivity({
                     date: minutesAgo,
                     name: name,
@@ -99,7 +101,7 @@ export default function CurrentActivity({ type, id }) {
                     puntosOponentes: puntosOponentes,
                     slots: slots,
                     mapaDePVP: mapaDePVP,
-                    imagen: actividadImg,
+                    imagen: actividadImg && actividadImg.includes(orbit) ? actividadImg : "/api" + actividadImg,
                     logo: actividadLogo,
                     tieneIcono: tieneIcono,
                 });
@@ -108,7 +110,7 @@ export default function CurrentActivity({ type, id }) {
                 const partyMembersDetails = await fetchPartyMembersDetails(partyMembersData);
                 setPartyMembers(partyMembersDetails);
 
-                if(partyMembers.length > 2){
+                if (partyMembers.length > 2) {
                     setColums(2)
                 } else setColums(1)
 
@@ -123,9 +125,9 @@ export default function CurrentActivity({ type, id }) {
 
 
     return (
-        <div className="container w-fit font-Inter mt-10 ">
+        <div className="w-fit mt-10">
             {activity ? (
-                <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg space-x-6 content-fit justify-between flex object-fill bg-center bg-cover" style={{ backgroundImage: `url(/api${activity.imagen})`, filter: 'grayscale(50%)' }}>
+                <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${activity.imagen})` }}>
                     <div>
                         {activity.name ? (
                             <div className="gap-0">
@@ -182,11 +184,11 @@ export default function CurrentActivity({ type, id }) {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-center text-3xl font-semibold">En órbita</p>
+                            <p className="text-4xl font-semibold items-center">En órbita </p>
                         )}
                         <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            <ul className={`space-x-6 grid ${numColumns > 3 ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+                            <ul className={`space-x-6 grid ${numColumns > 3 ? 'grid-cols-2 grid-rows-3' : 'grid-cols-1'} gap-4`}>
                                 {partyMembers.map(member => (
                                     <li key={member.id} className=" items-center space-x-1 flex">
                                         <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
@@ -198,8 +200,9 @@ export default function CurrentActivity({ type, id }) {
                                 ))}
                             </ul>
                         </div>
+
                     </div>
-                    {activity.logo && !activity.logo.includes("missing")?
+                    {activity.logo && !activity.logo.includes("missing") ?
                         <div className="opacity-50">
                             <img src={`/api${activity.logo}`} width={80} height={80} />
                         </div>
