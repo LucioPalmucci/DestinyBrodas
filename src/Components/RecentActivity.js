@@ -83,6 +83,7 @@ export const fetchActivityDetails = async (activityHash, type, Subclase) => {
         if (response.data.Response == null) return null;
         else if (Subclase === "sub") return response.data.Response.talentGrid.buildName;
         else if (Subclase === "general") return response.data.Response;
+        else if (Subclase === "mode") return response.data.directActivityModeHash || 0;
         else return response.data.Response.displayProperties.name;
 
     } catch (error) {

@@ -10,6 +10,7 @@ import Spinner from '../Spinner';
 import '../Tabla.css';
 import CurrentActivity from './CurrentActivity';
 import FavouriteWeapons from './FavouriteWeapons';
+import GeneralStats from './GeneralStats';
 import ReportLinks from './ReportLinks';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -119,9 +120,9 @@ function MemberDetail() {
                 <div className='w-3/4 text-start'>
                     <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
                     <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
-                    <CurrentActivity type={membershipType} id={membershipId} />
-                    {/*<ActivityHistory userId={membershipId} membershipType={membershipType} />*/}
+                    {<CurrentActivity type={membershipType} id={membershipId} />}
                     <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
+                    <GeneralStats userId={membershipId} membershipType={membershipType} />
                 </div>
             </div>
         </div>

@@ -53,6 +53,8 @@ export default function CurrentActivity({ type, id }) {
                 let mapaDePVP = datosGenerales.displayProperties.description;
                 const actividadImg = datosGenerales.pgcrImage;
 
+                console.log("Current activity hash:", datosGenerales);
+
                 let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
 
                 let modoDatos = await fetchActivityDetails(currentActivityMode, "DestinyActivityModeDefinition", "general");
@@ -117,7 +119,7 @@ export default function CurrentActivity({ type, id }) {
         };
 
         fetchActivity();
-    }, [activity]);
+    }, []);
 
 
     return (
