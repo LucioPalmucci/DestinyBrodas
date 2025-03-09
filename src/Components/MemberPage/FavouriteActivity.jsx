@@ -52,8 +52,6 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
                     }
                 });
 
-                console.log("Mode Groups after processing activities:", modeGroups);
-
                 let mostPlayedMode = null;
                 let maxTimePlayed = 0;
                 for (const mode in modeGroups) {
@@ -105,8 +103,6 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
             allActivities = allActivities.concat(activitiesStats.data.Response.activities);
         }
 
-        console.log(allActivities);
-
         /*const activityMap = new Map();
         allActivities.forEach(activity => {
             const hash = activity.activityHash;
@@ -124,7 +120,6 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
         });
         allActivities = Array.from(activityMap.values());*/
 
-        console.log(allActivities);
         return allActivities;
     }
 
