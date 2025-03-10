@@ -53,9 +53,9 @@ export default function CurrentActivity({ type, id }) {
                 let name = datosGenerales.displayProperties.name;
                 let mapaDePVP = datosGenerales.displayProperties.description;
                 const actividadImg = datosGenerales.pgcrImage || orbit;
-                console.log("Current activity hash:", actividadImg);
+                //console.log("Current activity hash:", actividadImg);
 
-                console.log("Current activity hash:", datosGenerales);
+                //console.log("Current activity hash:", datosGenerales);
 
                 let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
 
@@ -110,7 +110,7 @@ export default function CurrentActivity({ type, id }) {
                 const partyMembersDetails = await fetchPartyMembersDetails(partyMembersData);
                 setPartyMembers(partyMembersDetails);
 
-                if (partyMembers.length > 2) {
+                if (partyMembers.length > 3) {
                     setColums(3)
                 } else setColums(1);
 

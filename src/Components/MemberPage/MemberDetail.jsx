@@ -8,6 +8,7 @@ import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
+import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
 import FavouriteWeapons from './FavouriteWeapons';
 import GeneralStats from './GeneralStats';
@@ -96,7 +97,7 @@ function MemberDetail() {
                     Volver al inicio
                 </a>
             </button>
-            <div className='justify-start flex mt-20 font-Inter items-center flex-col w-3/4'>
+            <div className='justify-start flex mt-10 font-Inter items-center flex-col w-3/4'>
                 <div className='w-3/4 text-start'>
                     <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
                     {memberDetail && userMemberships && (
@@ -117,12 +118,17 @@ function MemberDetail() {
                         </div>
                     )}
                 </div>
-                <div className='w-3/4 text-start'>
+                <div className='w-3/4 text-start flex justify-between'>
                     <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
+                    <div>
                     <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
-                    {<CurrentActivity type={membershipType} id={membershipId} />}
+                    <CurrentActivity type={membershipType} id={membershipId} />
                     <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
+                    <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                    </div>
+                    <div>
                     <GeneralStats userId={membershipId} membershipType={membershipType} />
+                    </div>
                 </div>
             </div>
         </div>

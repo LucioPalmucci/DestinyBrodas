@@ -4,7 +4,7 @@ import FavouriteActivity from "./FavouriteActivity";
 export default function GeneralStats({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
     const [rango, setRango] = useState(null);
-
+    const [Triumphs, setTriumphs] = useState(null);
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
@@ -37,12 +37,13 @@ export default function GeneralStats({ membershipType, userId }) {
                     naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
                 })
 
-                const reputationRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=202`, {
+                const reputationRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=202,900`, {
                     headers: {
                         "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
                     }
                 });
 
+                console.log(reputationRes.data.Response);
                 // 3008065600 progression gambito
                 // 1021210278 progression vanguardia
                 // 2083746873 progression crisol
@@ -51,7 +52,7 @@ export default function GeneralStats({ membershipType, userId }) {
                 // 599071390 progression estandarte
 
                 const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
-                console.log(AllProgresions);
+                //console.log(AllProgresions);
                 const progressions = ["3008065600", "1021210278", "2083746873", "3696598664", "2755675426", "599071390"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [];
 
@@ -119,7 +120,12 @@ export default function GeneralStats({ membershipType, userId }) {
                             break;
                     }
                 }
-                console.log(rangoVanguardia, rangoCrisol, rangoCompetitivo, rangoPruebas, rangoEstandarte, rangoGambito);
+                //console.log(rangoVanguardia, rangoCrisol, rangoCompetitivo, rangoPruebas, rangoEstandarte, rangoGambito);
+
+                setTriumphs({
+                    Total: reputationRes.data.Response.profileRecords.data.lifetimeScore,
+                    Active: reputationRes.data.Response.profileRecords.data.activeScore,
+                });
 
                 setRango({
                     vanguardia: rangoVanguardia,
@@ -129,6 +135,7 @@ export default function GeneralStats({ membershipType, userId }) {
                     estandarte: rangoEstandarte,
                     gambito: rangoGambito,
                 })
+
             } catch (error) {
                 console.error(error);
             }
@@ -143,8 +150,6 @@ export default function GeneralStats({ membershipType, userId }) {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
-
-            console.log("Competi", response.data.Response.steps[progression].icon);
 
             return "/api"+response.data.Response.steps[progression].icon;
         } catch (error) {
@@ -183,6 +188,13 @@ export default function GeneralStats({ membershipType, userId }) {
                             </div>
                         )
                     ))}
+                </div>
+            )}
+            {Triumphs && (
+                <div className="mt-6">
+                    <h2>Triunfos</h2>
+                    <p>Puntuación en total: {Triumphs.Total}</p>
+                    <p>Puntuación en activos: {Triumphs.Active}</p>
                 </div>
             )}
         </div>
