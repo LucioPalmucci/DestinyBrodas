@@ -26,6 +26,7 @@ function MemberDetail() {
     const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [classImg, setClassImg] = useState(null);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -63,6 +64,25 @@ function MemberDetail() {
                 setGuardianRank(guardianRankResponse.data.Response.displayProperties.name);
                 setCurrentLight(await getEquippedEmblem(member, "CharacterPower"));
                 setEmblem(await getEquippedEmblem(member, "Large"));
+                const clase = await getEquippedEmblem(member, "CharacterClass");
+
+                switch (clase) {
+                    case 2: setClassImg({
+                        link: "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+                        colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
+                    })
+                        break;
+                    case 0: setClassImg({
+                        link: "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+                        colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
+                    })
+                        break;
+                    case 1: setClassImg({
+                        link: "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
+                        colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
+                    })
+                        break;
+                }
 
                 if (member.isOnline) {
                     setActivity(await fetchCharacterIds(member, "activity", "MemberDetail"));
@@ -93,13 +113,17 @@ function MemberDetail() {
         <div>
             <button className='bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4 ml-4 '>
                 <a href='/DestinyBrodas/' className='items-center flex'>
-                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2' style={{filter: 'invert(100%)'}}/>
+                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2' style={{ filter: 'invert(100%)' }} />
                     Volver al inicio
                 </a>
             </button>
             <div className='justify-start flex mt-10 font-Inter items-center flex-col w-3/4'>
                 <div className='w-3/4 text-start'>
-                    <h1 className='text-4xl font-bold text-gray-700 w-3/4 mb-6'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
+                    <div className='flex space-x-4 items-center mb-1'>
+                        <img src={`${classImg.link}`} className={`w-10 h-10 mr-2`} style={{ filter: `${classImg.colore}`, marginLeft: '-3px' }} />
+                        <h1 className='text-4xl font-bold text-gray-700 mr-8'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
+                        <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
+                    </div>
                     {memberDetail && userMemberships && (
                         <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
                             <div className='ml-1 items-center'>
@@ -118,16 +142,14 @@ function MemberDetail() {
                         </div>
                     )}
                 </div>
-                <div className='w-3/4 text-start flex justify-between'>
-                    <h2 className='italic text-gray-400 tracking-wide text-large'>{activity}</h2>
+                <div className='w-3/4 text-start'>
                     <div>
-                    <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
-                    <CurrentActivity type={membershipType} id={membershipId} />
-                    <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
-                    <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                        <CurrentActivity type={membershipType} id={membershipId} />
+                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
+                        <ActivityHistory userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div>
-                    <GeneralStats userId={membershipId} membershipType={membershipType} />
+                        <GeneralStats userId={membershipId} membershipType={membershipType} />
                     </div>
                 </div>
             </div>
