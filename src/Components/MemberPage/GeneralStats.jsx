@@ -151,7 +151,7 @@ export default function GeneralStats({ membershipType, userId }) {
                 },
             });
 
-            return "/api"+response.data.Response.steps[progression].icon;
+            return "/api" + response.data.Response.steps[progression].icon;
         } catch (error) {
             console.error(error);
         }
@@ -159,9 +159,8 @@ export default function GeneralStats({ membershipType, userId }) {
 
     return (
         <div>
-            <h1>General Stats</h1>
             <FavouriteActivity membershipType={membershipType} userId={userId} />
-            {honor && (
+            {/*{honor && (
                 <div className="mt-6">
                     <h2>Commendations</h2>
                     <p>Total Score: {honor.totalScore}</p>
@@ -196,7 +195,7 @@ export default function GeneralStats({ membershipType, userId }) {
                     <p>Puntuación en total: {Triumphs.Total}</p>
                     <p>Puntuación en activos: {Triumphs.Active}</p>
                 </div>
-            )}
+            )}*/}
         </div>
     )
 }

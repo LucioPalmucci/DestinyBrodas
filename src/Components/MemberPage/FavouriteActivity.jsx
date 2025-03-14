@@ -1,16 +1,15 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { fetchActivityDetails } from "../RecentActivity";
 
-export default function FavouriteActivity({ membershipType, userId, pvp }) {
+export default function FavouriteActivity({ membershipType, userId }) {
     const [mostPlayedActivity, setMostPlayedMode] = useState(null);
+    const [charCompl, setCharCompl] = useState(null);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
-
-                let modeGroups = {};
-
                 const mazmorras = await activityHashes(608898761, false);
                 const asaltos = await activityHashes(4110605575, false);
                 const raids = await activityHashes(2043403989, false);
@@ -20,15 +19,15 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
                 const crisol = await activityHashes(4088006058, true);
                 const Pruebas = await activityHashes(2112637710, true);
 
-                modeGroups = {
-                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0 },
-                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0 },
-                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0 },
-                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0 },
-                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0 },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0 },
-                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0 },
-                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0 },
+                let modeGroups = {
+                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761 },
+                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 4110605575 },
+                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989 },
+                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 547513715 },
+                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444 },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 2371050408 },
+                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 2112637710 },
+                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 4088006058 },
                 };
 
                 const profileRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100,104`, {
@@ -61,15 +60,41 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
                     }
                 }
 
+                let mostPlayedActivity = { name: null, completions: 0 };
+                allActivities.forEach(activity => {
+                    const hash = activity.activityHash;
+                    if (modeGroups[mostPlayedMode].hashes.includes(hash)) {
+                        if (activity.values.activityCompletions.basic.value > mostPlayedActivity.completions) {
+                            mostPlayedActivity = { name: activity.activityHash, completions: activity.values.activityCompletions.basic.value };
+                        }
+                    }
+                });
+
+                let modoDatos = await fetchActivityDetails(modeGroups[mostPlayedMode].modeHash, "DestinyActivityModeDefinition", "general");
+
+                let characterCompletions = {};
+                for (const characterId of characterIds) {
+                    characterCompletions[characterId] = {};
+                    characterCompletions[characterId].totalCompletions = await mostPlayedCharacter(modeGroups[mostPlayedMode], characterId, membershipType, userId);
+                    characterCompletions[characterId].percentage = ((characterCompletions[characterId].totalCompletions / modeGroups[mostPlayedMode].completions) * 100).toFixed(1);
+                    characterCompletions[characterId].character = await characterClass(characterId, membershipType, userId);
+                    characterCompletions[characterId].classImg = charImg(characterCompletions[characterId].character, membershipType, userId);
+                }
+
                 if (mostPlayedMode) {
                     setMostPlayedMode({
                         mode: mostPlayedMode,
                         timePlayed: (modeGroups[mostPlayedMode].timePlayed / 3600).toFixed(0),
                         completions: modeGroups[mostPlayedMode].completions,
                         kills: modeGroups[mostPlayedMode].kills,
+                        icon: "/api" + modoDatos.displayProperties.icon,
+                        pgcrImg: mostPlayedMode == "Incursiones" ? "https://images.contentstack.io/v3/assets/blte410e3b15535c144/blt25ec3d789f5701d6/664ee84d2dad6500dee525d3/low-res-Pantheon-art---Raid-logo.jpg" : "/api" + modoDatos.pgcrImage,
+                        fav: await fetchActivityDetails(mostPlayedActivity.name, "DestinyActivityDefinition"),
                     });
                 }
+                setCharCompl(characterCompletions);
 
+                console.log("Char completions", charCompl);
             } catch (error) {
                 console.error(error);
             }
@@ -80,7 +105,13 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
 
 
     async function activityHashes(mode, pvp) {
-        const activityUrl = "https://www.bungie.net/common/destiny2_content/json/es/DestinyActivityDefinition-180d19ec-32f8-4b44-8b2a-fcc5163f4db0.json";
+        const manifestRes = await axios.get("/api/Platform/Destiny2/Manifest/", {
+            headers: {
+                "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
+            }
+        });
+        const activityUrl = `https://www.bungie.net${manifestRes.data.Response.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
+
         const activityRes = await axios.get(activityUrl);
 
         const activityData = activityRes.data;
@@ -102,36 +133,96 @@ export default function FavouriteActivity({ membershipType, userId, pvp }) {
             });
             allActivities = allActivities.concat(activitiesStats.data.Response.activities);
         }
-
-        /*const activityMap = new Map();
-        allActivities.forEach(activity => {
-            const hash = activity.activityHash;
-            if (!activityMap.has(hash)) {
-                activityMap.set(hash, {
-                    ...activity,
-                    values: { ...activity.values },
-                });
-            } else {
-                const existingActivity = activityMap.get(hash);
-                Object.keys(activity.values).forEach(key => {
-                    existingActivity.values[key].basic.value += activity.values[key].basic.value;
-                });
-            }
-        });
-        allActivities = Array.from(activityMap.values());*/
-
+        console.log("Actividades", allActivities);
         return allActivities;
     }
 
+    async function mostPlayedCharacter(mode, characterId, membershipType, userId) {
+
+        const activitiesStats = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+
+        let allActivities = activitiesStats.data.Response.activities;
+        let classCompletitions = 0;
+
+        allActivities.forEach(activity => {
+            const hash = activity.activityHash;
+            if (mode.hashes.includes(hash)) {
+                classCompletitions += activity.values.activityCompletions.basic.value;
+            }
+        });
+
+        return classCompletitions;
+    }
+
+    async function characterClass(characterId, membershipType, userId) {
+
+        const characterRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${characterId}/?components=200`, {
+            headers: {
+                "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
+            }
+        });
+        const characterData = characterRes.data.Response.character.data;
+        switch (characterData.classType) {
+            case 0:
+                return "Titán";
+            case 1:
+                return "Cazador";
+            case 2:
+                return "Hechicero";
+        }
+    }
+
+    function charImg(character) {
+        switch (character) {
+            case "Hechicero": return ({
+                link: "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+                colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
+            })
+            case "Titán": return ({
+                link: "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+                colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
+            })
+            case "Cazador": return ({
+                link: "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
+                colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
+            })
+        }
+    }
+
     return (
-        <div>
-            {mostPlayedActivity ? (
-                <p>
-                    Actividad más jugada: {mostPlayedActivity.mode}<br />
-                    Tiempo jugado: {mostPlayedActivity.timePlayed} horas<br />
-                    Completiciones: {mostPlayedActivity.completions}<br />
-                    Kills: {mostPlayedActivity.kills}
-                </p>
+        <div className="w-fit font-Inter">
+            {mostPlayedActivity && charCompl ? (
+                <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})` }}>
+                    <div className="space-y-4 flex flex-col">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold mb-0 p-0 leading-tight">
+                            Actividad más jugada
+                        </div>
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold mb-0 p-0">
+                            {mostPlayedActivity.mode}
+                        </div>
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 mb-0 p-0">
+                            Completiciones: {mostPlayedActivity.completions}<br />
+                            Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
+                            Bajas: {mostPlayedActivity.kills}<br />
+                            Favorita: {mostPlayedActivity.fav}
+                        </div>
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 mb-0 p-0 flex space-x-6">
+                            {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
+                                <div className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
+                                    <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 ml-10" />}
+
+                    </div>
+                </div>
             ) : (
                 <p>Cargando actividad...</p>
             )}

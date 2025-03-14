@@ -8,7 +8,6 @@ import { getTimeSinceLastConnection } from '../LastConexion';
 import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
-import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
 import FavouriteWeapons from './FavouriteWeapons';
 import GeneralStats from './GeneralStats';
@@ -144,12 +143,14 @@ function MemberDetail() {
                 </div>
                 <div className='w-3/4 text-start'>
                     <div>
-                        <CurrentActivity type={membershipType} id={membershipId} />
+                        <div className='flex'>
+                            <CurrentActivity type={membershipType} id={membershipId} />
+                            <GeneralStats userId={membershipId} membershipType={membershipType} />
+                        </div>
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
-                        <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                        {/*<ActivityHistory userId={membershipId} membershipType={membershipType} />*/}
                     </div>
                     <div>
-                        <GeneralStats userId={membershipId} membershipType={membershipType} />
                     </div>
                 </div>
             </div>

@@ -111,8 +111,11 @@ export default function CurrentActivity({ type, id }) {
                 setPartyMembers(partyMembersDetails);
 
                 if (partyMembers.length > 3) {
+                    setColums(2)
+                } else if (partyMembers.length > 6) {
                     setColums(3)
-                } else setColums(1);
+                }
+                else setColums(1);
 
             } catch (error) {
                 console.error(`Error fetching current activity:`, error);
@@ -187,7 +190,7 @@ export default function CurrentActivity({ type, id }) {
                         )}
                         <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            <ul className={`space-x-6 grid ${numColumns > 2 ? 'grid-cols-2 grid-rows-3' : 'grid-cols-1'} gap-4`}>
+                            <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-4`}>
                                 {partyMembers.map(member => (
                                     <li key={member.id} className=" items-center space-x-1 flex">
                                         <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
