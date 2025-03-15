@@ -1,8 +1,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import Commendations from "./Commendations";
 import FavouriteActivity from "./FavouriteActivity";
 export default function GeneralStats({ membershipType, userId }) {
-    const [honor, setCommendations] = useState(null);
     const [rango, setRango] = useState(null);
     const [Triumphs, setTriumphs] = useState(null);
     useEffect(() => {
@@ -16,34 +16,12 @@ export default function GeneralStats({ membershipType, userId }) {
                 const characterIds = Object.keys(response.data.Response.characters.data);
                 const firstCharacterId = characterIds[0];
 
-                const commendation = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1400`, {
-                    headers: {
-                        "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-                    }
-                });
-                const dataHonor = commendation.data.Response.profileCommendations.data;
-
-                setCommendations({
-                    totalScore: dataHonor.totalScore,
-                    recibidas: dataHonor.scoreDetailValues[1],
-                    enviadas: dataHonor.scoreDetailValues[0],
-                    verdes: dataHonor.commendationNodePercentagesByHash[154475713],
-                    rosas: dataHonor.commendationNodePercentagesByHash[1341823550],
-                    azules: dataHonor.commendationNodePercentagesByHash[1390663518],
-                    naranjas: dataHonor.commendationNodePercentagesByHash[4180748446],
-                    verdesPuntos: dataHonor.commendationNodeScoresByHash[154475713],
-                    rosasPuntos: dataHonor.commendationNodeScoresByHash[1341823550],
-                    azulesPuntos: dataHonor.commendationNodeScoresByHash[1390663518],
-                    naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
-                })
-
                 const reputationRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=202,900`, {
                     headers: {
                         "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
                     }
                 });
 
-                console.log(reputationRes.data.Response);
                 // 3008065600 progression gambito
                 // 1021210278 progression vanguardia
                 // 2083746873 progression crisol
@@ -52,7 +30,6 @@ export default function GeneralStats({ membershipType, userId }) {
                 // 599071390 progression estandarte
 
                 const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
-                //console.log(AllProgresions);
                 const progressions = ["3008065600", "1021210278", "2083746873", "3696598664", "2755675426", "599071390"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [];
 
@@ -160,36 +137,25 @@ export default function GeneralStats({ membershipType, userId }) {
     return (
         <div>
             <FavouriteActivity membershipType={membershipType} userId={userId} />
-            {/*{honor && (
-                <div className="mt-6">
-                    <h2>Commendations</h2>
-                    <p>Total Score: {honor.totalScore}</p>
-                    <p>Recibidas: {honor.recibidas}</p>
-                    <p>Enviadas: {honor.enviadas}</p>
-                    <p>Verdes: {honor.verdes}% ({honor.verdesPuntos})</p>
-                    <p>Rosas: {honor.rosas}% ({honor.rosasPuntos})</p>
-                    <p>Azules: {honor.azules}% ({honor.azulesPuntos})</p>
-                    <p>Naranjas: {honor.naranjas}% ({honor.naranjasPuntos})</p>
-                </div>
-            )}
+            <Commendations membershipType={membershipType} userId={userId} />
             {rango && (
-                <div className="mt-6">
-                    <h2>Ranks</h2>
+                <div className="mt-6 bg-gray-300">
+                    <h2>Reputación</h2>
+                    <div className="flex space-x-4">
                     {Object.keys(rango).map((key) => (
                         rango[key] && (
-                            <div key={key} className="bg-gray-300">
-                                <h3>{rango[key].nombre}</h3>
-                                <p>Valor: {rango[key].valor}</p>
-                                <p>Progreso: {rango[key].progreso}</p>
-                                <p>Valor Máximo: {rango[key].valorMaximo}</p>
-                                <p>Nivel: {rango[key].level}</p>
+                            <div key={key} >
                                 {rango[key].logo && <img src={rango[key].logo} width={40} height={40} alt={`${rango[key].nombre} logo`} />}
+                                <p>{rango[key].valor} / {rango[key].level}</p>
+                                <p>Valor Máximo: {rango[key].valorMaximo}</p>
+                                <p>Nivel: {rango[key].progreso}</p>
                             </div>
                         )
                     ))}
+                    </div>
                 </div>
             )}
-            {Triumphs && (
+            {/*{Triumphs && (
                 <div className="mt-6">
                     <h2>Triunfos</h2>
                     <p>Puntuación en total: {Triumphs.Total}</p>
