@@ -14,7 +14,6 @@ export const getEquippedEmblem = async (member, type) => {
         const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
         });
-        console.log(mostRecentCharacter);
 
         if (type === "Large") return mostRecentCharacter.emblemBackgroundPath;
         else if(type === "CharacterPower") return mostRecentCharacter.light;
