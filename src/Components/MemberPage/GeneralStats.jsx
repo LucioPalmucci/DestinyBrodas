@@ -1,10 +1,20 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import caretLeft from "../../assets/caret-left-solid.svg";
+import caretRight from "../../assets/caret-right-solid.svg";
+import "../../index.css";
 import Commendations from "./Commendations";
 import FavouriteActivity from "./FavouriteActivity";
+
 export default function GeneralStats({ membershipType, userId }) {
     const [rango, setRango] = useState(null);
     const [Triumphs, setTriumphs] = useState(null);
+    const [page, setPage] = useState(0);
+    const [move, setMove] = useState("next");
+
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
@@ -22,18 +32,9 @@ export default function GeneralStats({ membershipType, userId }) {
                     }
                 });
 
-                // 3008065600 progression gambito
-                // 1021210278 progression vanguardia
-                // 2083746873 progression crisol
-                // 3696598664 progression competitivio
-                // 2755675426 progression pruebas
-                // 599071390 progression estandarte
-
                 const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
                 const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [];
-
-                console.log(AllProgresions);
 
                 let levelInfo = {};
                 for (const element of progressions) {
@@ -46,7 +47,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(63,198,163)",
@@ -61,7 +62,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(92,145,184)",
@@ -76,7 +77,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(209, 94, 87)",
@@ -91,7 +92,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgba(209, 94, 87, 1)",
@@ -106,7 +107,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(248, 159, 27)",
@@ -121,7 +122,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                 progreso: AllProgresions[element].progressToNextLevel,
                                 valorMaximo: AllProgresions[element].nextLevelAt,
                                 level: AllProgresions[element].level,
-                                logo: "/api"+levelInfo.icon,
+                                logo: "/api" + levelInfo.icon,
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(31, 194, 26)",
@@ -130,7 +131,6 @@ export default function GeneralStats({ membershipType, userId }) {
                             break;
                     }
                 }
-                console.log(rangoVanguardia, rangoCrisol, rangoCompetitivo, rangoPruebas, rangoEstandarte, rangoGambito);
 
                 setTriumphs({
                     Total: reputationRes.data.Response.profileRecords.data.lifetimeScore,
@@ -167,61 +167,75 @@ export default function GeneralStats({ membershipType, userId }) {
         }
     }
 
+    const pages = [
+        ["vanguardia", "crisol"],
+        ["competitivo", "pruebas"],
+        ["estandarte", "gambito"]
+    ];
+
+    const sliderSettings = {
+        dots: false,
+        infinite: false,
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        nextArrow: <img src={caretRight} width={10} height={10} class="custom-arrow" />,
+        prevArrow: <img src={caretLeft} width={10} height={10} class="custom-arrow" />,
+        afterChange: (current) => setPage(current),
+        height: 100,
+    };
+
     return (
         <div>
             <FavouriteActivity membershipType={membershipType} userId={userId} />
             <Commendations membershipType={membershipType} userId={userId} />
             {rango && (
-                <div className="mt-6 bg-gray-300 p-4 rounded-lg">
-                    <h2 className="text-2xl font-semibold">Reputación</h2>
-                    <div className="grid gap-2 grid-rows-3 grid-cols-2 items-center flex">
-                        {Object.keys(rango).map((key) => (
-                            rango[key] && (
-                                <div key={key} className="relative pt-4 justify-center flex space-x-1 items-center">
-                                    {rango[key].logo && (
-                                        <div className="relative w-[60px] h-[60px]">
-                                            <img
-                                                src={rango[key].logo}
-                                                width={60}
-                                                height={60}
-                                                alt={`${rango[key].nombre} logo`}
-                                                className="absolute top-0 left-0 z-10 p-3"
-                                                style={{ filter: rango[key].filtro }}
-                                            />
-                                            <svg className="absolute top-0 left-0" width="100" height="100">
-                                                <circle cx="30" cy="30" r="23" fill="#222222" />
-                                                <circle
-                                                    cx="30"
-                                                    cy="30"
-                                                    r="25"
-                                                    stroke={rango[key].color}
-                                                    strokeWidth="4"
-                                                    fill="none"
-                                                    strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 176`}
-                                                    transform="rotate(-90 30 30)"
-                                                />
-                                            </svg>
+                <div className="mt-6 bg-gray-300 p-4 rounded-lg flex flex-col items-center">
+                    <h2 className="text-2xl font-semibold self-start">Reputación</h2>
+                    <Slider {...sliderSettings} className="w-full max-w-[420px] flex justify-center items-center pt-2 h-[100px]">
+                        {pages.map((pageKeys, index) => (
+                            <div key={index} className="!flex flex-row justify-center gap-4 w-full items-center px-0">
+                                {pageKeys.map((key) => (
+                                    rango[key] && (
+                                        <div key={key} className="relative justify-center flex space-x-1 items-center">
+                                            {rango[key].logo && (
+                                                <div className="relative w-[70px] h-[70px] flex flex-row items-center justify-center">
+                                                    <img
+                                                        src={rango[key].logo}
+                                                        width={70}
+                                                        height={70}
+                                                        alt={`${rango[key].nombre} logo`}
+                                                        className="absolute z-10 p-3"
+                                                    />
+                                                    <svg className="absolute" width="100" height="100">
+                                                        <circle cx="50" cy="50" r="30" fill="#222222" />
+                                                        <circle
+                                                            cx="50"
+                                                            cy="50"
+                                                            r="32"
+                                                            stroke={rango[key].color}
+                                                            strokeWidth="4"
+                                                            fill="none"
+                                                            strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 176`}
+                                                            transform="rotate(-90 50 50)"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                            <div className="text-start leading-5">
+                                                <p>Rango {rango[key].level}</p>
+                                                <p className="font-semibold">{rango[key].stepName}</p>
+                                                <p className="text-sm">{rango[key].valor} ({rango[key].progreso || 0} / {rango[key].valorMaximo || 0})</p>
+                                                <p className="text-sm">{rango[key].resets || 0} reinicios</p>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="text-start">
-                                        <p>Rango {rango[key].level}</p>
-                                        <p className=" font-semibold">{rango[key].stepName}</p>
-                                        <p className="text-sm">{rango[key].valor} ({rango[key].progreso || 0} / {rango[key].valorMaximo || 0})</p>
-                                        <p className="text-sm">{rango[key].resets || 0} reinicios</p>
-                                    </div>
-                                </div>
-                            )
+                                    )
+                                ))}
+                            </div>
                         ))}
-                    </div>
+                    </Slider>
                 </div>
             )}
-            {/*{Triumphs && (
-                <div className="mt-6">
-                    <h2>Triunfos</h2>
-                    <p>Puntuación en total: {Triumphs.Total}</p>
-                    <p>Puntuación en activos: {Triumphs.Active}</p>
-                </div>
-            )}*/}
         </div>
     )
 }

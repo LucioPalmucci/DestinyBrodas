@@ -197,20 +197,20 @@ export default function FavouriteActivity({ membershipType, userId }) {
         <div className="w-fit font-Inter">
             {mostPlayedActivity && charCompl ? (
                 <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})` }}>
-                    <div className="space-y-4 flex flex-col">
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold mb-0 p-0 leading-tight">
+                    <div className="space-y-2 flex flex-col">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
                             Actividad más jugada
                         </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold mb-0 p-0">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold p-0">
                             {mostPlayedActivity.mode}
                         </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 mb-0 p-0">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0">
                             Completiciones: {mostPlayedActivity.completions}<br />
                             Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
                             Bajas: {mostPlayedActivity.kills}<br />
                             Favorita: {mostPlayedActivity.fav}
                         </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 mb-0 p-0 flex space-x-6">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
                             {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
                                 <div className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
                                     <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%

@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import url("https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro");
 
-body{
+body {
     font-family: 'Inter', sans-serif;
     font-size: 16px;
     background-color: #f3f4f6;
     color: #1f2937;
 }
-.emblema{
+
+.emblema {
     font-family: 'Neue Haas Grotesk Text Pro', sans-serif
 }
 
@@ -15,6 +16,7 @@ body{
     font-family: "Destiny Symbols Common";
     src: url(./assets/fonts/destiny_symbols_common.otf) format('opentype');
 }
+
 @font-face {
     font-family: "Destiny Symbols Common 2";
     src: url(./assets/fonts/icomoon.ttf) format('opentype');
@@ -134,7 +136,7 @@ body{
 
 .icon-estasis::before {
     content: "\E139";
-    color:  #4E87FF;
+    color: #4E87FF;
     font-family: "Destiny Symbols Common";
 }
 
@@ -155,7 +157,7 @@ body{
     vertical-align: middle;
 }
 
-.icon-kills::before{
+.icon-kills::before {
     content: "";
     display: inline-block;
     width: 12px;
@@ -166,7 +168,7 @@ body{
     vertical-align: middle;
 }
 
-.icon-kills2::before{
+.icon-kills2::before {
     content: "";
     display: inline-block;
     width: 15px;
@@ -177,12 +179,12 @@ body{
     vertical-align: middle;
 }
 
-.icon-precision::before{
+.icon-precision::before {
     content: "\E142";
     font-family: "Destiny Symbols Common 2";
 }
 
-.icon-clock::before{
+.icon-clock::before {
     content: "";
     display: inline-block;
     width: 15px;
@@ -193,7 +195,7 @@ body{
     vertical-align: middle;
 }
 
-.icon-kills-black::before{
+.icon-kills-black::before {
     content: "";
     display: inline-block;
     width: 12px;
@@ -203,5 +205,14 @@ body{
     background-repeat: no-repeat;
     vertical-align: middle;
 }
+
+.custom-arrow::hover {
+    cursor: pointer;
+    background-color: #000;
+    color: #f3f4f6;
+    padding: 6px;
+}
+
+
 
 @import "tailwindcss";
