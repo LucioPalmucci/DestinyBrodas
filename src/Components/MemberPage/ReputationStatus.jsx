@@ -9,9 +9,8 @@ import "../../index.css";
 import Commendations from "./Commendations";
 import FavouriteActivity from "./FavouriteActivity";
 
-export default function GeneralStats({ membershipType, userId }) {
+export default function ReputationStatus({ membershipType, userId }) {
     const [rango, setRango] = useState(null);
-    const [Triumphs, setTriumphs] = useState(null);
     const [page, setPage] = useState(0);
     const [move, setMove] = useState("next");
 
@@ -32,9 +31,11 @@ export default function GeneralStats({ membershipType, userId }) {
                     }
                 });
 
+                console.log(reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions);
+
                 const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
-                const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390"];
-                let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [];
+                const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390", "198624022", "784742260"];
+                let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [], rangoClanes = [], rangoEngramas = [];
 
                 let levelInfo = {};
                 for (const element of progressions) {
@@ -129,13 +130,38 @@ export default function GeneralStats({ membershipType, userId }) {
                                 filter: "brightness(0) saturate(100%) invert(61%) sepia(48%) saturate(2549%) hue-rotate(74deg) brightness(94%) contrast(94%);"
                             }
                             break;
+                        case "198624022":
+                            levelInfo = await getLogo(AllProgresions[element].stepIndex, "198624022")
+                            rangoClanes = {
+                                valor: AllProgresions[element].currentProgress,
+                                nombre: "Clanes",
+                                progreso: AllProgresions[element].progressToNextLevel,
+                                valorMaximo: AllProgresions[element].nextLevelAt,
+                                level: AllProgresions[element].level,
+                                logo: "/api" + levelInfo.icon,
+                                stepName: levelInfo.stepName,
+                                resets: AllProgresions[element].currentResetCount,
+                                color: "rgb(165, 3, 3)",
+                                filtro: "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);"
+                            }
+                            break;
+                        case "784742260":
+                            levelInfo = await getLogo(AllProgresions[element].stepIndex, "784742260")
+                            rangoEngramas = {
+                                valor: AllProgresions[element].currentProgress,
+                                nombre: "Engramas",
+                                progreso: AllProgresions[element].progressToNextLevel,
+                                valorMaximo: AllProgresions[element].nextLevelAt,
+                                level: AllProgresions[element].level,
+                                logo: "/api" + levelInfo.icon,
+                                stepName: levelInfo.stepName,
+                                resets: AllProgresions[element].currentResetCount,
+                                color: "rgb(253, 195, 36)",
+                                filtro: "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);"
+                            }
+                            break;
                     }
                 }
-
-                setTriumphs({
-                    Total: reputationRes.data.Response.profileRecords.data.lifetimeScore,
-                    Active: reputationRes.data.Response.profileRecords.data.activeScore,
-                });
 
                 setRango({
                     vanguardia: rangoVanguardia,
@@ -144,6 +170,8 @@ export default function GeneralStats({ membershipType, userId }) {
                     pruebas: rangoPruebas,
                     estandarte: rangoEstandarte,
                     gambito: rangoGambito,
+                    clanes: rangoClanes,
+                    engramas: rangoEngramas,
                 })
 
             } catch (error) {
@@ -170,7 +198,8 @@ export default function GeneralStats({ membershipType, userId }) {
     const pages = [
         ["vanguardia", "crisol"],
         ["competitivo", "pruebas"],
-        ["estandarte", "gambito"]
+        ["estandarte", "gambito"],
+        ["clanes", "engramas"],
     ];
 
     const sliderSettings = {
@@ -199,7 +228,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                     rango[key] && (
                                         <div key={key} className="relative justify-center flex space-x-1 items-center">
                                             {rango[key].logo && (
-                                                <div className="relative w-[70px] h-[70px] flex flex-row items-center justify-center">
+                                                <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
                                                     <img
                                                         src={rango[key].logo}
                                                         width={70}
@@ -226,7 +255,7 @@ export default function GeneralStats({ membershipType, userId }) {
                                                 <p>Rango {rango[key].level}</p>
                                                 <p className="font-semibold">{rango[key].stepName}</p>
                                                 <p className="text-sm">{rango[key].valor} ({rango[key].progreso || 0} / {rango[key].valorMaximo || 0})</p>
-                                                <p className="text-sm">{rango[key].resets || 0} reinicios</p>
+                                                {rango[key].resets != null && <p className="text-sm">{rango[key].resets} reinicios</p>}
                                             </div>
                                         </div>
                                     )

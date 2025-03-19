@@ -94,7 +94,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 }
                 setCharCompl(characterCompletions);
 
-                console.log("Char completions", charCompl);
+                //console.log("Char completions", charCompl);
             } catch (error) {
                 console.error(error);
             }
@@ -133,7 +133,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             });
             allActivities = allActivities.concat(activitiesStats.data.Response.activities);
         }
-        console.log("Actividades", allActivities);
+        //console.log("Actividades", allActivities);
         return allActivities;
     }
 

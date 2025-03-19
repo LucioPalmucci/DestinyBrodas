@@ -18,7 +18,7 @@ export default function Commendations( { membershipType, userId }) {
                 console.log(dataHonor);
 
                 setCommendations({
-                    totalScore: dataHonor.totalScore,
+                    totalScore: dataHonor.totalScore.toLocaleString('en-US'),
                     recibidas: dataHonor.scoreDetailValues[1],
                     enviadas: dataHonor.scoreDetailValues[0],
                     verdes: dataHonor.commendationNodePercentagesByHash[154475713],

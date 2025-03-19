@@ -11,8 +11,9 @@ import '../Tabla.css';
 import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
 import FavouriteWeapons from './FavouriteWeapons';
-import GeneralStats from './GeneralStats';
 import ReportLinks from './ReportLinks';
+import ReputationStatus from './ReputationStatus';
+import TriumphScore from './TriumphScore';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
     const [memberDetail, setMemberDetail] = useState(null);
@@ -111,9 +112,9 @@ function MemberDetail() {
 
     return (
         <div>
-            <button className='bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mt-4 ml-4 '>
+            <button className='bg-gray-300 hover:bg-gray-400 font-bold py-2 px-4 rounded mt-4 ml-4 '>
                 <a href='/DestinyBrodas/' className='items-center flex'>
-                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2' style={{ filter: 'invert(100%)' }} />
+                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2'  />
                     Volver al inicio
                 </a>
             </button>
@@ -146,12 +147,13 @@ function MemberDetail() {
                     <div>
                         <div className='flex'>
                             <CurrentActivity type={membershipType} id={membershipId} />
-                            <GeneralStats userId={membershipId} membershipType={membershipType} />
+                            <ReputationStatus userId={membershipId} membershipType={membershipType} />
                         </div>
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
-                        {<ActivityHistory userId={membershipId} membershipType={membershipType} />}
+                        <ActivityHistory userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div>
+                        <TriumphScore userId={membershipId} membershipType={membershipType} />
                     </div>
                 </div>
             </div>
