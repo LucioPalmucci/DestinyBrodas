@@ -17,11 +17,6 @@ export default function TriumphScore({ membershipType, userId }) {
                 Total: response.data.Response.profileRecords.data.lifetimeScore.toLocaleString('en-US'),
                 Active: response.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'),
             });
-
-            //67 completado y reclamado
-            //4 no completado
-            //0 no reclamado
-
         }
         fetchTriumphs();
     }, []);

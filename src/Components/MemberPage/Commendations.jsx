@@ -15,7 +15,7 @@ export default function Commendations( { membershipType, userId }) {
                     }
                 });
                 const dataHonor = commendation.data.Response.profileCommendations.data;
-                console.log(dataHonor);
+                //console.log(dataHonor);
 
                 setCommendations({
                     totalScore: dataHonor.totalScore.toLocaleString('en-US'),

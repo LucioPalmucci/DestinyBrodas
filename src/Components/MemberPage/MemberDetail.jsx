@@ -10,6 +10,7 @@ import Spinner from '../Spinner';
 import '../Tabla.css';
 import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
+import CurrentLodaout from './CurrentLoadout';
 import FavouriteWeapons from './FavouriteWeapons';
 import ReportLinks from './ReportLinks';
 import ReputationStatus from './ReputationStatus';
@@ -142,7 +143,9 @@ function MemberDetail() {
                             </div>
                         </div>
                     )}
+                    <CurrentLodaout userId={membershipId} membershipType={membershipType} />
                 </div>
+
                 <div className='w-3/4 text-start'>
                     <div>
                         <div className='flex'>

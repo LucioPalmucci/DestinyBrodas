@@ -31,7 +31,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                     }
                 });
 
-                console.log(reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions);
+                //console.log(reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions);
 
                 const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
                 const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390", "198624022", "784742260"];
