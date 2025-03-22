@@ -37,6 +37,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                 const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390", "198624022", "784742260"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [], rangoClanes = [], rangoEngramas = [];
 
+                console.log(AllProgresions);
                 let levelInfo = {};
                 for (const element of progressions) {
                     switch (element) {
@@ -52,7 +53,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(63,198,163)",
-                                filtro: "brightness(0) saturate(100%) invert(61%) sepia(70%) saturate(459%) hue-rotate(118deg) brightness(90%) contrast(96%)"
                             }
                             break;
                         case "457612306":
@@ -67,7 +67,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(92,145,184)",
-                                filtro: "brightness(0) saturate(100%) invert(75%) sepia(12%) saturate(5033%) hue-rotate(177deg) brightness(79%) contrast(77%);"
                             }
                             break;
                         case "2083746873":
@@ -82,7 +81,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(209, 94, 87)",
-                                filtro: "brightness(0) saturate(100%) invert(49%) sepia(7%) saturate(4282%) hue-rotate(315deg) brightness(92%) contrast(92%);"
                             }
                             break;
                         case "3696598664":
@@ -97,7 +95,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgba(209, 94, 87, 1)",
-                                filtro: "brightness(0) saturate(100%) invert(49%) sepia(7%) saturate(4282%) hue-rotate(315deg) brightness(92%) contrast(92%);"
                             }
                             break;
                         case "2755675426":
@@ -112,7 +109,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(248, 159, 27)",
-                                filtro: "brightness(0) saturate(100%) invert(67%) sepia(58%) saturate(1177%) hue-rotate(345deg) brightness(99%) contrast(97%);"
                             }
                             break;
                         case "599071390":
@@ -127,7 +123,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(31, 194, 26)",
-                                filter: "brightness(0) saturate(100%) invert(61%) sepia(48%) saturate(2549%) hue-rotate(74deg) brightness(94%) contrast(94%);"
                             }
                             break;
                         case "198624022":
@@ -142,11 +137,11 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(165, 3, 3)",
-                                filtro: "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);"
                             }
                             break;
                         case "784742260":
                             levelInfo = await getLogo(AllProgresions[element].stepIndex, "784742260")
+                            console.log("dsad", AllProgresions[element].stepIndex);
                             rangoEngramas = {
                                 valor: AllProgresions[element].currentProgress,
                                 nombre: "Engramas",
@@ -157,7 +152,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                 stepName: levelInfo.stepName,
                                 resets: AllProgresions[element].currentResetCount,
                                 color: "rgb(253, 195, 36)",
-                                filtro: "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);"
                             }
                             break;
                     }
@@ -189,7 +183,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                 },
             });
 
-            return response.data.Response.steps[progression];
+            return response.data.Response.steps[progression] || response.data.Response.steps[15];
         } catch (error) {
             console.error(error);
         }
@@ -228,6 +222,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                                     rango[key] && (
                                         <div key={key} className="relative justify-center flex space-x-1 items-center">
                                             {rango[key].logo && (
+                                                console.log(rango[key]),
                                                 <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
                                                     <img
                                                         src={rango[key].logo}
@@ -245,7 +240,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                                                             stroke={rango[key].color}
                                                             strokeWidth="4"
                                                             fill="none"
-                                                            strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 176`}
+                                                            strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 189`}
                                                             transform="rotate(-90 50 50)"
                                                         />
                                                     </svg>
