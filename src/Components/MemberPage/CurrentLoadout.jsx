@@ -8,12 +8,11 @@ export default function CurrentLoadout({ membershipType, userId }) {
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             try {
-                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`, {
+                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102&lc=es`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-
                 const characters = responseChar.data.Response.characters.data;
 
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
@@ -22,11 +21,12 @@ export default function CurrentLoadout({ membershipType, userId }) {
 
                 const charID = mostRecentCharacter.characterId;
 
-                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205`, {
+                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
+
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -35,14 +35,32 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         },
                     });
 
-                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=302,304,300,305`, {
+                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,302,304,305`, {
                         headers: {
                             'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                         },
                     });
 
-                    let perks;
-                    if (response.data.Response.equipment.data.items.indexOf(item) === 11) { //Sublcase
+                    let perks = [];
+                    if (response.data.Response.equipment.data.items.indexOf(item) === 16) { //Artifact
+                        const activePerks = response.data.Response.progressions.data.seasonalArtifact.tiers.flatMap(tier =>
+                            tier.items.filter(perk => perk.isActive)
+                        );
+
+                        perks = await Promise.all(activePerks.map(async (perk) => {
+                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
+                                headers: {
+                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                                },
+                            });
+                            return {
+                                ...perk,
+                                name: perkResponse.data.Response.displayProperties.name,
+                                iconPath: perkResponse.data.Response.displayProperties.icon,
+                            };
+                        })) || [];
+
+                    } else if (response.data.Response.equipment.data.items.indexOf(item) === 11) { //Sublcase
                         perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
                             const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
                                 headers: {
@@ -69,6 +87,11 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
                             };
                         }) || []);
+                    }
+
+                    if (response.data.Response.equipment.data.items.indexOf(item) === 11) {
+                        const perkAtIndex2 = perks.splice(2, 1)[0];
+                        perks.unshift(perkAtIndex2);
                     }
 
                     return {
@@ -135,11 +158,13 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                 {[11, 0, 1, 2, 8, 16].map((index) => (
                                     items[index] && (
                                         <div key={index} className="flex items-center justify-end space-x-2">
+                                            <div dir={index == 16 || index == 11 ? "rtl" : ""} className={index == 16 || index == 11 ? "grid grid-cols-9 gap-2 text-right justify-end rtl" : "flex space-x-2"}>
                                             {items[index].perks?.map((perk) => (
-                                                perk.iconPath && perk.name != "Ranura de fragmento vacía" && (
-                                                    <img src={`/api${perk.iconPath}`} width={30} height={30} alt={perk.name} title={perk.name} />
+                                                perk.iconPath && perk.name != "Ranura de fragmento vacía" && !perk.name.includes("Modificadores autorizados") && (
+                                                    <img src={`/api${perk.iconPath}`} className={index == 16 || index == 11 ? "w-[20px] h-[20px] " : "w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
                                                 )
                                             ))}
+                                            </div>
                                             <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} title={items[index].name} />
                                         </div>
                                     )
