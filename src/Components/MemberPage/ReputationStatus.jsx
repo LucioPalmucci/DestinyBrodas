@@ -37,7 +37,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                 const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390", "198624022", "784742260"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [], rangoClanes = [], rangoEngramas = [];
 
-                console.log(AllProgresions);
                 let levelInfo = {};
                 for (const element of progressions) {
                     switch (element) {
@@ -141,7 +140,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                             break;
                         case "784742260":
                             levelInfo = await getLogo(AllProgresions[element].stepIndex, "784742260")
-                            console.log("dsad", AllProgresions[element].stepIndex);
                             rangoEngramas = {
                                 valor: AllProgresions[element].currentProgress,
                                 nombre: "Engramas",
@@ -222,7 +220,6 @@ export default function ReputationStatus({ membershipType, userId }) {
                                     rango[key] && (
                                         <div key={key} className="relative justify-center flex space-x-1 items-center">
                                             {rango[key].logo && (
-                                                console.log(rango[key]),
                                                 <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
                                                     <img
                                                         src={rango[key].logo}
