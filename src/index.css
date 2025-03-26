@@ -213,6 +213,27 @@ body {
     padding: 6px;
 }
 
+.item-wrapper {
+    position: relative;
+    display: inline-block;
+    border: 0.5px solid #FFD700;
+    overflow: hidden;
+}
+
+.masterwork-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 40%;
+    background-image:
+        radial-gradient(ellipse at bottom, #e8a53433, #0000 75%), 
+        radial-gradient(ellipse at bottom, #e8a5341a, #0000 75%);
+    background-size: 100% 100%;
+    box-shadow: inset 0 0 1px 0 #00000040;
+    pointer-events: none;
+}
 
 
 @import "tailwindcss";

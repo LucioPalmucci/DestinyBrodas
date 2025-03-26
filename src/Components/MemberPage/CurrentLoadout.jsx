@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import "../../index.css";
 
 export default function CurrentLoadout({ membershipType, userId }) {
     const [items, setItems] = useState([]);
@@ -30,6 +31,8 @@ export default function CurrentLoadout({ membershipType, userId }) {
 
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
+
+                console.log(response.data.Response.equipment.data.items);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -75,7 +78,6 @@ export default function CurrentLoadout({ membershipType, userId }) {
                             if (perkResponse.data.Response.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
                                 for (const stat of Object.values(perkResponse.data.Response.investmentStats).slice(1)) {
                                     const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
-                                    console.log(baseStat.statHash, stat.statTypeHash);
                                     if (stat.value < 0) {
                                         baseStat.value -= Math.abs(stat.value);
                                     } else {
@@ -97,6 +99,9 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
+
+                            //if(response.data.Response.equipment.data.items.indexOf(item) === 1)console.log(itemD.data.Response, itemResponse.data.Response);
+
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
@@ -137,16 +142,19 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         }
                     }
 
+                    console.log(itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0])
+
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
                         icon: itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
                         perks: perks,
                         stats: armorStats,
+                        masterwork: item.state,
+                        watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || null,
                     };
                 }));
 
-                console.log(itemDetails);
                 setItems(itemDetails);
                 setTotalStats(totalStats);
 
@@ -237,21 +245,39 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         <div className="flex">
                                                             {items[index].perks.slice(7).map((perk, perkIndex) => (
                                                                 perk.name != "Ranura de fragmento vacía" && (
-                                                                <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[20px] h-[20px] mx-1" alt={perk.name} title={perk.name} />
+                                                                    <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[20px] h-[20px] mx-1" alt={perk.name} title={perk.name} />
                                                                 )
                                                             ))}
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     items[index].perks?.map((perk) => (
-                                                        !renderedPerkNames.has(perk.name) && perk.iconPath && perk.name != "Ranura de fragmento vacía" && !perk.name.includes("Modificadores autorizados") && (
+                                                        (index !== 16 || perk.isVisible) && !renderedPerkNames.has(perk.name) && perk.iconPath && perk.name != "Ranura de fragmento vacía" && !perk.name.includes("Modificadores autorizados") && (
                                                             renderedPerkNames.add(perk.name), //Alamcena en un registro para no repetir perks
                                                             <img src={`/api${perk.iconPath}`} className={index == 16 || index == 11 ? "w-[20px] h-[20px] " : "w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
                                                         )
                                                     ))
                                                 )}
                                             </div>
-                                            <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} title={items[index].name} />
+                                            {/*<img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} title={items[index].name} className={items[index].masterwork === 8 || items[index].masterwork === 9 ? "masterwork" : ""}/>*/}
+                                            <div className={`relative ${items[index].masterwork === 8 || items[index].masterwork === 9 ? "masterwork item-wrapper" : ""}`}>
+                                                <img
+                                                    src={`/api${items[index].icon}`}
+                                                    width={50}
+                                                    height={50}
+                                                    alt={items[index].name}
+                                                    title={items[index].name}
+                                                />
+                                                {(items[index].masterwork === 8 || items[index].masterwork === 9) && (
+                                                    <div className="masterwork-overlay masterwork" />
+                                                )}
+                                                {items[index].watermark && (
+                                                    <img
+                                                        src={`/api${items[index].watermark}`}
+                                                        className="absolute bottom-0 right-0 w-[50px] h-[50px] z-50 pointer-events-none"
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
                                     )
                                 ))}
