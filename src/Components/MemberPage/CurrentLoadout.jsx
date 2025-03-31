@@ -34,7 +34,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                console.log("dsds",response.data.Response);
+                console.log("dsds", response.data.Response);
 
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
@@ -425,10 +425,12 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             transition={{ duration: 0.5 }}
                                             className="absolute w-full"
                                         >
-                                            <div className="flex flex-col space-y-4 items-center justify-center py-8 h-[500px]">
-                                                {[9, 10, 12, 13, 14, 15].map((index) => (
-                                                    items[index] && (
-                                                        <div key={index} className="flex items-center space-x-2">
+                                            <div className="flex flex-col space-y-4 items-center justify-center py-4 h-[500px]">
+                                                <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
+                                                    <div className="flex space-x-10 justify-center mx-10">
+                                                    {[9, 10].map((index) => (
+                                                        <div key={index} className="flex mb-4 space-x-2">
                                                             <div className={`relative`}>
                                                                 <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
                                                                 {items[index].watermark && (
@@ -451,8 +453,9 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                 </>
                                                             ))}
                                                         </div>
-                                                    )
-                                                ))}
+                                                    ))}
+                                                    </div>
+                                                </fieldset>
                                             </div>
                                         </motion.div>
                                     )}
