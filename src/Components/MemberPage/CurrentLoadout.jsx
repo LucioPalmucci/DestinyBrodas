@@ -34,7 +34,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                console.log("dsds", response.data.Response);
+
 
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
@@ -102,19 +102,20 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         }
                         ) || []);
                     } else { //Resto de items
-                        perks = await Promise.all(itemD.data.Response.perks.data?.perks?.map(async (perk) => {
-                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${perk.perkHash}/?lc=es`, {
+                        perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
+                            if (!perk.plugHash) return null;
+                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
                                 headers: {
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
-
-                            //if(response.data.Response.equipment.data.items.indexOf(item) === 1)console.log(itemD.data.Response, itemResponse.data.Response);
-
+                            if (response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(perkResponse.data.Response.displayProperties.name, perkResponse.data.Response.plug.plugCategoryIdentifier);
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
+                                perkHash: perkResponse.data.Response.perks[0]?.perkHash,
+                                perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
                             };
                         }) || []);
                     }
@@ -163,9 +164,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) === 14) {
-                        console.log(itemResponse.data.Response, itemD.data.Response);
-                    }
+                    let isArtifice;
+                    if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) sortByArtificePerk(perks);
+                    else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) sortWeaponPerks(perks, itemD.data.Response.perks.data?.perks);
+
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
@@ -174,6 +176,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         stats: armorStats,
                         masterwork: item.state,
                         watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
+                        isArtifice: isArtifice,
                     };
                 }));
 
@@ -197,8 +200,6 @@ export default function CurrentLoadout({ membershipType, userId }) {
             setTimeout(() => setIsVisible(false), 200);
         }
     }, [showPopup]);
-
-    const renderedPerkNames = new Set();
 
     async function getTotalStats(totalStats) {
         const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
@@ -224,6 +225,45 @@ export default function CurrentLoadout({ membershipType, userId }) {
             },
         });
         return cosmetic.data.Response.displayProperties.icon;
+    }
+
+    function sortByArtificePerk(perks) {
+        const artificeIndex = perks.findIndex((perk) => perk?.name?.includes("Forjada con"));
+
+        if (artificeIndex !== -1) {
+            const [artificePerk] = perks.splice(artificeIndex, 1);
+            perks.splice(1, 0, artificePerk);
+            return true;
+        }
+        return false;
+    }
+
+    function sortWeaponPerks(perks) {
+        const order = [
+            "intrinsics",
+            "barrels",
+            "magazines",
+            "frames",
+            "origins",
+            "v400.plugs.weapons.masterworks.trackers",
+            "v400.plugs.weapons.masterworks.stat",
+            "v400.weapon.mod_",
+            "crafting.plugs.weapons.mods.enhancers",
+            "crafting.plugs.weapons.mods.transfusers.level",
+            "mementos",
+            "crafting.recipes.empty_socket",
+            "shader",
+            "exotic_all_skins"
+        ];
+
+        perks.sort((a, b) => {
+            const indexA = order.findIndex(orderItem => a.perkType?.includes(orderItem));
+            const indexB = order.findIndex(orderItem => b.perkType?.includes(orderItem));
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
     }
 
     return (
@@ -264,7 +304,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
                         <div className={`p-4 rounded-lg relative bg-neutral-600 text-white w-[1200px] h-[710px] overflow-auto transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
-                            <div>
+                            <div className="flex flex-col items-center justify-center">
                                 <div className="flex justify-center mt-4">
                                     <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-sm p-2 py-1 ${activeTab === "Equipamento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
                                     <button onClick={() => setActiveTab("Cosmeticos")} className={`cursor-pointer text-sm p-2 py-1 ${activeTab === "Cosmeticos" ? "bg-gray-400" : ""} rounded-lg`}>Cosmeticos</button>
@@ -281,7 +321,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                         >
                                             <div className="flex flex-col space-y-4 items-center justify-center">
                                                 {items[11] && (
-                                                    <div className={`flex justify-center space-x-4 ${items[11].name.includes("prismático") ? "ml-2" : "mr-[32px]"}`}>
+                                                    <div className={`flex justify-center ${items[11].name.includes("prismático") ? "ml-2" : "ml-22"}`}>
                                                         <div className="flex flex-col justify-center items-end">
                                                             <div className="flex mb-2 rtl">
                                                                 {items[11].perks[0] && (
@@ -298,16 +338,14 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         <div className="flex flex-col justify-center">
                                                             <div className="flex mb-2">
                                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
-                                                                    perk.name != "Ranura de fragmento vacía" && (
-                                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
-                                                                    )
+                                                                    <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
+
                                                                 ))}
                                                             </div>
                                                             <div className="flex mb-2">
                                                                 {items[11].perks.slice(7).map((perk, perkIndex) => (
-                                                                    perk.name != "Ranura de fragmento vacía" && (
-                                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
-                                                                    )
+                                                                    <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
+
                                                                 ))}
                                                             </div>
                                                         </div>
@@ -319,12 +357,30 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-end">
                                                                     <div dir={index == 16 ? "rtl" : ""} className={index == 16 ? "grid grid-cols-6 gap-2 text-right justify-end rtl mr-4" : "flex space-x-2 mr-4"}>
-                                                                        {items[index].perks?.map((perk) => (
-                                                                            (index !== 16 || perk.isVisible) && !renderedPerkNames.has(perk.name) && perk.iconPath && !perk.name.includes("Modificadores autorizados") && (
-                                                                                renderedPerkNames.add(perk.name), //Alamcena en un registro para no repetir perks
-                                                                                <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px] " : "w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
-                                                                            )
-                                                                        ))}
+                                                                        {index == 8 || index == 16 ? (
+                                                                            items[index].perks?.map((perk) => (
+                                                                                perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && (
+                                                                                    <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[32px] h-[32px]"} alt={perk.name} title={perk.name} />
+                                                                                )
+                                                                            ))
+                                                                        ) : (
+                                                                            <div className="justify-between space-y-0.5 flex flex-col">
+                                                                                <div className="flex space-x-2 justify-end">
+                                                                                    {items[index].perks?.slice(0, 6).map((perk) => (
+                                                                                        perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[32px] h-[32px]"} alt={perk.name} title={perk.name} />
+                                                                                        )
+                                                                                    ))}
+                                                                                </div>
+                                                                                <div className="flex space-x-2 justify-end">
+                                                                                    {items[index].perks?.slice(6).map((perk) => (
+                                                                                        perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[32px] h-[32px]"} alt={perk.name} title={perk.name} />
+                                                                                        )
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <div className={`relative ${items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4 ? "masterwork item-wrapper" : ""}`}>
                                                                         <img
@@ -389,19 +445,28 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                             />
                                                                         )}
                                                                     </div>
-                                                                    <div className="ml-4 justify-between flex flex-col">
-                                                                        <div className="flex space-x-2">
-                                                                            {items[index].perks?.map((perk) => (
-                                                                                perk.iconPath && perk.isActive && (
-                                                                                    <img src={`/api${perk.iconPath}`} width={32} height={32} alt={perk.name} title={perk.name} />
-                                                                                )
-                                                                            ))}
+                                                                    <div className="ml-4 justify-between space-y-0.5 flex flex-col">
+                                                                        <div className="flex space-x-8">
+                                                                            <div className="flex space-x-2">
+                                                                                {items[index].perks?.slice(0, items[index].isArtifice ? 5 : 4).map((perk) => (
+                                                                                    perk && perk.isVisible && perk.name !== "Mejorar armadura" && (
+                                                                                        <img src={`/api${perk.iconPath}`} width={32} height={32} alt={perk.name} title={perk.name} />
+                                                                                    )
+                                                                                ))}
+                                                                            </div>
+                                                                            <div className="flex space-x-2">
+                                                                                {items[index].perks?.slice(items[index].isArtifice ? 5 : 4).map((perk) => (
+                                                                                    perk && perk.isVisible && perk.name !== "Mejorar armadura" && (
+                                                                                        <img src={`/api${perk.iconPath}`} width={32} height={32} alt={perk.name} title={perk.name} />
+                                                                                    )
+                                                                                ))}
+                                                                            </div>
                                                                         </div>
                                                                         <div className="flex space-x-2">
                                                                             {items[index].stats?.map((stat) => (
                                                                                 stat.iconPath && (
-                                                                                    <p className="flex items-center space-x-2 font-xl font-semibold">
-                                                                                        <img src={`/api${stat.iconPath}`} width={22} height={22} alt={stat.name} title={stat.name} />
+                                                                                    <p className="flex items-center space-x-2 font-lg font-semibold">
+                                                                                        <img src={`/api${stat.iconPath}`} width={18} height={18} alt={stat.name} title={stat.name} />
                                                                                         {stat.value}
                                                                                     </p>
                                                                                 )
@@ -425,43 +490,77 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             transition={{ duration: 0.5 }}
                                             className="absolute w-full"
                                         >
-                                            <div className="flex flex-col space-y-4 items-center justify-center py-4 h-[500px]">
+                                            <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
                                                 <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
                                                     <div className="flex space-x-10 justify-center mx-10">
-                                                    {[9, 10].map((index) => (
-                                                        <div key={index} className="flex mb-4 space-x-2">
-                                                            <div className={`relative`}>
-                                                                <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
-                                                                {items[index].watermark && (
-                                                                    <img
-                                                                        src={`/api${items[index].watermark}`}
-                                                                        className="absolute bottom-0 right-0 w-[50px] h-[50px] z-50 pointer-events-none"
-                                                                    />
+                                                        {[9, 10].map((index) => (
+                                                            <div key={index} className="flex mb-4 space-x-2">
+                                                                <div className={`relative`}>
+                                                                    <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
+                                                                    {items[index].watermark && (
+                                                                        <img
+                                                                            src={`/api${items[index].watermark}`}
+                                                                            className="absolute bottom-0 right-0 w-[50px] h-[50px] z-50 pointer-events-none"
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                {items[index].perks?.map((perk) => (
+                                                                    <>
+                                                                        {perk.iconPath && (
+                                                                            <div className="relative">
+                                                                                <img src={`/api${perk.iconPath}`} width={45} height={45} alt={perk.name} title={perk.name} />
+                                                                                {perk.watermark && (
+                                                                                    <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-50 pointer-events-none" />
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                ))}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </fieldset>
+                                                <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
+                                                    <div className="flex space-x-10 justify-center mx-10">
+                                                        {items[14].perks?.map((perk) => (
+                                                            <div className="flex mb-4 space-x-2">
+                                                                {perk.iconPath && (
+                                                                    <div className="relative">
+                                                                        <img src={`/api${perk.iconPath}`} width={45} height={45} alt={perk.name} title={perk.name} />
+                                                                        {perk.watermark && (
+                                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[45px] h-[45px] z-50 pointer-events-none" />
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            {items[index].perks?.map((perk) => (
-                                                                <>
-                                                                    {perk.iconPath && (
-                                                                        <div className="relative">
-                                                                            <img src={`/api${perk.iconPath}`} width={45} height={45} alt={perk.name} title={perk.name} />
-                                                                            {perk.watermark && (
-                                                                                <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[45px] h-[45px] z-50 pointer-events-none" />
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </>
-                                                            ))}
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
+                                                </fieldset>
+                                                <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
+                                                    <div className="flex space-x-10 justify-center mx-10">
+                                                        {items[15].perks?.map((perk) => (
+                                                            <div className="flex mb-4 space-x-2">
+                                                                {perk.iconPath && (
+                                                                    <div className="relative">
+                                                                        <img src={`/api${perk.iconPath}`} width={45} height={45} alt={perk.name} title={perk.name} />
+                                                                        {perk.watermark && (
+                                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[45px] h-[45px] z-50 pointer-events-none" />
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </fieldset>
                                             </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                <div className="justify-center flex flex-col items-center mt-[520px]">
-                                    <p className="font-semibold text-lg">ESTADISTICAS TOTALES</p>
+                                <div className="justify-center flex flex-col items-center mt-[530px]">
+                                    <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
                                     <div className="flex space-x-2">
                                         {totalStats && totalStats.map((stat) => (
                                             stat.iconPath && (
@@ -477,7 +576,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
         )
     );
 }
