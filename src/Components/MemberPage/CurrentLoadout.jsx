@@ -2,6 +2,7 @@ import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import inventory from "../../assets/inventory.png";
+import masterworkHeader from "../../assets/masterworkHeader.png";
 import "../../index.css";
 
 export default function CurrentLoadout({ membershipType, userId }) {
@@ -14,6 +15,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
     const [activeTab, setActiveTab] = useState("Equipamiento");
     const [selectedWeapon, setSelectedWeapon] = useState(null);
     const [selectedArmor, setSelectedArmor] = useState(null);
+    const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
 
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
@@ -164,13 +166,15 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let isArtifice, tracker;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
                             cosmeticPerks: designPerks
                         };
+                        bgColor = (itemResponse.data.Response.inventory.tierType == 6) ? "#c3a019" : "#513065";
+                        bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                     }
                     else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
@@ -179,9 +183,13 @@ export default function CurrentLoadout({ membershipType, userId }) {
                             cosmeticPerks: cosmeticPerks
                         };
                         tracker = getTrackerKills(perks.cosmeticPerks?.tracker[0]?.plugHash, itemD.data.Response.plugObjectives.data.objectivesPerPlug)
+                        dmgType = await getdmgType(itemResponse.data.Response.defaultDamageTypeHash)
+                        ammo = await getAmmoType(itemResponse.data.Response.equippingBlock.ammoType)
+                        bgColor = (itemResponse.data.Response.inventory.tierType == 6) ? "#c3a019" : "#513065";
+                        bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                     }
 
-                    if(response.data.Response.equipment.data.items.indexOf(item) == 14) console.log(itemD.data.Response, itemResponse.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemD.data.Response, itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -191,12 +199,18 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         stats: armorStats,
                         masterwork: item.state,
                         watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
-                        isArtifice: isArtifice,
                         power: itemD.data.Response.instance?.data?.primaryStat?.value,
                         tracker: tracker,
                         itemHash: item.itemHash,
+                        weaponType: itemResponse.data.Response.itemTypeDisplayName,
+                        dmgType: dmgType,
+                        ammo: ammo,
+                        bgColor: bgColor,
+                        mwHeader: bgMasterwork,
                     };
                 }));
+                //#513065 armas legendaria
+                // #c3a019 armas exoticas
 
                 console.log(itemDetails);
                 setItems(itemDetails);
@@ -219,16 +233,21 @@ export default function CurrentLoadout({ membershipType, userId }) {
         }
     }, [showPopup]);
 
-    const handleWeaponClick = (weapon) => {
+    const handleWeaponClick = (weapon, event) => {
+        const rect = event.target.getBoundingClientRect();
+        setPopupPosition({ top: rect.top - 140, left: rect.right - 308 }); // Posición a la derecha de la imagen
         setSelectedWeapon(weapon);
     };
     const closeWeaponDetails = () => {
         setSelectedWeapon(null);
     };
 
-    const handleArmorClick = (armor) => {
+    const handleArmorClick = (armor, event) => {
+        const rect = event.target.getBoundingClientRect();
+        setPopupPosition({ top: rect.top - 140, left: rect.right - 674 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
-    };
+    }
+
     const closeArmorDetails = () => {
         setSelectedArmor(null);
     };
@@ -337,6 +356,56 @@ export default function CurrentLoadout({ membershipType, userId }) {
         return tracker;
     }
 
+    async function getdmgType(dmgType) {
+        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyDamageTypeDefinition/${dmgType}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        return {
+            name: response.data.Response.displayProperties.name,
+            iconPath: response.data.Response.displayProperties.icon,
+        };
+    }
+
+    async function getAmmoType(ammoType) {
+        switch (ammoType) {
+            case 1: {
+                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/1731162900/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                return {
+                    name: response.data.Response.displayProperties.name,
+                    iconPath: response.data.Response.displayProperties.icon,
+                }
+            }
+            case 2: {
+                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/638914517/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                return {
+                    name: response.data.Response.displayProperties.name,
+                    iconPath: response.data.Response.displayProperties.icon,
+                }
+            }
+            case 3: {
+                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/3686962409/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                return {
+                    name: response.data.Response.displayProperties.name,
+                    iconPath: response.data.Response.displayProperties.icon,
+                }
+            }
+            default: return null;
+        }
+    }
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -375,10 +444,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
                         <div className={`p-4 rounded-lg relative bg-neutral-600 text-white w-[1200px] h-[710px] overflow-auto transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
-                            <div className="flex flex-col items-center justify-center">
+                            <div className="flex flex-col items-center justify-center space-y-4">
                                 <div className="flex justify-center mt-4">
-                                    <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-sm p-2 py-1 ${activeTab === "Equipamento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
-                                    <button onClick={() => setActiveTab("Cosmeticos")} className={`cursor-pointer text-sm p-2 py-1 ${activeTab === "Cosmeticos" ? "bg-gray-400" : ""} rounded-lg`}>Cosmeticos</button>
+                                    <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Equipamento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
+                                    <button onClick={() => setActiveTab("Cosmeticos")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Cosmeticos" ? "bg-gray-400" : ""} rounded-lg`}>Cosmeticos</button>
                                 </div>
                                 <AnimatePresence mode="wait">
                                     {activeTab === "Equipamiento" && (
@@ -444,48 +513,57 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                     ))}
                                                                                 </div>
                                                                                 {selectedWeapon &&
-                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50" onClick={(e) => { closeWeaponDetails(); e.stopPropagation(); }}>
-                                                                                        <div className="bg-neutral-600 p-4 rounded-lg w-fit p-4 text-white relative">
-                                                                                            <h1 className="text-2xl font-semibold flex items-center">
+                                                                                    <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeWeaponDetails()} >
+                                                                                        <div
+                                                                                            className={`p-2 rounded-lg w-[400px] text-white relative`}
+                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", backgroundColor: selectedWeapon.bgColor, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}
+                                                                                            onClick={(e) => e.stopPropagation()}
+                                                                                        >
+                                                                                            <div className="text-2xl font-semibold flex items-center">
                                                                                                 <a href={`https://www.light.gg/db/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300" >{selectedWeapon.name}</a>
                                                                                                 <h1 className='lightlevel ml-2' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                                                                                                     <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.40rem' }} />{selectedWeapon.power}
                                                                                                 </h1>
-                                                                                            </h1>
-                                                                                            <div className="flex space-x-3 p-2 py-4">
-                                                                                                <div className="space-y-1 justify-top flex flex-col items-center w-[177px]">
+                                                                                            </div>
+                                                                                            <div className="flex items-center">
+                                                                                                <p>{selectedWeapon.weaponType}</p>
+                                                                                                <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
+                                                                                                <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
+                                                                                            </div>
+                                                                                            <div className="flex space-x-3 p-2">
+                                                                                                <div className="space-y-1 flex flex-col justify-top space-y-3 items-center w-[177px]">
                                                                                                     <p className="font-semibold text-md">Armazón</p>
                                                                                                     <div className="flex space-x-2">
-                                                                                                    {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
-                                                                                                        perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[50px] h-[50px]"} alt={perk.name} title={perk.name} />
-                                                                                                        )
-                                                                                                    ))}
+                                                                                                        {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
+                                                                                                            perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                            )
+                                                                                                        ))}
                                                                                                     </div>
                                                                                                 </div>
-                                                                                                <div class="border-l border-0.5 border-white/25 h-24 "/>
-                                                                                                <div className="space-y-1 justify-top flex flex-col items-center w-[177px]">
+                                                                                                <div class="border-l border-0.5 border-white/25 h-24 " />
+                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center w-[177px]">
                                                                                                     <p className="font-semibold text-md">Diseño</p>
                                                                                                     <div className="flex space-x-2">
-                                                                                                    {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
-                                                                                                        perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[50px] h-[50px]"} alt={perk.name} title={perk.name} />
-                                                                                                        )
-                                                                                                    ))}
+                                                                                                        {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
+                                                                                                            perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                            )
+                                                                                                        ))}
                                                                                                     </div>
                                                                                                 </div>
-                                                                                                <div class="border-l border-0.5 border-white/25 h-24"/>
-                                                                                                <div className="space-y-1 justify-top flex flex-col items-center w-[177px]">
-                                                                                                    <p className="font-semibold text-md"> {selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos derrotados" : "Guardianes derrotados"} </p>
-                                                                                                    <div className="flex space-x-2">
-                                                                                                    {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
-                                                                                                        perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[50px] h-[50px]"} alt={perk.name} title={perk.name} />
-                                                                                                        )
-                                                                                                    ))}
-                                                                                                    {selectedWeapon.tracker && (
-                                                                                                        <p className="flex items-center space-x-2 text-sm"> {selectedWeapon.tracker} Bajas</p>
-                                                                                                    )}
+                                                                                                <div class="border-l border-0.5 border-white/25 h-24" />
+                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center w-[177px]">
+                                                                                                    <p className="font-semibold text-md">Muertes</p>
+                                                                                                    <div className="flex space-x-1">
+                                                                                                        {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
+                                                                                                            perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                            )
+                                                                                                        ))}
+                                                                                                        {selectedWeapon.tracker && (
+                                                                                                            <p className="flex items-center space-x-2 text-xs"> {selectedWeapon.tracker} {selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos" : "Guardianes"}</p>
+                                                                                                        )}
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
@@ -501,7 +579,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                             height={60}
                                                                             alt={items[index].name}
                                                                             title={items[index].name}
-                                                                            onClick={() => [0, 1, 2].includes(index) && handleWeaponClick(items[index])}
+                                                                            onClick={(e) => [0, 1, 2].includes(index) && handleWeaponClick(items[index], e)}
                                                                             className={`${[0, 1, 2].includes(index) ? "cursor-pointer" : ""} `}
 
                                                                         />
@@ -546,7 +624,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                             height={60}
                                                                             alt={items[index].name}
                                                                             title={items[index].name}
-                                                                            onClick={() => [3, 4, 5, 6, 7].includes(index) && handleArmorClick(items[index])}
+                                                                            onClick={(e) => [3, 4, 5, 6, 7].includes(index) && handleArmorClick(items[index], e)}
                                                                             className="cursor-pointer"
                                                                         />
                                                                         {(items[index].masterwork == 5 || items[index].masterwork == 4) && (
@@ -581,8 +659,12 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                             ))}
                                                                         </div>
                                                                         {selectedArmor &&
-                                                                            <div className="fixed inset-0 flex items-center justify-center z-50" onClick={(e) => { closeArmorDetails(); e.stopPropagation(); }}>
-                                                                                <div className={`bg-neutral-600 p-4 rounded-lg w-fit p-4 text-white relative transition-all duration-200 transform opacity-100 scale-100`}>
+                                                                            <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
+                                                                                <div
+                                                                                    className="bg-neutral-600 p-2 rounded-lg w-[300px] text-white relative"
+                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", backgroundColor: selectedArmor.bgColor, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                >
                                                                                     <h1 className="text-2xl font-semibold flex items-center">
                                                                                         {selectedArmor.name}
                                                                                         <h1 className='lightlevel ml-2' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
@@ -685,7 +767,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                <div className="justify-center flex flex-col items-center mt-[530px]">
+                                <div className="justify-center flex flex-col items-center mt-[540px]">
                                     <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
                                     <div className="flex space-x-2">
                                         {totalStats && totalStats.map((stat) => (
