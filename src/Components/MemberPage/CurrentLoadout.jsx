@@ -112,6 +112,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
+                            //if(response.data.Response.equipment.data.items.indexOf(item) === 1) console.log(perkResponse.data.Response.plug.plugCategoryIdentifier)
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
@@ -166,7 +167,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
@@ -187,9 +188,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         ammo = await getAmmoType(itemResponse.data.Response.equippingBlock.ammoType)
                         bgColor = (itemResponse.data.Response.inventory.tierType == 6) ? "#c3a019" : "#513065";
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
+                        champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemD.data.Response, itemResponse.data.Response);
+                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -207,10 +209,13 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         ammo: ammo,
                         bgColor: bgColor,
                         mwHeader: bgMasterwork,
+                        champmod: champmod,
                     };
                 }));
-                //#513065 armas legendaria
-                // #c3a019 armas exoticas
+                //#3f8e90 champ mod bg for legendary weapons
+                //485622768 antibarrier
+                //3178805705 unstp
+                //2611060930 sobrecarega
 
                 console.log(itemDetails);
                 setItems(itemDetails);
@@ -291,7 +296,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
         const designPerks = perks.filter(perk => design.some(des => perk?.perkType?.includes(des)));
 
         for (const mod of modifierPerks) {
-            if (mod.name.includes("Forjada con")) {
+            if (mod.name.includes("Forjada con") || mod.name.includes("Modificador vacío")) {
                 const index = modifierPerks.indexOf(mod);
                 if (index > -1) {
                     modifierPerks.splice(index, 1); // Remove the perk from its current position
@@ -309,8 +314,14 @@ export default function CurrentLoadout({ membershipType, userId }) {
     function sortWeaponPerks(perks) {
         const modifiers = [
             "barrels",
+            "blades",
+            "bowstrings",
             "magazines",
+            "guards",
+            "arrows",
+            "batteries",
             "frames",
+            "stocks",
             "origins",
             "v400.weapon.mod_",
         ];
@@ -330,10 +341,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
             "v400.plugs.weapons.masterworks.trackers",
         ];
 
-        const modifierPerks = perks.filter(perk => modifiers.some(mod => perk.perkType?.includes(mod)));
-        const archetypePerks = perks.filter(perk => archetype.some(arch => perk.perkType?.includes(arch)));
-        const designPerks = perks.filter(perk => design.some(des => perk.perkType?.includes(des)));
-        const trackerPerks = perks.filter(perk => tracker.some(trk => perk.perkType?.includes(trk)));
+        const modifierPerks = perks.filter(perk => modifiers.some(mod => perk?.perkType?.includes(mod)));
+        const archetypePerks = perks.filter(perk => archetype.some(arch => perk?.perkType?.includes(arch)));
+        const designPerks = perks.filter(perk => design.some(des => perk?.perkType?.includes(des)));
+        const trackerPerks = perks.filter(perk => tracker.some(trk => perk?.perkType?.includes(trk)));
 
         return {
             modifierPerks,
@@ -404,6 +415,77 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 }
             }
             default: return null;
+        }
+    }
+
+    async function getChampMod(item, artifactMods){
+        if(item.breakerType != 0){
+            const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/${item.breakerTypeHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                }
+            });
+            return {
+                name: response.data.Response.displayProperties.name,
+                iconPath: response.data.Response.displayProperties.icon,
+            }
+        }else {
+            const activePerks = artifactMods.flatMap(tier =>
+                tier.items.filter(perk => perk.isActive && perk.isVisible)
+            );
+
+            let perks = await Promise.all(activePerks.map(async (perk) => {
+                const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                return perkResponse.data.Response.displayProperties.name;
+            })) || [];
+
+            let modActivo;
+            for (const perk of perks) {
+                let itemWords = item.itemTypeDisplayName.toLowerCase();
+                if (itemWords.includes("fusil de")) {
+                    itemWords = itemWords.replace("fusil de", "").trim();
+                }
+                console.log(itemWords)
+                const match = perk.toLowerCase().includes(itemWords);
+                if (match) {
+                    console.log("Coincide:", perk, itemWords);
+                    modActivo = perk;
+                }
+            }
+
+            if (modActivo) {
+                let breakerInfo;
+                const text = modActivo.trim().toLowerCase();
+                if (text.includes("imparable")) {
+                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/3178805705/?lc=es`, {
+                        headers: {
+                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                        }
+                    });
+                } else if (text.includes("sobrecarga")) {
+                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/2611060930/?lc=es`, {
+                        headers: {
+                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                        }
+                    });
+                } else if (text.includes("antibarrera") || text.includes("penetrante")) {
+                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/485622768/?lc=es`, {
+                        headers: {
+                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                        }
+                    });
+                }
+            
+                return {
+                    name: breakerInfo?.data.Response.displayProperties.name,
+                    iconPath: breakerInfo?.data.Response.displayProperties.icon,
+                    backgroundColor: "#3f8e90",
+                }
+            }
         }
     }
     return (
@@ -529,6 +611,11 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                                 <p>{selectedWeapon.weaponType}</p>
                                                                                                 <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
                                                                                                 <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
+                                                                                                {selectedWeapon.champmod && (
+                                                                                                    <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
+                                                                                                        <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[20px] h-[20px]" title={selectedWeapon.champmod.name} />
+                                                                                                    </div>
+                                                                                                )}
                                                                                             </div>
                                                                                             <div className="flex space-x-3 p-2">
                                                                                                 <div className="space-y-1 flex flex-col justify-top space-y-3 items-center w-[177px]">
