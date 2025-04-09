@@ -16,6 +16,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
     const [selectedWeapon, setSelectedWeapon] = useState(null);
     const [selectedArmor, setSelectedArmor] = useState(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+    const [emblems, setEmblems] = useState(null);
 
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
@@ -41,6 +42,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
 
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
+                await getOtherEmblems(characters);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -191,7 +193,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                     }
 
-                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 15) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -449,10 +451,8 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 if (itemWords.includes("fusil de")) {
                     itemWords = itemWords.replace("fusil de", "").trim();
                 }
-                console.log(itemWords)
                 const match = perk.toLowerCase().includes(itemWords);
                 if (match) {
-                    console.log("Coincide:", perk, itemWords);
                     modActivo = perk;
                 }
             }
@@ -521,6 +521,39 @@ export default function CurrentLoadout({ membershipType, userId }) {
             rgb: color,
             rgba: colorRGBA,
         };
+    }
+
+    async function getOtherEmblems(characters) {
+        let emblems, classe;
+        console.log(characters);
+        const emblemPromises = Object.values(characters).map(async (char) => {
+            const rep = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${char.characterId}/?components=205`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            const emblem = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${rep.data.Response.equipment.data.items[13].itemHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            switch (char.classType) {
+                case 0: classe = "Titán"; break;
+                case 1: classe = "Cazador"; break;
+                case 2: classe = "Hechicero"; break;
+            }
+
+            return {
+                name: emblem.data.Response.displayProperties.name,
+                iconPath: emblem.data.Response.displayProperties.icon,
+                class: classe,
+            };
+        });
+
+        emblems = await Promise.all(emblemPromises);
+        setEmblems(emblems);
     }
     return (
         totalStats && background && items && (
@@ -824,7 +857,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             className="absolute w-full"
                                         >
                                             <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
-                                                <fieldset className="flex flex-col border-2 py-10 rounded-lg w-fit z-0 text-start">
+                                                <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
                                                     <div className="flex justify-center mx-6 space-x-6">
                                                         {[9, 10].map((index) => (
@@ -854,7 +887,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         ))}
                                                     </div>
                                                 </fieldset>
-                                                <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
                                                     <div className="flex space-x-10 justify-center mx-10">
                                                         {items[14].perks?.map((perk) => (
@@ -871,17 +904,32 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         ))}
                                                     </div>
                                                 </fieldset>
-                                                <fieldset className="flex flex-col border-2 py-10 px-4 rounded-lg w-fit z-0 text-start">
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
-                                                    <div className="flex space-x-10 justify-center mx-4">
+                                                    <div className="flex space-x-8 justify-center mx-6">
                                                         {items[15].perks?.map((perk) => (
-                                                            <div className="flex mb-4 space-x-2">
+                                                            <div className="flex mb-4 ">
                                                                 {perk.iconPath && (
                                                                     <div className="relative">
                                                                         <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} title={perk.name} />
                                                                         {perk.watermark && (
                                                                             <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
                                                                         )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </fieldset>
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
+                                                    <div className="flex space-x-10 justify-evenly mx-4 pb-3">
+                                                        {emblems.map((emblem) => (
+                                                            <div className="flex flex-col mb-4 justify-center items-center">
+                                                                <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
+                                                                {emblem.iconPath && (
+                                                                    <div className={`relative ${emblem.name === items[13]?.name ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
+                                                                        <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} title={emblem.name} />
                                                                     </div>
                                                                 )}
                                                             </div>
