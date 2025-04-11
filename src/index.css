@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://blogfonts.com/css/aWQ9MTMxMjY3JnN1Yj0yNjcmYz1oJnR0Zj1ITEhJLnR0ZiZuPWhlbHZldGljYS02NS1tZWRpdW0tMw/Helvetica 65 Medium.ttf');
 @import url("https://db.onlinewebfonts.com/c/6e47ef470dd19698c911332a9b4d1cf4?family=Neue+Haas+Grotesk+Text+Pro");
 
 body {
@@ -20,6 +21,15 @@ body {
 @font-face {
     font-family: "Destiny Symbols Common 2";
     src: url(./assets/fonts/icomoon.ttf) format('opentype');
+}
+
+@font-face {
+    font-family: "Destiny Symbols Common Braytech";
+    src: url(./assets/fonts/Braytech-Symbols.353470fdcd26b36f49c0.woff2) format('opentype');
+}
+
+.titulo {
+    font-family: 'helvetica-65-medium-3', sans-serif;
 }
 
 .icon-AutoRifle::before {
@@ -182,6 +192,11 @@ body {
 .icon-precision::before {
     content: "\E142";
     font-family: "Destiny Symbols Common 2";
+}
+
+.icon-gilded::before{
+    content: "\E147";
+    font-family: "Destiny Symbols Common Braytech";
 }
 
 .icon-clock::before {

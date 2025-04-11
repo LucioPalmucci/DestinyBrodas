@@ -17,6 +17,8 @@ export default function CurrentLoadout({ membershipType, userId }) {
     const [selectedArmor, setSelectedArmor] = useState(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [emblems, setEmblems] = useState(null);
+    const [seal, setSeal] = useState(null);
+    const [sealGilded, setSealGilded] = useState(null);
 
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
@@ -27,7 +29,9 @@ export default function CurrentLoadout({ membershipType, userId }) {
                     },
                 });
                 const characters = responseChar.data.Response.characters.data;
+                console.log("chars", characters)
 
+                //0 masculino, 1 femenino
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
@@ -43,6 +47,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters);
+                await getSeal(mostRecentCharacter);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -525,7 +530,6 @@ export default function CurrentLoadout({ membershipType, userId }) {
 
     async function getOtherEmblems(characters) {
         let emblems, classe;
-        console.log(characters);
         const emblemPromises = Object.values(characters).map(async (char) => {
             const rep = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${char.characterId}/?components=205`, {
                 headers: {
@@ -540,9 +544,15 @@ export default function CurrentLoadout({ membershipType, userId }) {
             });
 
             switch (char.classType) {
-                case 0: classe = "Titán"; break;
-                case 1: classe = "Cazador"; break;
-                case 2: classe = "Hechicero"; break;
+                case 0:
+                    classe = "Titán";
+                    break;
+                case 1:
+                    classe = char.genderType === 0 ? "Cazador" : "Cazadora";
+                    break;
+                case 2:
+                    classe = char.genderType === 0 ? "Hechicero" : "Hechicera";
+                    break;
             }
 
             return {
@@ -554,6 +564,27 @@ export default function CurrentLoadout({ membershipType, userId }) {
 
         emblems = await Promise.all(emblemPromises);
         setEmblems(emblems);
+    }
+
+    async function getSeal(char) {
+        if (char.titleRecordHash == null) return;
+        const sealResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyRecordDefinition/${char.titleRecordHash}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            }
+        });
+
+
+        const allseals = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        setSeal({
+            name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
+            iconPath: sealResponse.data.Response.displayProperties.icon,
+            timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
+        });
     }
     return (
         totalStats && background && items && (
@@ -591,11 +622,11 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white w-[1200px] h-[710px] overflow-auto transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white w-[1200px] h-[710px] overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <div className="flex justify-center mt-4">
-                                    <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Equipamento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
+                                    <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Equipamiento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
                                     <button onClick={() => setActiveTab("Cosmeticos")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Cosmeticos" ? "bg-gray-400" : ""} rounded-lg`}>Cosmeticos</button>
                                 </div>
                                 <AnimatePresence mode="wait">
@@ -604,7 +635,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             key="Equipamiento"
                                             initial={{ x: "-100%", opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
-                                            exit={{ x: "100%", opacity: 0 }}
+                                            exit={{ x: "-100%", opacity: 0 }}
                                             transition={{ duration: 0.5 }}
                                             className="absolute w-full justify-center flex"
                                         >
@@ -852,9 +883,9 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             key="Cosmeticos"
                                             initial={{ x: "100%", opacity: 0 }}
                                             animate={{ x: 0, opacity: 1 }}
-                                            exit={{ x: "-100%", opacity: 0 }}
+                                            exit={{ x: "100%", opacity: 0 }}
                                             transition={{ duration: 0.5 }}
-                                            className="absolute w-full"
+                                            className="absolute w-full justify-center flex"
                                         >
                                             <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
                                                 <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
@@ -888,20 +919,25 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                     </div>
                                                 </fieldset>
                                                 <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
-                                                    <div className="flex space-x-10 justify-center mx-10">
-                                                        {items[14].perks?.map((perk) => (
-                                                            <div className="flex mb-4 space-x-2">
-                                                                {perk.iconPath && (
-                                                                    <div className="relative">
-                                                                        <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} title={perk.name} />
-                                                                        {perk.watermark && (
-                                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
-                                                                        )}
-                                                                    </div>
-                                                                )}
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
+                                                    <div className="justify-center items-center flex w-full">
+                                                        {seal && (
+                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5">
+                                                                <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
+                                                                <div
+                                                                    className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px] relative"
+                                                                    style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
+                                                                >
+                                                                    <p className="tracking-[0.2em] text-xs uppercase titulo">{seal.name}</p>
+                                                                    {seal.timesGilded && seal.timesGilded > 0 && (
+                                                                        <div className="flex items-center ml-1">
+                                                                            <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
+                                                                            <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{seal.timesGilded}</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        ))}
+                                                        )}
                                                     </div>
                                                 </fieldset>
                                                 <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
@@ -925,7 +961,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
                                                     <div className="flex space-x-10 justify-evenly mx-4 pb-3">
                                                         {emblems.map((emblem) => (
-                                                            <div className="flex flex-col mb-4 justify-center items-center">
+                                                            <div className="flex flex-col mb-5 justify-center items-center">
                                                                 <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
                                                                 {emblem.iconPath && (
                                                                     <div className={`relative ${emblem.name === items[13]?.name ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
