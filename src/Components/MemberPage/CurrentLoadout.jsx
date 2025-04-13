@@ -29,7 +29,6 @@ export default function CurrentLoadout({ membershipType, userId }) {
                     },
                 });
                 const characters = responseChar.data.Response.characters.data;
-                console.log("chars", characters)
 
                 //0 masculino, 1 femenino
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
@@ -198,7 +197,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 15) console.log(itemResponse.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -217,6 +216,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         bgColor: bgColor,
                         mwHeader: bgMasterwork,
                         champmod: champmod,
+                        craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
                     };
                 }));
 
@@ -773,7 +773,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                         {(items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4) && (
                                                                             <div className="masterwork-overlay" />
                                                                         )}
-                                                                        {(items[index].masterwork === 8 || items[index].masterwork === 9) && (
+                                                                        {(items[index].craftedenchanced?.includes("info") || items[index].craftedenchanced?.includes("deepsight")) && (
                                                                             <div className="craftedshadow" />
                                                                         )}
                                                                         {items[index].watermark && (
@@ -785,12 +785,12 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                         {(items[index].rarity === 6 && (items[index].masterwork == 5 || items[index].masterwork == 4)) && (
                                                                             <div className="exotic-masterwork" />
                                                                         )}
-                                                                        {items[index].masterwork === 8 && (
+                                                                        {items[index].craftedenchanced?.includes("deepsight") && (
                                                                             <svg width="12" height="12" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
                                                                                 <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
                                                                             </svg>
                                                                         )}
-                                                                        {items[index].masterwork === 9 && (
+                                                                        {items[index].craftedenchanced?.includes("info") && (
                                                                             <svg width="15" height="15" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
                                                                                 <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
                                                                             </svg>
