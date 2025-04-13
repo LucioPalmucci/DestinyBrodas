@@ -622,7 +622,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white w-[1200px] h-[710px] overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <div className="flex justify-center mt-4">
@@ -731,10 +731,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                                 <div class="border-l border-0.5 border-white/25 h-24 " />
                                                                                                 <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center w-[177px]">
                                                                                                     <p className="font-semibold text-md">Diseño</p>
-                                                                                                    <div className="flex space-x-2">
+                                                                                                    <div className="flex space-x-2 w-fit mt-1">
                                                                                                         {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
                                                                                                             perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                                <img src={`/api${perk.iconPath}`} className={"max-w-[35px] max-h-[35px]"} alt={perk.name} title={perk.name} />
                                                                                                             )
                                                                                                         ))}
                                                                                                     </div>
