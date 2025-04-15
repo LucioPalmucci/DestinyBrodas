@@ -125,6 +125,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
+                                isEnhanced: perkResponse.data.Response.itemTypeDisplayName,
                             };
                         }) || []);
                     }
@@ -197,7 +198,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response);
+                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -344,7 +345,15 @@ export default function CurrentLoadout({ membershipType, userId }) {
             "v400.plugs.weapons.masterworks.trackers",
         ];
 
-        const modifierPerks = perks.filter(perk => modifiers.some(mod => perk?.perkType?.includes(mod)));
+        let modifierPerks = perks.filter(perk => modifiers.some(mod => perk?.perkType?.includes(mod)));
+
+        // Mover los perks de tipo "v400.weapon.mod_" al final
+        modifierPerks = modifierPerks.sort((a, b) => {
+            const isAWeaponMod = a.perkType?.includes("v400.weapon.mod_") ? 1 : 0;
+            const isBWeaponMod = b.perkType?.includes("v400.weapon.mod_") ? 1 : 0;
+            return isAWeaponMod - isBWeaponMod;
+        });
+
         const archetypePerks = perks.filter(perk => archetype.some(arch => perk?.perkType?.includes(arch)));
         const designPerks = perks.filter(perk => design.some(des => perk?.perkType?.includes(des)));
         const trackerPerks = perks.filter(perk => tracker.some(trk => perk?.perkType?.includes(trk)));
@@ -622,7 +631,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
                             <div className="flex flex-col items-center justify-center space-y-4">
                                 <div className="flex justify-center mt-4">
@@ -688,7 +697,32 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                 <div className="flex space-x-2 justify-end">
                                                                                     {items[index].perks.modifierPerks.map((perk) => (
                                                                                         perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[35px] h-[35px]"} alt={perk.name} title={perk.name} />
+                                                                                            !perk.perkType?.includes("v400.weapon.mod_") ? (<div key={perk.perkHash}>
+                                                                                                <svg viewBox="0 0 100 100" width="40" height="40">
+                                                                                                    <defs>
+                                                                                                        <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
+                                                                                                            <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
+                                                                                                            <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                                        </linearGradient>
+                                                                                                    </defs>
+                                                                                                    <mask id="mask">
+                                                                                                        <rect x="0" y="0" width="100" height="100" fill="black"></rect>
+                                                                                                        <circle cx="50" cy="50" r="46" fill="white"></circle>
+                                                                                                    </mask>
+                                                                                                    <circle cx="50" cy="50" r="48" style={{fill: "#4887ba"}}></circle>
+                                                                                                    {perk.isEnhanced == "Rasgo mejorado" && (
+                                                                                                        <>
+                                                                                                            <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
+                                                                                                            <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
+                                                                                                            <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                    <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                                                    <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                                                </svg>
+                                                                                            </div>) : (
+                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                            )
                                                                                         )
                                                                                     ))}
                                                                                 </div>
