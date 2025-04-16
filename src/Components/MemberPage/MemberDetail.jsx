@@ -143,7 +143,7 @@ function MemberDetail() {
                             </div>
                         </div>
                     )}
-                    <CurrentLodaout userId={membershipId} membershipType={membershipType} />
+                    <CurrentLodaout userId={membershipId} membershipType={membershipType} emblem={emblemBackgroundPath} />
                 </div>
 
                 <div className='w-3/4 text-start'>

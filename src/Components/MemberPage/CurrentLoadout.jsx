@@ -5,7 +5,7 @@ import inventory from "../../assets/inventory.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import "../../index.css";
 
-export default function CurrentLoadout({ membershipType, userId }) {
+export default function CurrentLoadout({ membershipType, userId, emblem }) {
     const [items, setItems] = useState([]);
     const [totalStats, setTotalStats] = useState([]);
     const [background, setBackground] = useState(null);
@@ -18,8 +18,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [emblems, setEmblems] = useState(null);
     const [seal, setSeal] = useState(null);
-    const [sealGilded, setSealGilded] = useState(null);
-
+    const [emblemElements, setEmblemElements] = useState(null);
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             try {
@@ -47,6 +46,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters);
                 await getSeal(mostRecentCharacter);
+                await getEmblemElements(mostRecentCharacter.emblemHash);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -199,7 +199,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemD.data.Response);
+                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -607,6 +607,18 @@ export default function CurrentLoadout({ membershipType, userId }) {
         }
         return null;
     }
+
+    async function getEmblemElements(emblemHash) {
+        const emblemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            }
+        })
+        setEmblemElements({
+            icon: emblemResponse.data.Response.secondaryOverlay,
+            bg: emblemResponse.data.Response.secondarySpecial,
+        });
+    }
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -643,12 +655,14 @@ export default function CurrentLoadout({ membershipType, userId }) {
                 <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={`p-4 rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => setShowPopup(false)} className="absolute cursor-pointer top-2 right-2 text-gray-500 hover:text-gray-300"> &times; </button>
-                            <div className="flex flex-col items-center justify-center space-y-4">
-                                <div className="flex justify-center mt-4">
-                                    <button onClick={() => setActiveTab("Equipamiento")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Equipamiento" ? "bg-gray-400" : ""} rounded-lg`}>Equipamento</button>
-                                    <button onClick={() => setActiveTab("Cosmeticos")} className={`cursor-pointer text-md p-2 py-1 ${activeTab === "Cosmeticos" ? "bg-gray-400" : ""} rounded-lg`}>Cosmeticos</button>
+                        <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
+                                    <img src={`/api${emblemElements.icon}`} style={{ transform: "translateY(22%)", width: "5.6%" }} className="ml-12" />
+                                    <div className="flex space-x-4 mr-12">
+                                        <button onClick={() => setActiveTab("Equipamiento")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Equipamiento" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Equipamiento</button>
+                                        <button onClick={() => setActiveTab("Cosmeticos")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Cosmeticos" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Cosméticos</button>
+                                    </div>
                                 </div>
                                 <AnimatePresence mode="wait">
                                     {activeTab === "Equipamiento" && (
@@ -658,7 +672,8 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             animate={{ x: 0, opacity: 1 }}
                                             exit={{ x: "-100%", opacity: 0 }}
                                             transition={{ duration: 0.5 }}
-                                            className="absolute w-full justify-center flex"
+                                            className="w-full justify-center flex items-center"
+                                            style={{ height: "100%" }}
                                         >
                                             <div className="flex flex-col space-y-4 items-center justify-center w-full">
                                                 {items[11] && (
@@ -757,11 +772,11 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                                         <p>{selectedWeapon.weaponType}</p>
                                                                                                         <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
                                                                                                         <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
-                                                                                                    {selectedWeapon.champmod && (
-                                                                                                        <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
-                                                                                                            <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
-                                                                                                        </div>
-                                                                                                    )}
+                                                                                                        {selectedWeapon.champmod && (
+                                                                                                            <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
+                                                                                                                <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
+                                                                                                            </div>
+                                                                                                        )}
                                                                                                     </div>
                                                                                                     {selectedWeapon.weaponLevel && <div className="text-sm mt-[3px] flex items-center">Nv. {selectedWeapon.weaponLevel}</div>}
                                                                                                 </div>
@@ -924,6 +939,19 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         ))}
                                                     </div>
                                                 </div>
+                                                <div className="justify-center flex flex-col items-center">
+                                                    <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
+                                                    <div className="flex space-x-2">
+                                                        {totalStats && totalStats.map((stat) => (
+                                                            stat.iconPath && (
+                                                                <p key={stat.statHash} className="flex items-center space-x-2">
+                                                                    <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
+                                                                    {stat.value}
+                                                                </p>
+                                                            )
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </motion.div>
                                     )}
@@ -934,7 +962,8 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                             animate={{ x: 0, opacity: 1 }}
                                             exit={{ x: "100%", opacity: 0 }}
                                             transition={{ duration: 0.5 }}
-                                            className="absolute w-full justify-center flex"
+                                            className="w-full justify-center flex items-center"
+                                            style={{ height: "100%" }}
                                         >
                                             <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
                                                 <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
@@ -1025,19 +1054,6 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                <div className="justify-center flex flex-col items-center mt-[540px]">
-                                    <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
-                                    <div className="flex space-x-2">
-                                        {totalStats && totalStats.map((stat) => (
-                                            stat.iconPath && (
-                                                <p key={stat.statHash} className="flex items-center space-x-2">
-                                                    <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
-                                                    {stat.value}
-                                                </p>
-                                            )
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
