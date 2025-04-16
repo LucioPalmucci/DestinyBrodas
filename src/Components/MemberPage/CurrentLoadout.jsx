@@ -174,7 +174,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
@@ -196,9 +196,10 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
+                        weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
                     }
 
-                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -218,6 +219,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                         mwHeader: bgMasterwork,
                         champmod: champmod,
                         craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
+                        weaponLevel: weaponLevel,
                     };
                 }));
 
@@ -595,6 +597,16 @@ export default function CurrentLoadout({ membershipType, userId }) {
             timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
     }
+
+    function getWeaponLevel(objectivesPerPlug) {
+        for (const objective of Object.values(objectivesPerPlug)) {
+            const subObjective = objective.find(sub => sub.objectiveHash === 3077315735);
+            if (subObjective) {
+                return subObjective.progress;
+            }
+        }
+        return null;
+    }
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -680,7 +692,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                         </div>
                                                     </div>
                                                 )}
-                                                <div className="flex h-[400px] justify-center w-full ">
+                                                <div className="flex h-[400px] justify-center w-full">
                                                     <div className="flex flex-col justify-between mr-4">
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
@@ -709,7 +721,7 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                                         <rect x="0" y="0" width="100" height="100" fill="black"></rect>
                                                                                                         <circle cx="50" cy="50" r="46" fill="white"></circle>
                                                                                                     </mask>
-                                                                                                    <circle cx="50" cy="50" r="48" style={{fill: "#4887ba"}}></circle>
+                                                                                                    <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
                                                                                                     {perk.isEnhanced == "Rasgo mejorado" && (
                                                                                                         <>
                                                                                                             <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
@@ -740,15 +752,18 @@ export default function CurrentLoadout({ membershipType, userId }) {
                                                                                                         <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.40rem' }} />{selectedWeapon.power}
                                                                                                     </h1>
                                                                                                 </div>
-                                                                                                <div className="flex items-center">
-                                                                                                    <p>{selectedWeapon.weaponType}</p>
-                                                                                                    <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
-                                                                                                    <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
+                                                                                                <div className="flex items-center justify-between">
+                                                                                                    <div className="flex items-center">
+                                                                                                        <p>{selectedWeapon.weaponType}</p>
+                                                                                                        <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
+                                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
                                                                                                     {selectedWeapon.champmod && (
                                                                                                         <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
                                                                                                             <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
                                                                                                         </div>
                                                                                                     )}
+                                                                                                    </div>
+                                                                                                    {selectedWeapon.weaponLevel && <div className="text-sm mt-[3px] flex items-center">Nv. {selectedWeapon.weaponLevel}</div>}
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div className="flex space-x-3 p-2 rounded-b-lg" style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
