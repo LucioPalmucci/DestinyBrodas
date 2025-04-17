@@ -5,7 +5,7 @@ import inventory from "../../assets/inventory.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import "../../index.css";
 
-export default function CurrentLoadout({ membershipType, userId, emblem }) {
+export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
     const [totalStats, setTotalStats] = useState([]);
     const [background, setBackground] = useState(null);
@@ -19,10 +19,13 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
     const [emblems, setEmblems] = useState(null);
     const [seal, setSeal] = useState(null);
     const [emblemElements, setEmblemElements] = useState(null);
+    const [season, setSeason] = useState(null);
+    const [Passlevel, setPassLevel] = useState(null);
+    const [triumphRecord, setTriumphRecord] = useState(null);
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             try {
-                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102&lc=es`, {
+                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
@@ -42,11 +45,13 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
                     },
                 });
 
+                console.log("Char", responseChar.data.Response);
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters);
                 await getSeal(mostRecentCharacter);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
+                const seasonProgress = await getCurrentSeason(seasonHash);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -199,7 +204,7 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
                         weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
                     }
 
-                    //if (response.data.Response.equipment.data.items.indexOf(item) == 1 || response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemD.data.Response);
+                    //if (response.data.Response.equipment.data.items.indexOf(item) == 16) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -223,6 +228,8 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
                     };
                 }));
 
+                setPassLevel(responseChar.data.Response.metrics.data.metrics[seasonProgress]?.objectiveProgress?.progress);
+                setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore);
                 console.log(itemDetails);
                 setItems(itemDetails);
                 setTotalStats(totalStats);
@@ -619,6 +626,30 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
             bg: emblemResponse.data.Response.secondarySpecial,
         });
     }
+
+    async function getCurrentSeason(seasonHash) {
+        const seasonResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySeasonDefinition/${seasonHash}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            }
+        })
+        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
+        const metricsData = await axios.get(`/api${manifestUrl}`);
+        console.log(seasonResponse.data.Response.displayProperties.name)
+
+        // Buscar la métrica que coincida con el nombre de la temporada
+        const matchingMetric = Object.values(metricsData.data).find(metric =>
+            metric.displayProperties.name.toLowerCase().includes(seasonResponse.data.Response.displayProperties.name.toLowerCase())
+        );
+        setSeason(seasonResponse.data.Response.seasonNumber);
+
+        return matchingMetric.hash;
+    }
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -658,7 +689,24 @@ export default function CurrentLoadout({ membershipType, userId, emblem }) {
                         <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center justify-center h-full">
                                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
-                                    <img src={`/api${emblemElements.icon}`} style={{ transform: "translateY(22%)", width: "5.6%" }} className="ml-12" />
+                                    <div className="flex items-center ml-12" style={{ transform: "translateY(22%)" }}>
+                                        <img src={`/api${emblemElements.icon}`} style={{ width: "80%" }} />
+                                        <div className="flex flex-col ml-4">
+                                            <h2 className="text-2xl font-semibold">{name}</h2>
+                                            <div className="flex flex-row items-center space-x-4">
+                                                <p className="font-semibold">{rank}</p>
+                                                <p className="font-semibold flex flex-row items-center">
+                                                    <span>Temporada</span>
+                                                    <span className="ml-1">{season}</span>
+                                                </p>
+                                                <h1 className='lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.20rem' }} />{light}
+                                                </h1>
+                                                <p>{Passlevel}</p>
+                                                <p>{triumphRecord}</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="flex space-x-4 mr-12">
                                         <button onClick={() => setActiveTab("Equipamiento")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Equipamiento" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Equipamiento</button>
                                         <button onClick={() => setActiveTab("Cosmeticos")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Cosmeticos" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Cosméticos</button>

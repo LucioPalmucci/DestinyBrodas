@@ -61,9 +61,10 @@ function MemberDetail() {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
+                console.log(responseProfile.data.Response)
                 setMemberDetail(responseProfile.data.Response);
                 setUserMemberships(membershipsResponse.data.Response);
-                setGuardianRank(guardianRankResponse.data.Response.displayProperties.name);
+                setGuardianRank(guardianRankResponse.data.Response);
                 setCurrentLight(await getEquippedEmblem(member, "CharacterPower"));
                 setEmblem(await getEquippedEmblem(member, "Large"));
                 const clase = await getEquippedEmblem(member, "CharacterClass");
@@ -131,7 +132,7 @@ function MemberDetail() {
                             <div className='ml-1 items-center'>
                                 <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
                                 <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
-                                    <img src={`${import.meta.env.BASE_URL}/levels/${memberDetail.profile.data.currentGuardianRank}.fw.png`} className='w-6 h-6 mr-1' />{guardianRank}
+                                    <img src={`${import.meta.env.BASE_URL}/levels/${memberDetail.profile.data.currentGuardianRank}.fw.png`} className='w-6 h-6 mr-1' />{guardianRank.displayProperties.name}
                                 </h1>
                                 <h1 className='font-extralight tracking-wide text-gray-200 text-xl opacity-50'>BRODAS</h1>
                             </div>
@@ -143,7 +144,7 @@ function MemberDetail() {
                             </div>
                         </div>
                     )}
-                    <CurrentLodaout userId={membershipId} membershipType={membershipType} emblem={emblemBackgroundPath} />
+                    <CurrentLodaout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
                 </div>
 
                 <div className='w-3/4 text-start'>
