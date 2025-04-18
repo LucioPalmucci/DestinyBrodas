@@ -61,7 +61,7 @@ function MemberDetail() {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                console.log(responseProfile.data.Response)
+                //console.log(responseProfile.data.Response)
                 setMemberDetail(responseProfile.data.Response);
                 setUserMemberships(membershipsResponse.data.Response);
                 setGuardianRank(guardianRankResponse.data.Response);

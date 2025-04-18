@@ -38,6 +38,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 });
 
                 const charID = mostRecentCharacter.characterId;
+                const classType = mostRecentCharacter.classType;
 
                 const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`, {
                     headers: {
@@ -45,13 +46,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     },
                 });
 
-                console.log("Char", responseChar.data.Response);
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters);
                 await getSeal(mostRecentCharacter);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 const seasonProgress = await getCurrentSeason(seasonHash);
+                console.log(totalStats);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -97,7 +98,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 },
                             });
                             if (perkResponse.data.Response.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                for (const stat of Object.values(perkResponse.data.Response.investmentStats).slice(1)) {
+                                if(perkResponse.data.Response.hash == 2272984671 || perkResponse.data.Response.hash == 1727069360) { //Si es un fragmento de clase
+                                    switch (classType) {
+                                        case 0: //Titan resto resistencia
+                                            totalStats[1].value -= Math.abs(perkResponse.data.Response.investmentStats[3].value);
+                                            break;
+                                        case 1: //Cazador resto movilidad
+                                            totalStats[4].value -= Math.abs(perkResponse.data.Response.investmentStats[2].value);
+                                            break;
+                                        case 2: //Hechicero resto recuperacion
+                                            totalStats[3].value -= Math.abs(perkResponse.data.Response.investmentStats[1].value);
+                                            break;
+                                    }
+                                }
+                                else for (const stat of Object.values(perkResponse.data.Response.investmentStats).slice(1)) {
                                     const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
                                     if (stat.value < 0) {
                                         baseStat.value -= Math.abs(stat.value);
@@ -640,14 +654,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         });
         const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
-        console.log(seasonResponse.data.Response.displayProperties.name)
 
         // Buscar la métrica que coincida con el nombre de la temporada
         const matchingMetric = Object.values(metricsData.data).find(metric =>
             metric.displayProperties.name.toLowerCase().includes(seasonResponse.data.Response.displayProperties.name.toLowerCase())
         );
         setSeason(seasonResponse.data.Response.seasonNumber);
-
         return matchingMetric.hash;
     }
     return (
