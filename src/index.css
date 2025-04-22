@@ -199,6 +199,31 @@ body {
     font-family: "Destiny Symbols Common Braytech";
 }
 
+.icon-pass::before{
+    content: "\F123";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-rank::before{
+    content: "\F124";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-triumph::before{
+    content: "\F125";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-arrowR::before {
+    content: "\EEB5";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-arrowL::before {
+    content: "\EEB4";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
 .icon-clock::before {
     content: "";
     display: inline-block;

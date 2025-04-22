@@ -52,7 +52,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 await getSeal(mostRecentCharacter);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 const seasonProgress = await getCurrentSeason(seasonHash);
-                console.log(totalStats);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -98,7 +97,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 },
                             });
                             if (perkResponse.data.Response.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                if(perkResponse.data.Response.hash == 2272984671 || perkResponse.data.Response.hash == 1727069360) { //Si es un fragmento de clase
+                                if (perkResponse.data.Response.hash == 2272984671 || perkResponse.data.Response.hash == 1727069360) { //Si es un fragmento de clase
                                     switch (classType) {
                                         case 0: //Titan resto resistencia
                                             totalStats[1].value -= Math.abs(perkResponse.data.Response.investmentStats[3].value);
@@ -243,7 +242,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 }));
 
                 setPassLevel(responseChar.data.Response.metrics.data.metrics[seasonProgress]?.objectiveProgress?.progress);
-                setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore);
+                setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'));
                 console.log(itemDetails);
                 setItems(itemDetails);
                 setTotalStats(totalStats);
@@ -342,6 +341,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const modifiers = [
             "barrels",
             "blades",
+            "scopes",
             "bowstrings",
             "magazines",
             "guards",
@@ -662,6 +662,26 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         setSeason(seasonResponse.data.Response.seasonNumber);
         return matchingMetric.hash;
     }
+
+    useEffect(() => {
+        if (isVisible) {
+            const handleKeyDown = (event) => {
+                if (event.key === "ArrowLeft" || event.key === "a") {
+                    setActiveTab((prevTab) => (prevTab === "Cosmeticos" ? "Equipamiento" : prevTab));
+                } else if (event.key === "ArrowRight" || event.key === "d") {
+                    setActiveTab((prevTab) => (prevTab === "Equipamiento" ? "Cosmeticos" : prevTab));
+                }
+            };
+    
+            window.addEventListener("keydown", handleKeyDown);
+    
+            // Cleanup: eliminar el evento cuando isVisible cambie o el componente se desmonte
+            return () => {
+                window.removeEventListener("keydown", handleKeyDown);
+            };
+        }
+    }, [isVisible]);
+
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -701,27 +721,34 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center justify-center h-full">
                                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
-                                    <div className="flex items-center ml-12" style={{ transform: "translateY(22%)" }}>
-                                        <img src={`/api${emblemElements.icon}`} style={{ width: "80%" }} />
-                                        <div className="flex flex-col ml-4">
-                                            <h2 className="text-2xl font-semibold">{name}</h2>
-                                            <div className="flex flex-row items-center space-x-4">
-                                                <p className="font-semibold">{rank}</p>
-                                                <p className="font-semibold flex flex-row items-center">
+                                    <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
+                                        <img src={`/api${emblemElements.icon}`} style={{ width: "17%" }} />
+                                        <div className="flex flex-col items-top ml-4 mt-0.5">
+                                            <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
+                                            <h2 className="text-2xl font-bold tracking-[0.11em]">{name}</h2>
+                                            <div className="flex flex-row items-center space-x-2.5 opacity-[0.8] tracking-widest titulo">
+                                                <p className="flex flex-row mt-0.5">
                                                     <span>Temporada</span>
                                                     <span className="ml-1">{season}</span>
                                                 </p>
-                                                <h1 className='lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.20rem' }} />{light}
+                                                <p><i className="icon-pass mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
+                                                <p><i className="icon-rank mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{rank}</p>
+                                                <h1 className='lightlevel' style={{ textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', top: '-0.20rem', position: 'relative' }} />{light}
                                                 </h1>
-                                                <p>{Passlevel}</p>
-                                                <p>{triumphRecord}</p>
+                                                <p><i className="icon-triumph mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{triumphRecord} </p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex space-x-4 mr-12">
-                                        <button onClick={() => setActiveTab("Equipamiento")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Equipamiento" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Equipamiento</button>
-                                        <button onClick={() => setActiveTab("Cosmeticos")} className={`titulo text-[0.92rem] font-semibold cursor-pointer tracking-wide p-2 py-1 border-b-2 uppercase ${activeTab === "Cosmeticos" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Cosméticos</button>
+                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="opacity-[.50]">
+                                            <i className="icon-arrowL cursor-pointer" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />
+                                        </button>
+                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 border-b-2 uppercase ${activeTab === "Equipamiento" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Equipamiento</button>
+                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 border-b-2 uppercase ${activeTab === "Cosmeticos" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Cosméticos</button>
+                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="opacity-[.50]">
+                                            <i className="icon-arrowR cursor-pointer" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />
+                                        </button>
                                     </div>
                                 </div>
                                 <AnimatePresence mode="wait">
@@ -737,8 +764,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                         >
                                             <div className="flex flex-col space-y-4 items-center justify-center w-full">
                                                 {items[11] && (
-                                                    <div className={`flex justify-center ${items[11].name.includes("prismático") ? "ml-2" : "ml-22"}`}>
-                                                        <div className="flex flex-col justify-center items-end">
+                                                    <div className={`flex relative w-full justify-center`}>
+                                                        <div className="flex flex-col items-end" style={{ width: "26%" }}>
                                                             <div className="flex mb-2 rtl">
                                                                 {items[11].perks[0] && (
                                                                     <img src={`/api${items[11].perks[0].iconPath}`} className="w-[35px] h-[35px]" alt={items[11].perks[0].name} title={items[11].perks[0].name} />
@@ -750,8 +777,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                        <img src={`/api${items[11].icon}`} width={81} alt={items[11].name} className="rounded-lg" />
-                                                        <div className="flex flex-col justify-center">
+                                                        <img src={`/api${items[11].icon}`} style={{ width: "7%" }} alt={items[11].name} className="rounded-lg" />
+                                                        <div className="flex flex-col right-0 mt-1" style={{ width: "26%" }}>
                                                             <div className="flex mb-2">
                                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
                                                                     <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
@@ -768,7 +795,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     </div>
                                                 )}
                                                 <div className="flex h-[400px] justify-center w-full">
-                                                    <div className="flex flex-col justify-between mr-4">
+                                                    <div className="flex flex-col justify-between mr-4" style={{width: "40%"}}>
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-end">
@@ -924,7 +951,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             )
                                                         ))}
                                                     </div>
-                                                    <div className="flex flex-col justify-between ml-4">
+                                                    <div className="flex flex-col justify-between ml-4" style={{width: "40%"}}>
                                                         {[3, 4, 5, 6, 7].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-start">
@@ -1028,7 +1055,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
                                                 <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
-                                                    <div className="flex justify-center mx-6 space-x-6">
+                                                    <div className="flex flex-wrap justify-center mx-6 space-x-6">
                                                         {[9, 10].map((index) => (
                                                             <div key={index} className="flex mb-4 space-x-2">
                                                                 <div className={`relative`}>
