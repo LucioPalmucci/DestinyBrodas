@@ -591,11 +591,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             return {
                 name: emblem.data.Response.displayProperties.name,
                 iconPath: emblem.data.Response.displayProperties.icon,
+                hash: emblem.data.Response.hash,
                 class: classe,
             };
         });
 
         emblems = await Promise.all(emblemPromises);
+        console.log("Emblemas",emblems);
         setEmblems(emblems);
     }
 
@@ -606,18 +608,27 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             }
         });
-
-
         const allseals = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
-        console.log(sealResponse.data.Response)
+
+        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
+        const metricsData = await axios.get(`/api${manifestUrl}`);
+
+        // Buscar el parentNodeHash que coincida con el hash del título
+        const matchingNode = Object.values(metricsData.data).find(node => node.completionRecordHash === char.titleRecordHash);
+
         setSeal({
             name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
             iconPath: sealResponse.data.Response.displayProperties.icon,
-            sealHash: sealResponse.data.Response,
+            sealHash: matchingNode.hash,
             timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
     }
@@ -1111,7 +1122,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
                                                     <div className="justify-center items-center flex w-full">
                                                         {seal && (
-                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5" onClick={() => window.location.href = `https://bray.tech/triumphs/seal/${seal.sealHash}`}>
+                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5 cursor-pointer" onClick={() => window.open(`https://bray.tech/triumphs/seal/${seal.sealHash}`, '_blank')}>
                                                                 <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
                                                                 <div
                                                                     className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px] relative"
@@ -1156,7 +1167,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
                                                                 {emblem.iconPath && (
                                                                     <div className={`relative ${emblem.name === items[13]?.name ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
+                                                                        <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
                                                                         <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} title={emblem.name} />
+                                                                        </a>
                                                                     </div>
                                                                 )}
                                                             </div>
