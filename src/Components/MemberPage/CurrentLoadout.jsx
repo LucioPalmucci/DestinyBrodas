@@ -597,7 +597,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         });
 
         emblems = await Promise.all(emblemPromises);
-        console.log("Emblemas",emblems);
+        console.log("Emblemas", emblems);
         setEmblems(emblems);
     }
 
@@ -696,6 +696,18 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }, [isVisible]);
 
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                setShowPopup(false);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
+
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -732,7 +744,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                        <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center justify-center h-full">
                                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
                                     <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
@@ -1168,7 +1180,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 {emblem.iconPath && (
                                                                     <div className={`relative ${emblem.name === items[13]?.name ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
                                                                         <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
-                                                                        <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} title={emblem.name} />
+                                                                            <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} title={emblem.name} />
                                                                         </a>
                                                                     </div>
                                                                 )}
@@ -1182,6 +1194,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 </AnimatePresence>
                             </div>
                         </div>
+                        <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{marginTop: "4%"}} onClick={(e) => {e.stopPropagation(); setShowPopup(false);}}>✕</button>
                     </div>
                 )}
             </div >
