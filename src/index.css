@@ -222,7 +222,7 @@ body {
 .icon-arrowL::before {
     content: "\EEB4";
     font-family: "Destiny Symbols Common Braytech";
-}
+  }
 
 .icon-clock::before {
     content: "";

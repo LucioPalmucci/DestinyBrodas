@@ -244,6 +244,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 setPassLevel(responseChar.data.Response.metrics.data.metrics[seasonProgress]?.objectiveProgress?.progress);
                 setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'));
                 console.log(itemDetails);
+                console.log(seal);
                 setItems(itemDetails);
                 setTotalStats(totalStats);
 
@@ -612,9 +613,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         });
+        console.log(sealResponse.data.Response)
         setSeal({
             name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
             iconPath: sealResponse.data.Response.displayProperties.icon,
+            sealHash: sealResponse.data.Response,
             timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
     }
@@ -672,9 +675,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     setActiveTab((prevTab) => (prevTab === "Equipamiento" ? "Cosmeticos" : prevTab));
                 }
             };
-    
+
             window.addEventListener("keydown", handleKeyDown);
-    
+
             // Cleanup: eliminar el evento cuando isVisible cambie o el componente se desmonte
             return () => {
                 window.removeEventListener("keydown", handleKeyDown);
@@ -733,21 +736,40 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                 </p>
                                                 <p><i className="icon-pass mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
                                                 <p><i className="icon-rank mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{rank}</p>
-                                                <h1 className='lightlevel' style={{ textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                <h1 className='lightlevel'>
                                                     <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', top: '-0.20rem', position: 'relative' }} />{light}
                                                 </h1>
                                                 <p><i className="icon-triumph mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{triumphRecord} </p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex space-x-4 mr-12">
-                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="opacity-[.50]">
-                                            <i className="icon-arrowL cursor-pointer" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />
+                                    <div className="flex items-center space-x-4 mr-12">
+                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="mt-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer">
+                                                <g transform="matrix(1 0 0 -1 0 680)">
+                                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
+                                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM400 382 l305 -305l51 52l-253 253l253 254l-51 51z" />
+                                                </g>
+                                            </svg>
                                         </button>
-                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 border-b-2 uppercase ${activeTab === "Equipamiento" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Equipamiento</button>
-                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 border-b-2 uppercase ${activeTab === "Cosmeticos" ? " border-white opacity-[.90]" : "border-transparent opacity-[.70]"}`}>Cosméticos</button>
-                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="opacity-[.50]">
-                                            <i className="icon-arrowR cursor-pointer" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />
+                                        <div className="relative flex space-x-4 items-center">
+                                            <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Equipamiento" ? "opacity-[.90]" : "opacity-[.70]"}`}>Equipamiento</button>
+                                            <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Cosmeticos" ? " opacity-[.90]" : "opacity-[.70]"}`}>Cosméticos</button>
+                                            <motion.div className="absolute top-13 h-[2px] bg-white left-0.5" layout initial={false}
+                                                animate={{
+                                                    x: activeTab === "Equipamiento" ? 0 : 154,
+                                                    width: 140,
+                                                }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            />
+                                        </div>
+                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer" >
+                                                <g transform="matrix(1 0 0 -1 0 680)">
+                                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
+                                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM808 382 l-305 -305l-51 52l253 253l-253 254l51 51z" />
+                                                </g>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
@@ -795,7 +817,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     </div>
                                                 )}
                                                 <div className="flex h-[400px] justify-center w-full">
-                                                    <div className="flex flex-col justify-between mr-4" style={{width: "40%"}}>
+                                                    <div className="flex flex-col justify-between mr-4" style={{ width: "40%" }}>
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-end">
@@ -951,7 +973,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             )
                                                         ))}
                                                     </div>
-                                                    <div className="flex flex-col justify-between ml-4" style={{width: "40%"}}>
+                                                    <div className="flex flex-col justify-between ml-4" style={{ width: "40%" }}>
                                                         {[3, 4, 5, 6, 7].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-start">
@@ -1057,9 +1079,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
                                                     <div className="flex flex-wrap justify-center mx-6 space-x-6">
                                                         {[9, 10].map((index) => (
-                                                            <div key={index} className="flex mb-4 space-x-2">
+                                                            <div key={index} className="flex mb-4 space-x-4 mr-0">
                                                                 <div className={`relative`}>
-                                                                    <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
+                                                                    <a href={`https://www.light.gg/db/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                                        <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
+                                                                    </a>
                                                                     {items[index].watermark && (
                                                                         <img
                                                                             src={`/api${items[index].watermark}`}
@@ -1087,7 +1111,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
                                                     <div className="justify-center items-center flex w-full">
                                                         {seal && (
-                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5">
+                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5" onClick={() => window.location.href = `https://bray.tech/triumphs/seal/${seal.sealHash}`}>
                                                                 <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
                                                                 <div
                                                                     className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px] relative"
@@ -1112,7 +1136,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             <div className="flex mb-4 ">
                                                                 {perk.iconPath && (
                                                                     <div className="relative">
-                                                                        <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} title={perk.name} />
+                                                                        <a href={`https://www.light.gg/db/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                                            <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} title={perk.name} />
+                                                                        </a>
                                                                         {perk.watermark && (
                                                                             <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
                                                                         )}
