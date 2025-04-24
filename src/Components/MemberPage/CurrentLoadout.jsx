@@ -267,7 +267,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleWeaponClick = (weapon, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - 140, left: rect.right - 308 }); // Posición a la derecha de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 5.1 }); // Posición a la derecha de la imagen
         setSelectedWeapon(weapon);
     };
     const closeWeaponDetails = () => {
@@ -276,7 +276,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - 140, left: rect.right - 674 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 11.15 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
