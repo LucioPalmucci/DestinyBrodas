@@ -194,22 +194,22 @@ body {
     font-family: "Destiny Symbols Common 2";
 }
 
-.icon-gilded::before{
+.icon-gilded::before {
     content: "\E147";
     font-family: "Destiny Symbols Common Braytech";
 }
 
-.icon-pass::before{
+.icon-pass::before {
     content: "\F123";
     font-family: "Destiny Symbols Common Braytech";
 }
 
-.icon-rank::before{
+.icon-rank::before {
     content: "\F124";
     font-family: "Destiny Symbols Common Braytech";
 }
 
-.icon-triumph::before{
+.icon-triumph::before {
     content: "\F125";
     font-family: "Destiny Symbols Common Braytech";
 }
@@ -222,7 +222,7 @@ body {
 .icon-arrowL::before {
     content: "\EEB4";
     font-family: "Destiny Symbols Common Braytech";
-  }
+}
 
 .icon-clock::before {
     content: "";
@@ -343,6 +343,60 @@ body {
     -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="white" d="M12 0L24 12H16V24H8V12H0L12 0Z"/></svg>') no-repeat center;
     mask-size: contain;
     -webkit-mask-size: contain;
+}
+
+
+@keyframes cristalHoverEffectAfter {
+    0% {
+        left: -100%;
+    }
+    15% {
+        left: 100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+.cristal {
+    cursor: pointer;
+    margin-left: 10%;
+    position: relative;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #fff;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    font-family: sans-serif;
+    letter-spacing: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .1);
+    box-shadow: 0 5px 5px rgba(0, 0, 0.2);
+}
+
+.cristal:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+}
+
+.cristal:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .4), transparent);
+    animation: cristalHoverEffectAfter 2.3s linear infinite;
+}
+.cristal span {
+    position: absolute;
+    display: block;
+    transition: 0.5s ease;
 }
 
 @import "tailwindcss";

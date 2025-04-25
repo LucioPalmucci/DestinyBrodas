@@ -276,7 +276,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 11.15 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 11 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
@@ -741,7 +741,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         ))}
                     </div>}
                 </div>
-                <button onClick={() => setShowPopup(true)} className="bg-black/25 py-2 px-4 font-semibold hover:bg-gray-500 rounded text-lg mt-2 cursor-pointer duration-400 ml-12">Ver más</button>
+                <div className="flex">
+                    <a onClick={() => setShowPopup(true)} className="cristal">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        Ver Más</a>
+                </div>
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
                         <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
@@ -804,10 +811,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             animate={{ x: 0, opacity: 1 }}
                                             exit={{ x: "-100%", opacity: 0 }}
                                             transition={{ duration: 0.5 }}
-                                            className="w-full justify-center flex items-center"
+                                            className="w-full justify-center flex items-top mt-4"
                                             style={{ height: "100%" }}
                                         >
-                                            <div className="flex flex-col space-y-4 items-center justify-center w-full">
+                                            <div className="flex flex-col space-y-4 justify-center w-full">
                                                 {items[11] && (
                                                     <div className={`flex relative w-full justify-center`}>
                                                         <div className="flex flex-col items-end" style={{ width: "26%" }}>
@@ -839,7 +846,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         </div>
                                                     </div>
                                                 )}
-                                                <div className="flex h-[400px] justify-center w-full">
+                                                <div className="flex justify-center w-full" style={{ height: "65%" }}>
                                                     <div className="flex flex-col justify-between mr-4" style={{ width: "40%" }}>
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
@@ -888,8 +895,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 {selectedWeapon &&
                                                                                     <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeWeaponDetails()} >
                                                                                         <div
-                                                                                            className={`w-[400px] text-white relative`}
-                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute" }}
+                                                                                            className={`text-white relative`}
+                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "34%" }}
                                                                                             onClick={(e) => e.stopPropagation()}
                                                                                         >
                                                                                             <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }} className="p-2 px-4 rounded-t-lg">
@@ -914,7 +921,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div className="flex space-x-3 p-2 rounded-b-lg" style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
-                                                                                                <div className="space-y-1 flex flex-col justify-top space-y-3 items-center w-[177px]">
+                                                                                                <div className="space-y-1 flex flex-col justify-top space-y-3 items-center " style={{ width: "33%" }}>
                                                                                                     <p className="font-semibold text-md">Armazón</p>
                                                                                                     <div className="flex space-x-2">
                                                                                                         {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
@@ -925,7 +932,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     </div>
                                                                                                 </div>
                                                                                                 <div class="border-l border-0.5 border-white/25 h-24 " />
-                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center w-[177px]">
+                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center" style={{ width: "33%" }}>
                                                                                                     <p className="font-semibold text-md">Diseño</p>
                                                                                                     <div className="flex space-x-2 w-fit mt-1">
                                                                                                         {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
@@ -936,7 +943,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     </div>
                                                                                                 </div>
                                                                                                 <div class="border-l border-0.5 border-white/25 h-24" />
-                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center w-[177px]">
+                                                                                                <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center" style={{ width: "33%" }}>
                                                                                                     <p className="font-semibold text-md">Muertes</p>
                                                                                                     <div className="flex space-x-1">
                                                                                                         {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
@@ -1044,8 +1051,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         {selectedArmor &&
                                                                             <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
                                                                                 <div
-                                                                                    className="w-[300px] text-white relative"
-                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute" }}
+                                                                                    className="text-white relative"
+                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "24%" }}
                                                                                     onClick={(e) => e.stopPropagation()}
                                                                                 >
                                                                                     <div className="rounded-t-lg p-2 px-3" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
@@ -1098,8 +1105,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             style={{ height: "100%" }}
                                         >
                                             <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
-                                                <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">COLIBRÍ / NAVE</legend>
+                                                <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center w-full py-2 h-full">
+                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2 ml-2">COLIBRÍ / NAVE</legend>
                                                     <div className="flex flex-wrap justify-center mx-6 space-x-6">
                                                         {[9, 10].map((index) => (
                                                             <div key={index} className="flex mb-4 space-x-4 mr-0">
@@ -1130,7 +1137,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         ))}
                                                     </div>
                                                 </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center w-full py-2 h-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
                                                     <div className="justify-center items-center flex w-full">
                                                         {seal && (
@@ -1152,7 +1159,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         )}
                                                     </div>
                                                 </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-full w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
                                                     <div className="flex space-x-8 justify-center mx-6">
                                                         {items[15].perks?.map((perk) => (
@@ -1171,7 +1178,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         ))}
                                                     </div>
                                                 </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-[170px] w-full">
+                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center py-4.5 h-full w-full">
                                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
                                                     <div className="flex space-x-10 justify-evenly mx-4 pb-3">
                                                         {emblems.map((emblem) => (
@@ -1194,7 +1201,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 </AnimatePresence>
                             </div>
                         </div>
-                        <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{marginTop: "4%"}} onClick={(e) => {e.stopPropagation(); setShowPopup(false);}}>✕</button>
+                        <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowPopup(false); }}>✕</button>
                     </div>
                 )}
             </div >
