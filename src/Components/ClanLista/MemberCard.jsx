@@ -79,7 +79,7 @@ export default function MemberCard({ member }) {
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setEquippedEmblem(await getEquippedEmblem(member));
+                setEquippedEmblem(await getEquippedEmblem(member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType));
                 
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchCharacterIds(member, "activity", 3));

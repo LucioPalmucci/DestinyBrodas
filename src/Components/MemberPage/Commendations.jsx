@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import elogio from "../../assets/elogio.png";
 
-export default function Commendations( { membershipType, userId }) {
+export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
     const [error, setError] = useState(null);
 
@@ -49,18 +49,26 @@ export default function Commendations( { membershipType, userId }) {
                     </div>
                 </div>
                 <div className="flex h-1 mt-2 relative space-x-0.5">
-                    <div style={{ width: `${honor.verdes}%`, backgroundColor: 'rgba(54,163,137,1)' }} className="text-sm">
-                        <p style={{ color: 'rgba(54,163,137,1)' }} className="mt-1">{honor.verdes}%</p>
-                    </div>
-                    <div style={{ width: `${honor.naranjas}%`, backgroundColor: 'rgba(205,125,44,1)' }} className="text-sm">
-                        <p style={{ color: 'rgba(205,125,44,1)' }} className="mt-1">{honor.naranjas}%</p>
-                    </div>
-                    <div style={{ width: `${honor.rosas}%`, backgroundColor: 'rgba(190,79,106,1)' }} className="text-sm">
-                        <p style={{ color: 'rgba(190,79,106,1)' }} className="mt-1">{honor.rosas}%</p>
-                    </div>
-                    <div style={{ width: `${honor.azules}%`, backgroundColor: 'rgba(50,136,193,1)' }} className="text-sm">
-                        <p style={{ color: 'rgba(50,136,193,1)' }} className="mt-1">{honor.azules}%</p>
-                    </div>
+                    {honor.verdes > 0 && (
+                        <div style={{ width: `${honor.verdes}%`, backgroundColor: 'rgba(54,163,137,1)' }} className="text-sm">
+                            <p style={{ color: 'rgba(54,163,137,1)' }} className="mt-1">{honor.verdes}%</p>
+                        </div>
+                    )}
+                    {honor.naranjas > 0 && (
+                        <div style={{ width: `${honor.naranjas}%`, backgroundColor: 'rgba(205,125,44,1)' }} className="text-sm">
+                            <p style={{ color: 'rgba(205,125,44,1)' }} className="mt-1">{honor.naranjas}%</p>
+                        </div>
+                    )}
+                    {honor.rosas > 0 && (
+                        <div style={{ width: `${honor.rosas}%`, backgroundColor: 'rgba(190,79,106,1)' }} className="text-sm">
+                            <p style={{ color: 'rgba(190,79,106,1)' }} className="mt-1">{honor.rosas}%</p>
+                        </div>
+                    )}
+                    {honor.azules > 0 && (
+                        <div style={{ width: `${honor.azules}%`, backgroundColor: 'rgba(50,136,193,1)' }} className="text-sm">
+                            <p style={{ color: 'rgba(50,136,193,1)' }} className="mt-1">{honor.azules}%</p>
+                        </div>
+                    )}
                 </div>
             </div>
         )
