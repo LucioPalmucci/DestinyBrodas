@@ -762,7 +762,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     </div>}
                 </div>
                 <div className="flex">
-                    <a onClick={() => setShowPopup(true)} className="cristal">
+                    <a onClick={() => setShowPopup(true)} className="cristal transform transition-transform duration-200 hover:scale-105">
                         <span></span>
                         <span></span>
                         <span></span>

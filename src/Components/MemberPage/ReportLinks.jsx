@@ -4,7 +4,7 @@ import dungeonLogo from '../../assets/dungeonLogo.png';
 import raidReportIcon from '../../assets/raidreport.png';
 export default function ReportLinks({ type, id, nombre }) {
     return (
-        <div className='flex pl-0 p-4 w-fit text-2xl font-Inter rounded items-center py-1'>
+        <div className='flex pl-0 p-4 w-fit text-2xl font-Inter rounded items-center py-1 -translate-x-2.5'>
             <button className="p-0 pb-1 rounded-lg text-white m-1 ml-0 transform transition-transform duration-200 hover:scale-105" style={{backgroundColor: '#4DB6AC'}}>
                 <a href={`https://raid.report/${type}/${id}`} target="_blank" rel="noreferrer noopener" className='flex' title='Raid Report'>
                     <img src={raidReportIcon} alt="Raid Report Icon" className="w-5 h-5 mx-1 mt-1" />

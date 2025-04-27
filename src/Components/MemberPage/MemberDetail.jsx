@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import arrowLeft from '../../assets/arrow-left-solid.svg';
+import copy from '../../assets/copiar-archivo.png';
 import '../../index.css';
 import { getEquippedEmblem } from '../EquippedEmblem';
 import { getTimeSinceLastConnection } from '../LastConexion';
@@ -29,6 +30,7 @@ function MemberDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [classImg, setClassImg] = useState(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -47,6 +49,12 @@ function MemberDetail() {
 
         fetchData();
     }, [location.search]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(userMemberships?.bungieNetUser?.uniqueName || '');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     useEffect(() => {
         const fetchMemberDetail = async () => {
@@ -122,15 +130,24 @@ function MemberDetail() {
         <div>
             <button className='bg-gray-300 hover:bg-gray-400 font-bold py-2 px-4 rounded mt-4 ml-4 '>
                 <a href='/DestinyBrodas/' className='items-center flex'>
-                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2'  />
+                    <img src={arrowLeft} className='w-4 h-4 inline-block mr-2' />
                     Volver al inicio
                 </a>
             </button>
             <div className='justify-start flex mt-10 font-Inter items-center flex-col w-3/4'>
                 <div className='w-3/4 text-start'>
-                    <div className='flex space-x-4 items-center mb-1'>
+                    <div className='flex items-center mb-1 relative'>
                         <img src={`${classImg.link}`} className={`w-10 h-10 mr-2`} style={{ filter: `${classImg.colore}`, marginLeft: '-3px' }} />
-                        <h1 className='text-4xl font-bold text-gray-700 mr-8'>{userMemberships?.bungieNetUser?.uniqueName}</h1>
+                        <h1 className='text-4xl font-bold text-gray-700 mr-0.5'>
+                            {userMemberships?.bungieNetUser?.uniqueName?.slice(0, -5)}
+                            <span style={{ color: '#479ce4' }}>
+                                {userMemberships?.bungieNetUser?.uniqueName?.slice(-5)}
+                            </span>
+                        </h1>
+                        <img src={copy} style={{ width: "1.2%", height: "1.2%", position: 'relative', top: '-0.50rem', cursor: "pointer" }} onClick={handleCopy} title='Copiar nombre' />
+                        <div className={`z-10 bg-green-500 text-white p-0.5 rounded transition-opacity duration-500 ease-in-out -translate-y-4 ${copied ? 'opacity-100' : 'opacity-0'}`} style={{fontSize: '0.5rem', top:  "-10px"}}>
+                            ¡Copiado!
+                        </div>
                         <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
                     </div>
                     {memberDetail && userMemberships && (
