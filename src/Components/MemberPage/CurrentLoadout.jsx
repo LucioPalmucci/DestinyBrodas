@@ -244,6 +244,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 setPassLevel(responseChar.data.Response.metrics.data.metrics[seasonProgress]?.objectiveProgress?.progress);
                 setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'));
                 setItems(itemDetails);
+                console.log(itemDetails)
                 setTotalStats(totalStats);
 
             } catch (error) {
@@ -383,7 +384,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             "plugs.weapons.masterworks.trackers",
         ];
 
-        console.log(perks);
         let modifierPerks = perks.filter(perk =>
             perk && excludedModifiers.every(mod => !perk.perkType?.includes(mod))
         );
@@ -1146,7 +1146,33 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                     {items[index].perks?.map((perk) => (
                                                                         perk.iconPath && (
                                                                             <div className="relative">
-                                                                                <img src={`/api${perk.iconPath}`} width={40} height={40} alt={perk.name} title={perk.name} />
+                                                                                {perk.perkType?.includes("vehicles.mod") ?
+                                                                                    (<div key={perk.perkHash} title={perk.name}>
+                                                                                        <svg viewBox="0 0 100 100" width="40" height="40" >
+                                                                                            <defs>
+                                                                                                <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
+                                                                                                    <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
+                                                                                                    <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                                </linearGradient>
+                                                                                            </defs>
+                                                                                            <mask id="mask">
+                                                                                                <rect x="0" y="0" width="100" height="100" fill="black"></rect>
+                                                                                                <circle cx="50" cy="50" r="46" fill="white"></circle>
+                                                                                            </mask>
+                                                                                            <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
+                                                                                            {perk.isEnhanced == "Rasgo mejorado" && (
+                                                                                                <>
+                                                                                                    <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
+                                                                                                    <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
+                                                                                                    <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
+                                                                                                </>
+                                                                                            )}
+                                                                                            <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                                            <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                                        </svg>
+                                                                                    </div>) : (
+                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                    )}
                                                                                 {perk.watermark && (
                                                                                     <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[40px] h-[40px] z-50 pointer-events-none" />
                                                                                 )}
