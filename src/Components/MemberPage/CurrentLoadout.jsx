@@ -48,7 +48,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
                 let totalStats = [144602215, 392767087, 1735777505, 1943323491, 2996146975, 4244567218];
                 await getTotalStats(totalStats);
-                await getOtherEmblems(characters);
+                await getOtherEmblems(characters, mostRecentCharacter);
                 await getSeal(mostRecentCharacter);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 const seasonProgress = await getCurrentSeason(seasonHash);
@@ -561,7 +561,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }
 
-    async function getOtherEmblems(characters) {
+    async function getOtherEmblems(characters, mostRecentCharacter) {
         let emblems, classe;
         const emblemPromises = Object.values(characters).map(async (char) => {
             const rep = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${char.characterId}/?components=205`, {
@@ -588,16 +588,21 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     break;
             }
 
+            let actual;
+            console.log(mostRecentCharacter.classType, char.classType);
+            if(mostRecentCharacter.classType === char.classType ? actual = true : actual = false);
+
             return {
                 name: emblem.data.Response.displayProperties.name,
                 iconPath: emblem.data.Response.displayProperties.icon,
                 hash: emblem.data.Response.hash,
                 class: classe,
+                currentClass: actual,
             };
         });
 
         emblems = await Promise.all(emblemPromises);
-        console.log("Emblemas", emblems);
+        console.log(emblems);
         setEmblems(emblems);
     }
 
@@ -1185,7 +1190,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             <div className="flex flex-col mb-5 justify-center items-center">
                                                                 <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
                                                                 {emblem.iconPath && (
-                                                                    <div className={`relative ${emblem.name === items[13]?.name ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
+                                                                    <div className={`relative ${emblem.currentClass === true ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
                                                                         <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
                                                                             <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} title={emblem.name} />
                                                                         </a>

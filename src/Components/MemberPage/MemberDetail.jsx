@@ -31,19 +31,25 @@ function MemberDetail() {
     const [classImg, setClassImg] = useState(null);
 
     useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        const memberParam = queryParams.get('member');
-        if (memberParam) {
-            setMember(JSON.parse(decodeURIComponent(memberParam)));
-        }
+        const fetchData = async () => {
+            const response = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            response.data.Response.results.forEach((member) => {
+                if (member.destinyUserInfo.membershipId === membershipId) {
+                    setMember(member);
+                }
+            })
+        };
+
+        fetchData();
     }, [location.search]);
 
     useEffect(() => {
         const fetchMemberDetail = async () => {
-            if (!member) {
-                return;
-            }
-
             try {
                 const responseProfile = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=100`, {
                     headers: {
@@ -65,9 +71,9 @@ function MemberDetail() {
                 setMemberDetail(responseProfile.data.Response);
                 setUserMemberships(membershipsResponse.data.Response);
                 setGuardianRank(guardianRankResponse.data.Response);
-                setCurrentLight(await getEquippedEmblem(member, "CharacterPower"));
-                setEmblem(await getEquippedEmblem(member, "Large"));
-                const clase = await getEquippedEmblem(member, "CharacterClass");
+                setCurrentLight(await getEquippedEmblem(membershipId, membershipType, "CharacterPower"));
+                setEmblem(await getEquippedEmblem(membershipId, membershipType, "Large"));
+                const clase = await getEquippedEmblem(membershipId, membershipType, "CharacterClass");
 
                 switch (clase) {
                     case 2: setClassImg({
@@ -87,10 +93,10 @@ function MemberDetail() {
                         break;
                 }
 
-                if (member.isOnline) {
+                if (member?.isOnline) {
                     setActivity(await fetchCharacterIds(member, "activity", "MemberDetail"));
                 } else {
-                    setActivity("Última conexión hace " + getTimeSinceLastConnection(member.lastOnlineStatusChange, member.isOnline));
+                    setActivity("Última conexión hace " + getTimeSinceLastConnection(member?.lastOnlineStatusChange, member?.isOnline));
                 }
 
             } catch (error) {
@@ -128,7 +134,7 @@ function MemberDetail() {
                         <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
                     </div>
                     {memberDetail && userMemberships && (
-                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
+                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
                             <div className='ml-1 items-center'>
                                 <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
                                 <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
@@ -146,7 +152,6 @@ function MemberDetail() {
                     )}
                     <CurrentLodaout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
                 </div>
-
                 <div className='w-3/4 text-start'>
                     <div>
                         <div className='flex'>

@@ -152,7 +152,7 @@ export default function MemberCard({ member }) {
         <>
             {equippedEmblem && (
                 <tr className='font-Inter'>
-                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}?member=${encodeURIComponent(JSON.stringify(member))}`} target='_blank' rel='noreferrer noopener'>
+                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
                         <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
                             <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
                             {member.destinyUserInfo.displayName}

@@ -1,9 +1,9 @@
 import axios from "axios";
 
-export const getEquippedEmblem = async (member, type) => {
+export const getEquippedEmblem = async (membershipId, membershipType, type) => {
     try {
         // Hacer una sola llamada a la API para obtener el perfil completo del miembro
-        const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
+        const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=Characters&lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
