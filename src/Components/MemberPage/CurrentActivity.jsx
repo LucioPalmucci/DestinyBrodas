@@ -123,10 +123,10 @@ export default function CurrentActivity({ type, id }) {
         };
 
         fetchActivity();
-        const interval = setInterval(() => {
+        /*const interval = setInterval(() => {
             fetchActivity();
         }, 10000);
-        return () => clearInterval(interval);
+        return () => clearInterval(interval);*/
 
     }, [partyMembers.length]);
 
@@ -222,7 +222,6 @@ export default function CurrentActivity({ type, id }) {
     );
 }
 const fetchPartyMembersDetails = async (partyMembersData) => {
-    console.log("Party members data:", partyMembersData);
     return await Promise.all(partyMembersData.map(async member => {
         const plataformas = [3, 1, 2, 10, 6];
         let profileResponse;

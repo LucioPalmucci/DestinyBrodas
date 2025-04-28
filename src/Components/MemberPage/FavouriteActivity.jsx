@@ -20,14 +20,14 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const Pruebas = await activityHashes(2112637710, true);
 
                 let modeGroups = {
-                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761 },
-                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 4110605575 },
-                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989 },
-                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 547513715 },
-                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444 },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 2371050408 },
-                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 2112637710 },
-                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 4088006058 },
+                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras" },
+                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Asaltos" },
+                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones" },
+                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 3789021730, name: "Ocasos" },
+                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444, name: "Historia" },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro" },
+                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris" },
+                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol" },
                 };
 
                 const profileRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100,104`, {
@@ -50,7 +50,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         }
                     }
                 });
-
                 let mostPlayedMode = null;
                 let maxTimePlayed = 0;
                 for (const mode in modeGroups) {
@@ -71,7 +70,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 });
 
                 let modoDatos = await fetchActivityDetails(modeGroups[mostPlayedMode].modeHash, "DestinyActivityModeDefinition", "general");
-
+                console.log("Modo datos", modeGroups[mostPlayedMode].name);
                 let characterCompletions = {};
                 for (const characterId of characterIds) {
                     characterCompletions[characterId] = {};
@@ -80,15 +79,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     characterCompletions[characterId].character = await characterClass(characterId, membershipType, userId);
                     characterCompletions[characterId].classImg = charImg(characterCompletions[characterId].character, membershipType, userId);
                 }
+                
 
                 if (mostPlayedMode) {
                     setMostPlayedMode({
-                        mode: mostPlayedMode,
+                        mode: modeGroups[mostPlayedMode].name,
                         timePlayed: (modeGroups[mostPlayedMode].timePlayed / 3600).toFixed(0),
                         completions: modeGroups[mostPlayedMode].completions,
                         kills: modeGroups[mostPlayedMode].kills,
-                        icon: "/api" + modoDatos.displayProperties.icon,
-                        pgcrImg: mostPlayedMode == "Incursiones" ? "https://images.contentstack.io/v3/assets/blte410e3b15535c144/blt25ec3d789f5701d6/664ee84d2dad6500dee525d3/low-res-Pantheon-art---Raid-logo.jpg" : "/api" + modoDatos.pgcrImage,
+                        icon: "/api" + modoDatos?.displayProperties?.icon,
+                        pgcrImg: mostPlayedMode == "Incursiones" ? "https://images.contentstack.io/v3/assets/blte410e3b15535c144/blt25ec3d789f5701d6/664ee84d2dad6500dee525d3/low-res-Pantheon-art---Raid-logo.jpg" : ("/api" + (modoDatos?.pgcrImage ?? "")),
                         fav: await fetchActivityDetails(mostPlayedActivity.name, "DestinyActivityDefinition"),
                     });
                 }
@@ -196,7 +196,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     return (
         <div className="w-fit font-Inter">
             {mostPlayedActivity && charCompl ? (
-                <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})` }}>
+                <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})`}}>
                     <div className="space-y-2 flex flex-col">
                         <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
                             Actividad más jugada
