@@ -370,12 +370,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             "crafting.recipes",
             "repackage",
             "weapon.damage_type.energy",
-            "plugs.masterworks"
+            "plugs.masterworks",
+            "exotic.weapon.masterwork",
         ]
 
         const archetype = [
             "intrinsics",
-            "plugs.weapons.masterworks.stats",
+            "plugs.weapons.masterworks.stat",
+            "exotic.weapon.masterwork",
         ];
 
         const design = [
@@ -389,6 +391,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             "plugs.weapons.masterworks.trackers",
         ];
 
+        console.log(perks)
         let modifierPerks = perks.filter(perk =>
             perk && excludedModifiers.every(mod => !perk.perkType?.includes(mod))
         );
@@ -649,10 +652,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
         // Buscar el parentNodeHash que coincida con el hash del título
         const matchingNode = Object.values(metricsData.data).find(node => node.completionRecordHash === char.titleRecordHash);
-
+        console.log(sealResponse.data.Response.hash)
         setSeal({
             name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
-            iconPath: sealResponse.data.Response.displayProperties.icon,
+            iconPath: matchingNode.originalIcon || sealResponse.data.Response.displayProperties.icon,
             sealHash: matchingNode.hash,
             timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
@@ -784,16 +787,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                         <div className="flex flex-col items-top ml-4 mt-0.5">
                                             <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
                                             <h2 className="text-2xl font-bold tracking-[0.11em]">{name}</h2>
-                                            <div className="flex flex-row items-center space-x-2.5 opacity-[0.8] tracking-widest titulo">
+                                            <div className="flex flex-row items-center space-x-2.5 opacity-[0.8] tracking-[0.17rem] titulo mb-4">
                                                 <p className="flex flex-row mt-0.5">
                                                     <span>Temporada</span>
                                                     <span className="ml-1">{season}</span>
                                                 </p>
-                                                <p><i className="icon-pass mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
+                                                <p><i className="icon-pass" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
                                                 <p><i className="icon-rank mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{rank}</p>
-                                                <h1 className='lightlevel'>
-                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', top: '-0.20rem', position: 'relative' }} />{light}
-                                                </h1>
+                                                <p className='lightlevel flex items-center'>
+                                                    <i className="icon-light" style={{ fontStyle: 'normal', fontSize: '1.6rem', top: '-0.05rem', position: "relative" }} />{light}
+                                                </p>
                                                 <p><i className="icon-triumph mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{triumphRecord} </p>
                                             </div>
                                         </div>
@@ -865,7 +868,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             <div className="flex mb-2">
                                                                 {items[11].perks.slice(7).map((perk, perkIndex) => (
                                                                     <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
-
                                                                 ))}
                                                             </div>
                                                         </div>
@@ -1067,8 +1069,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         <div className="flex space-x-2">
                                                                             {items[index].stats?.map((stat) => (
                                                                                 stat.iconPath && (
-                                                                                    <p className="flex items-center space-x-2 font-lg font-semibold">
-                                                                                        <img src={`/api${stat.iconPath}`} width={18} height={18} alt={stat.name} title={stat.name} />
+                                                                                    <p className="flex items-center font-lg">
+                                                                                        <img src={`/api${stat.iconPath}`} width={18} height={18} alt={stat.name} title={stat.name} style={{ marginRight: "1px" }} />
                                                                                         {stat.value}
                                                                                     </p>
                                                                                 )
@@ -1110,7 +1112,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         {totalStats && totalStats.map((stat) => (
                                                             stat.iconPath && (
                                                                 <p key={stat.statHash} className="flex items-center space-x-2">
-                                                                    <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
+                                                                    <img src={`/api${stat.iconPath}`} width={23} height={23} alt={stat.name} title={stat.name} />
                                                                     {stat.value}
                                                                 </p>
                                                             )
