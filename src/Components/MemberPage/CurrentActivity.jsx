@@ -123,6 +123,11 @@ export default function CurrentActivity({ type, id }) {
         };
 
         fetchActivity();
+        const interval = setInterval(() => {
+            fetchActivity();
+        }, 10000);
+        return () => clearInterval(interval);
+
     }, [partyMembers.length]);
 
 
@@ -163,19 +168,19 @@ export default function CurrentActivity({ type, id }) {
                                         </p>
                                     </>}
                                     {activity.PVPoPVE === "PVP" ? (
-                                        <div className="flex justify-evenly ">
+                                        <div className="flex justify-evenly">
                                             <div className="flex flex-col text-center items-center">
                                                 {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
-                                                {activity.puntosAliados ? <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
-                                                    <p className="text-xl">{activity.puntosAliados}</p>
-                                                </div> : null}
+                                                <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                    <p className="text-xl">{activity.puntosAliados || 0}</p>
+                                                </div>
                                             </div>
                                             <div className="border-l border-gray-100 mx-4"></div>
                                             <div className="flex flex-col text-center items-center">
                                                 {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
-                                                {activity.puntosOponentes ? <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
-                                                    <p className="text-xl">{activity.puntosOponentes}</p>
-                                                </div> : null}
+                                                <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                    <p className="text-xl">{activity.puntosOponentes || 0}</p>
+                                                </div>
                                             </div>
                                         </div>) : (
                                         <div>
@@ -217,6 +222,7 @@ export default function CurrentActivity({ type, id }) {
     );
 }
 const fetchPartyMembersDetails = async (partyMembersData) => {
+    console.log("Party members data:", partyMembersData);
     return await Promise.all(partyMembersData.map(async member => {
         const plataformas = [3, 1, 2, 10, 6];
         let profileResponse;
@@ -231,7 +237,7 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
                 successfulPlatform = plataforma;
                 break;
             } catch (error) {
-                console.error(`Error fetching profile for platform ${plataforma}:`, error);
+                console.error("No es de la plataforma", plataforma);
             }
         }
 

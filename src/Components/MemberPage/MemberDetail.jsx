@@ -145,7 +145,7 @@ function MemberDetail() {
                             </span>
                         </h1>
                         <img src={copy} style={{ width: "1.2%", height: "1.2%", position: 'relative', top: '-0.50rem', cursor: "pointer" }} onClick={handleCopy} title='Copiar nombre' />
-                        <div className={`z-10 bg-green-500 text-white p-0.5 rounded transition-opacity duration-500 ease-in-out -translate-y-4 ${copied ? 'opacity-100' : 'opacity-0'}`} style={{fontSize: '0.5rem', top:  "-10px"}}>
+                        <div className={`z-10 bg-green-500 text-white p-0.5 rounded transition-opacity duration-500 ease-in-out -translate-y-4 ${copied ? 'opacity-100' : 'opacity-0'}`} style={{ fontSize: '0.5rem', top: "-10px" }}>
                             ¡Copiado!
                         </div>
                         <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
@@ -177,8 +177,6 @@ function MemberDetail() {
                         </div>
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                         <ActivityHistory userId={membershipId} membershipType={membershipType} />
-                    </div>
-                    <div>
                         <TriumphScore userId={membershipId} membershipType={membershipType} />
                     </div>
                 </div>

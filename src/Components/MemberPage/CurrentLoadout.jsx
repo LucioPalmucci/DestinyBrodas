@@ -252,6 +252,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             }
         };
         fetchCurrentLoadout();
+        const interval = setInterval(() => {
+            fetchCurrentLoadout();
+        }, 120000);
+        return () => clearInterval(interval);
+
     }, [membershipType, userId]);
 
     useEffect(() => {
