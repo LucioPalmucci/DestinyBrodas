@@ -14,6 +14,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [animatePopup, setAnimatePopup] = useState(false);
     const [activeTab, setActiveTab] = useState("Equipamiento");
     const [selectedWeapon, setSelectedWeapon] = useState(null);
+    const [showArtifact, setShowArtifact] = useState(false);
     const [selectedArmor, setSelectedArmor] = useState(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [emblems, setEmblems] = useState(null);
@@ -22,6 +23,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [season, setSeason] = useState(null);
     const [Passlevel, setPassLevel] = useState(null);
     const [triumphRecord, setTriumphRecord] = useState(null);
+    const [artifact, setArtifact] = useState(null);
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             try {
@@ -51,6 +53,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 await getOtherEmblems(characters, mostRecentCharacter);
                 await getSeal(mostRecentCharacter);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
+                getArtifactDetails(responseChar.data.Response.profileProgression.data.seasonalArtifact);
                 const seasonProgress = await getCurrentSeason(seasonHash);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
@@ -245,6 +248,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'));
                 setItems(itemDetails);
                 console.log(itemDetails)
+                console.log(artifact)
                 setTotalStats(totalStats);
 
             } catch (error) {
@@ -269,13 +273,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }, [showPopup]);
 
-    const handleWeaponClick = (weapon, event) => {
+    const handleWeaponClick = (weapon, event, index) => {
         const rect = event.target.getBoundingClientRect();
         setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 5.1 }); // Posición a la derecha de la imagen
-        setSelectedWeapon(weapon);
+        index == 16 ? setShowArtifact(artifact) : setSelectedWeapon(weapon);
     };
     const closeWeaponDetails = () => {
         setSelectedWeapon(null);
+        setShowArtifact(null);
     };
 
     const handleArmorClick = (armor, event) => {
@@ -391,7 +396,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             "plugs.weapons.masterworks.trackers",
         ];
 
-        console.log(perks)
         let modifierPerks = perks.filter(perk =>
             perk && excludedModifiers.every(mod => !perk.perkType?.includes(mod))
         );
@@ -652,7 +656,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
         // Buscar el parentNodeHash que coincida con el hash del título
         const matchingNode = Object.values(metricsData.data).find(node => node.completionRecordHash === char.titleRecordHash);
-        console.log(sealResponse.data.Response.hash)
         setSeal({
             name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
             iconPath: matchingNode.originalIcon || sealResponse.data.Response.displayProperties.icon,
@@ -703,6 +706,18 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         );
         setSeason(seasonResponse.data.Response.seasonNumber);
         return matchingMetric.hash;
+    }
+
+    function getArtifactDetails(artifact) {
+        setArtifact({
+            points: artifact?.pointsAcquired,
+            pointsCap: artifact.pointProgression.levelCap,
+            pointsProgress: artifact.pointProgression.currentProgress,
+            pointsProgressNextLvl: artifact.pointProgression.progressToNextLevel,
+            powerBonus: artifact?.powerBonus,
+            powerProgress: artifact.powerBonusProgression.progressToNextLevel,
+            powerProgressNextLvl: artifact.powerBonusProgression.nextLevelAt,
+        })
     }
 
     useEffect(() => {
@@ -987,6 +1002,55 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>}
+                                                                                {showArtifact && (
+                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50" onClick={() => closeWeaponDetails()} style={{width: "75%"}}>
+                                                                                        <div
+                                                                                            className={`text-white relative`}
+                                                                                            style={{
+                                                                                                top: `${popupPosition.top}px`,
+                                                                                                left: `${popupPosition.left}px`,
+                                                                                                position: "absolute",
+                                                                                                width: "34%",
+                                                                                            }}
+                                                                                            onClick={(e) => e.stopPropagation()}
+                                                                                        >
+                                                                                            <div style={{ backgroundColor: "rgba(10, 55, 62, 0.65)" }} className="p-2 px-4 rounded-lg">
+                                                                                                <div className="flex space-x-2 items-center">
+                                                                                                    <div className="space-x-2 flex">
+                                                                                                        <p className="opacity-[0.90] tracking-wide">Disponibles</p>
+                                                                                                        <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
+                                                                                                    </div>
+                                                                                                    <svg width="80" height="80" viewBox="-10 -10 140 140" style={{ padding: "10px" }} className="relative">
+                                                                                                        <polygon
+                                                                                                            points="60,0 120,60 60,120 0,60"
+                                                                                                            fill="transparent"
+                                                                                                            stroke="rgba(0, 0, 0, 0.4)"
+                                                                                                            strokeWidth="7.5"
+                                                                                                        />
+                                                                                                        <polygon
+                                                                                                            points="60,0 120,60 60,120 0,60"
+                                                                                                            fill="none"
+                                                                                                            stroke="#00d4d4"
+                                                                                                            strokeWidth="7.5"
+                                                                                                            strokeDasharray="360"
+                                                                                                            strokeDashoffset={370 * (1 - showArtifact.powerProgress / showArtifact.powerProgressNextLvl)}
+                                                                                                        />
+                                                                                                        <polygon
+                                                                                                            points="60,28 92,60 60,92 28,60"
+                                                                                                            fill="transparent"
+                                                                                                            stroke="white"
+                                                                                                            strokeWidth="15"
+                                                                                                            strokeDasharray="191"
+                                                                                                            strokeLinecap="square"
+                                                                                                            strokeDashoffset={211 *  (1 - showArtifact.pointsProgress / showArtifact.pointsProgressNextLvl)}
+                                                                                                        />
+                                                                                                    </svg>
+                                                                                                    <p style={{color: "#00d4d4"}} className="text-xl font-extrabold">+{showArtifact.powerBonus}</p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -997,8 +1061,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             height={60}
                                                                             alt={items[index].name}
                                                                             title={items[index].name}
-                                                                            onClick={(e) => [0, 1, 2].includes(index) && handleWeaponClick(items[index], e)}
-                                                                            className={`${[0, 1, 2].includes(index) ? "cursor-pointer" : ""} `}
+                                                                            onClick={(e) => [0, 1, 2, 16].includes(index) && handleWeaponClick(items[index], e, index)}
+                                                                            className={`${[0, 1, 2, 16].includes(index) ? "cursor-pointer" : ""} `}
 
                                                                         />
                                                                         {(items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4) && (
