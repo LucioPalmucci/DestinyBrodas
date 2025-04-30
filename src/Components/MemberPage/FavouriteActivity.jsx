@@ -70,7 +70,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 });
 
                 let modoDatos = await fetchActivityDetails(modeGroups[mostPlayedMode].modeHash, "DestinyActivityModeDefinition", "general");
-                console.log("Modo datos", modeGroups[mostPlayedMode].name);
                 let characterCompletions = {};
                 for (const characterId of characterIds) {
                     characterCompletions[characterId] = {};

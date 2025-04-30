@@ -40,7 +40,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                //console.log("Lista de las actividades: ", response.data.Response.activities);
 
                 const details = await Promise.all(response.data.Response.activities.map(async (activity) => {
                     const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
@@ -100,7 +99,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
-            //console.log("Carnage Report: ", carnageReportResponse.data.Response);
             const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
