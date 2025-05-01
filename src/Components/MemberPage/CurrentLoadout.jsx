@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import inventory from "../../assets/inventory.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import "../../index.css";
+import RecoilStat from "./RecoliStat";
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
@@ -63,7 +64,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         },
                     });
 
-                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,302,304,305,309`, {
+                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,301,304,305,309`, {
                         headers: {
                             'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                         },
@@ -139,7 +140,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
-                            //if(response.data.Response.equipment.data.items.indexOf(item) === 1) console.log(perkResponse.data.Response.plug.plugCategoryIdentifier)
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
@@ -147,6 +147,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
                                 isEnhanced: perkResponse.data.Response.itemTypeDisplayName,
+                                investmentStats: perkResponse.data.Response.investmentStats,
                             };
                         }) || []);
                     }
@@ -195,7 +196,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
@@ -206,6 +207,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                     }
                     else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                        investmentStats = perks.map(perk => ({
+                            investmentStats: perk.investmentStats,
+                            name: perk.name,
+                            hash: perk.plugHash,
+                        }));
+                        weaponStats = await getWeaponStats(itemResponse.data.Response.stats.stats, itemResponse.data.Response.stats.statGroupHash, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemResponse.data.Response.displayProperties.name, itemResponse.data.Response.tooltipNotifications[0]?.displayStyle);
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -218,17 +225,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                         weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
-                        weaponStats = await getWeaponStats(itemD.data.Response.stats.data.stats, itemResponse.data.Response.stats.statGroupHash);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
                         perks: perks,
-                        stats: armorStats,
+                        stats: armorStats.length > 0 ? armorStats : weaponStats,
                         masterwork: item.state,
                         watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
                         power: itemD.data.Response.instance?.data?.primaryStat?.value,
@@ -242,7 +248,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         champmod: champmod,
                         craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
                         weaponLevel: weaponLevel,
-                        weaponStats: weaponStats,
                     };
                 }));
 
@@ -349,20 +354,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function sortWeaponPerks(perks) {
-        const modifiers = [
-            "barrels",
-            "blades",
-            "scopes",
-            "bowstrings",
-            "magazines",
-            "guards",
-            "arrows",
-            "batteries",
-            "frames",
-            "stocks",
-            "origins",
-            "v400.weapon.mod_",
-        ];
 
         const excludedModifiers = [
             "plugs.weapons.masterworks",
@@ -437,29 +428,49 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }
 
-    async function getWeaponStats(stats, group) {
+    async function getWeaponStats(stats, group, investmentStats, weaponLevel, name, craftedenchanced) {
+        console.log("invest stats1", investmentStats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         })
-        console.log(response.data.Response)
         const order = response.data.Response.scaledStats.map(stat => stat.statHash);
-
-        console.log("orden", order);
-
         let weaponStats = await Promise.all(Object.values(stats).map(async (stat) => {
             const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
                 headers: {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
+            // Verificar si algúna perk afecta el valor de la stat
+            let modifiedValue = stat.value;
+            investmentStats.forEach((investmentStat) => {
+                const matchingStat = investmentStat.investmentStats.find(
+                    (invStat) => invStat.statTypeHash === stat.statHash
+                );
+                if (matchingStat && investmentStat.hash !== 2728416796) { //evitar mejora lvl 3;
+                    modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
+                    if (investmentStats.indexOf(investmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
+                        if (name.includes("(") && name.includes(")")) {
+                            modifiedValue += 1; // Si el nivel de la arma es mayor o igual a 20 y se es mejorado sin craftear, sumar 1
+                            if(weaponLevel >= 20) modifiedValue += 1;
+                            console.log("+1 para el arma con nivel 20", name);
+                        }
+                    }
+                }
+            });
             return {
                 statHash: stat.statHash,
-                name: statResponse.data.Response.displayProperties.name,
-                value: stat.value,
+                name: statResponse.data.Response.displayProperties.name == "Disparos por minuto" ? "DPM" : statResponse.data.Response.displayProperties.name,
+                value: modifiedValue,
+                desc: statResponse.data.Response.displayProperties.description,
             };
         }));
+
+        //console.log("invest stats2", weaponStats)
+
+        // Filtrar los stats que no están en el arreglo "order"
+        weaponStats = weaponStats.filter(stat => order.includes(stat.statHash));
 
         // Ordenar weaponStats según el arreglo "order"
         weaponStats = weaponStats.sort((a, b) => {
@@ -480,7 +491,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             const [element] = weaponStats.splice(index, 1); // Elimina el elemento del arreglo
             weaponStats.splice(index - 2, 0, element); // Inserta el elemento dos índices atrás
         }
-        console.log(weaponStats);
+
+        // Orden secundario para colocar Velocidad de golpe al principio
+        const velocidadGolpe = weaponStats.findIndex(stat => stat.statHash === 2837207746);
+        if (velocidadGolpe > 0) {
+            const [element] = weaponStats.splice(velocidadGolpe, 1);
+            weaponStats.unshift(element); // Inserta el elemento al principio
+        }
+
+        // Orden secundario para colocar Recuperación de carga un índice adelante
+        const recuperacionCarga = weaponStats.findIndex(stat => stat.statHash === 3022301683);
+        if (recuperacionCarga > -1 && recuperacionCarga + 1 < weaponStats.length) {
+            const [element] = weaponStats.splice(recuperacionCarga, 1);
+            weaponStats.splice(recuperacionCarga + 1, 0, element); // Inserta el elemento dos índices adelante
+        }
         return weaponStats;
     }
 
@@ -1012,8 +1036,22 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
-                                                                                                <div>
-
+                                                                                                <div className="flex flex-col py-1.5 px-4">
+                                                                                                    {selectedWeapon.stats.map((stat) => (
+                                                                                                        <div key={stat.statHash} className="flex items-center space-x-2 text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc}>
+                                                                                                            <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }}>{stat.name}</p>
+                                                                                                            <p style={{ width: "5%", textAlign: "right", fontWeight: "300" }}>{stat.value}</p>
+                                                                                                            {stat.statHash === 2715839340 ? (
+                                                                                                                <div style={{ width: "35%" }}>
+                                                                                                                    <RecoilStat value={stat.value} />
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <div className="bg-[#333] h-3 overflow-hidden" style={{ width: "35%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
+                                                                                                                    {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (<div className="bg-white h-full" style={{ width: `${Math.min(stat.value, 100)}%` }} />)}
+                                                                                                                </div>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    ))}
                                                                                                 </div>
                                                                                                 <div className="flex space-x-3 p-2 rounded-b-lg">
                                                                                                     <div className="space-y-1 flex flex-col justify-top space-y-3 items-center " style={{ width: "33%" }}>
