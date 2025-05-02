@@ -64,7 +64,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         },
                     });
 
-                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,301,304,305,309`, {
+                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,301,304,305,309,302,303,306,307,308,310`, {
                         headers: {
                             'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                         },
@@ -212,7 +212,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             name: perk.name,
                             hash: perk.plugHash,
                         }));
-                        weaponStats = await getWeaponStats(itemResponse.data.Response.stats.stats, itemResponse.data.Response.stats.statGroupHash, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemResponse.data.Response.displayProperties.name, itemResponse.data.Response.tooltipNotifications[0]?.displayStyle);
+                        weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug));
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -227,7 +227,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -428,46 +428,48 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }
 
-    async function getWeaponStats(stats, group, investmentStats, weaponLevel, name, craftedenchanced) {
-        console.log("invest stats1", investmentStats)
+    async function getWeaponStats(item, perksinvestmentStats, weaponLevel) {
+        const stats = item.investmentStats;
+        const group = item.stats.statGroupHash;
+        const name = item.displayProperties.name;
+        console.log("invest stats1", perksinvestmentStats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             },
         })
+        const interpolatingStats = response.data.Response.scaledStats;
         const order = response.data.Response.scaledStats.map(stat => stat.statHash);
         let weaponStats = await Promise.all(Object.values(stats).map(async (stat) => {
-            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
+            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statTypeHash}/?lc=es`, {
                 headers: {
                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                 },
             });
             // Verificar si algúna perk afecta el valor de la stat
             let modifiedValue = stat.value;
-            investmentStats.forEach((investmentStat) => {
-                const matchingStat = investmentStat.investmentStats.find(
-                    (invStat) => invStat.statTypeHash === stat.statHash
+            perksinvestmentStats.forEach((perksinvestmentStat) => {
+                const matchingStat = perksinvestmentStat.investmentStats.find(
+                    (invStat) => invStat.statTypeHash === stat.statTypeHash
                 );
-                if (matchingStat && investmentStat.hash !== 2728416796) { //evitar mejora lvl 3;
+                if (matchingStat && perksinvestmentStat.hash !== 2728416796) { //evitar mejora lvl 3
                     modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
-                    if (investmentStats.indexOf(investmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
+                    if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
                         if (name.includes("(") && name.includes(")")) {
                             modifiedValue += 1; // Si el nivel de la arma es mayor o igual a 20 y se es mejorado sin craftear, sumar 1
-                            if(weaponLevel >= 20) modifiedValue += 1;
-                            console.log("+1 para el arma con nivel 20", name);
+                            if (weaponLevel >= 20) modifiedValue += 1;
                         }
                     }
                 }
             });
             return {
-                statHash: stat.statHash,
+                statHash: stat.statTypeHash,
                 name: statResponse.data.Response.displayProperties.name == "Disparos por minuto" ? "DPM" : statResponse.data.Response.displayProperties.name,
                 value: modifiedValue,
                 desc: statResponse.data.Response.displayProperties.description,
             };
         }));
 
-        //console.log("invest stats2", weaponStats)
 
         // Filtrar los stats que no están en el arreglo "order"
         weaponStats = weaponStats.filter(stat => order.includes(stat.statHash));
@@ -505,7 +507,57 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             const [element] = weaponStats.splice(recuperacionCarga, 1);
             weaponStats.splice(recuperacionCarga + 1, 0, element); // Inserta el elemento dos índices adelante
         }
+
+        weaponStats = interpoledStats(weaponStats, interpolatingStats);//Se "normalizan" las stats mediante interpolacion
         return weaponStats;
+    }
+
+    function interpoledStats(weaponStats, interpolatingStats) {
+        const interpolatedStats = weaponStats.map(stat => {
+            const interpolatingStat = interpolatingStats.find(interpolatingStat => interpolatingStat.statHash === stat.statHash);
+            if (interpolatingStat) {
+                const { displayInterpolation } = interpolatingStat;
+                const value = stat.value;
+
+                // Ordenar los valores de displayInterpolation por 'value' en caso de que no estén ordenados
+                displayInterpolation.sort((a, b) => a.value - b.value);
+
+                // Buscar el rango en el que se encuentra el valor
+                for (let i = 0; i < displayInterpolation.length - 1; i++) {
+                    const current = displayInterpolation[i];
+                    const next = displayInterpolation[i + 1];
+
+                    if (value >= current.value && value <= next.value) {
+                        // Calcular el peso interpolado
+                        const range = next.value - current.value;
+                        const weightRange = next.weight - current.weight;
+                        const proportion = (value - current.value) / range;
+
+                        const interpolatedValue = current.weight + proportion * weightRange;
+
+                        return {
+                            ...stat,
+                            value: Math.round(interpolatedValue),
+                        };
+                    }
+                }
+
+                // Si el valor está fuera del rango, devolver el peso más cercano
+                if (value < displayInterpolation[0].value) {
+                    return {
+                        ...stat,
+                        value: displayInterpolation[0].weight,
+                    };
+                }
+                if (value > displayInterpolation[displayInterpolation.length - 1].value) {
+                    return {
+                        ...stat,
+                        value: displayInterpolation[displayInterpolation.length - 1].weight,
+                    };
+                }
+            }
+        });
+        return interpolatedStats;
     }
 
     async function getdmgType(dmgType) {
