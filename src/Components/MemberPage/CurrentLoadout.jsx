@@ -167,6 +167,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     const statsList = itemD.data.Response.stats.data?.stats;
                     let armorStats = []; //Stats de armadura
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                        let totalStatValue = 0;
                         for (const stat of Object.values(statsList)) {
                             try {
                                 const statResponse = await axios.get(
@@ -185,10 +186,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     iconPath: statResponse.data.Response.displayProperties.icon,
                                     value: stat.value,
                                 });
+                                totalStatValue += stat.value;
                             } catch (error) {
                                 console.error(`Error fetching stat ${stat.statHash}:`, error);
                             }
                         }
+                        armorStats.push({
+                            statHash: null,
+                            name: "Total",
+                            iconPath: null,
+                            value: totalStatValue,
+                        });
                     }
 
                     let cosmetic;
@@ -196,7 +204,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
@@ -205,9 +213,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         };
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
+                        armorCategory = getArmorCategory(itemResponse.data.Response.itemTypeDisplayName, itemResponse.data.Response.classType);
                     }
                     else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
-                        investmentStats = perks.map(perk => ({
+                        console.log("Perksss", perks);
+                        investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
                             name: perk.name,
                             hash: perk.plugHash,
@@ -227,7 +237,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 3) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -248,6 +258,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         champmod: champmod,
                         craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
                         weaponLevel: weaponLevel,
+                        armorCategory: armorCategory,
                     };
                 }));
 
@@ -291,7 +302,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 11 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 13 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
@@ -844,6 +855,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         })
     }
 
+    function getArmorCategory(armorType, classType) {
+        switch (classType) {
+            case 0:
+                return "Titán " + armorType ;
+            case 1:
+                return "Cazador " + armorType ;
+            case 2:
+                return "Hechicero " + armorType ;
+            default:
+                return armorType;
+        }
+    }
+
     useEffect(() => {
         if (isVisible) {
             const handleKeyDown = (event) => {
@@ -1063,81 +1087,89 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                     <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeWeaponDetails()} >
                                                                                         <div
                                                                                             className={`text-white relative`}
-                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "34%" }}
+                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
                                                                                             onClick={(e) => e.stopPropagation()}
                                                                                         >
-                                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }} className="p-2 px-4 rounded-t-lg">
-                                                                                                <div className="text-2xl font-semibold flex items-center">
-                                                                                                    <a href={`https://www.light.gg/db/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300" >{selectedWeapon.name}</a>
-                                                                                                    <h1 className='lightlevel ml-2' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                                                                                        <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.40rem' }} />{selectedWeapon.power}
-                                                                                                    </h1>
+                                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                                <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                                    <a href={`https://www.light.gg/db/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedWeapon.name}</a>
                                                                                                 </div>
-                                                                                                <div className="flex items-center justify-between">
+                                                                                                <div className="flex items-center justify-between text-sm ">
                                                                                                     <div className="flex items-center">
-                                                                                                        <p>{selectedWeapon.weaponType}</p>
+                                                                                                        <p className="opacity-[0.7]">{selectedWeapon.weaponType}</p>
                                                                                                         <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
-                                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[18px] h-[18px]" title={selectedWeapon.dmgType.name} />
+                                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[14px] h-[14px]" title={selectedWeapon.dmgType.name} />
                                                                                                         {selectedWeapon.champmod && (
                                                                                                             <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
                                                                                                                 <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
                                                                                                             </div>
                                                                                                         )}
                                                                                                     </div>
-                                                                                                    {selectedWeapon.weaponLevel && <div className="text-sm mt-[3px] flex items-center">Nv. {selectedWeapon.weaponLevel}</div>}
+                                                                                                    <div className="flex items-center">
+                                                                                                        {selectedWeapon.weaponLevel && <div className="text-sm flex items-center space-x-1 opacity-[0.7]">
+                                                                                                            <p>Nv. {selectedWeapon.weaponLevel}</p>
+                                                                                                            <p>/</p>
+                                                                                                        </div>}
+                                                                                                        <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                                                                            <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedWeapon.power}
+                                                                                                        </p>
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
-                                                                                                <div className="flex flex-col py-1.5 px-4">
+                                                                                                <div className="flex flex-col py-1.5">
                                                                                                     {selectedWeapon.stats.map((stat) => (
-                                                                                                        <div key={stat.statHash} className="flex items-center space-x-2 text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc}>
+                                                                                                        <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc}>
                                                                                                             <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }}>{stat.name}</p>
-                                                                                                            <p style={{ width: "5%", textAlign: "right", fontWeight: "300" }}>{stat.value}</p>
+                                                                                                            <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }}>{stat.value}</p>
                                                                                                             {stat.statHash === 2715839340 ? (
-                                                                                                                <div style={{ width: "35%" }}>
+                                                                                                                <div style={{ width: "34%" }}>
                                                                                                                     <RecoilStat value={stat.value} />
                                                                                                                 </div>
                                                                                                             ) : (
-                                                                                                                <div className="bg-[#333] h-3 overflow-hidden" style={{ width: "35%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
+                                                                                                                <div className="bg-[#333] h-3 overflow-hidden" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
                                                                                                                     {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (<div className="bg-white h-full" style={{ width: `${Math.min(stat.value, 100)}%` }} />)}
                                                                                                                 </div>
                                                                                                             )}
                                                                                                         </div>
                                                                                                     ))}
                                                                                                 </div>
-                                                                                                <div className="flex space-x-3 p-2 rounded-b-lg">
-                                                                                                    <div className="space-y-1 flex flex-col justify-top space-y-3 items-center " style={{ width: "33%" }}>
-                                                                                                        <p className="font-semibold text-md">Armazón</p>
-                                                                                                        <div className="flex space-x-2">
+                                                                                                <div className="flex space-x-1 rounded-b-lg p-2 justify-center" >
+                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center " style={{ width: "28%" }}>
+                                                                                                        <p className="font-semibold text-sm">Armazón</p>
+                                                                                                        <div className="flex space-x-2 w-fit">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[35px] h-[35px]"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 h-24 " />
-                                                                                                    <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center" style={{ width: "33%" }}>
-                                                                                                        <p className="font-semibold text-md">Diseño</p>
-                                                                                                        <div className="flex space-x-2 w-fit mt-1">
+                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{height: "67px"}}/>
+                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center" style={{ width: "28%" }}>
+                                                                                                        <p className="font-semibold text-sm">Diseño</p>
+                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-0.5">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[35px] max-h-[35px]"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[30px] max-h-[30px]"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 h-24" />
-                                                                                                    <div className="space-y-1 justify-top flex flex-col justify-top space-y-3 items-center" style={{ width: "33%" }}>
-                                                                                                        <p className="font-semibold text-md">Muertes</p>
-                                                                                                        <div className="flex space-x-1">
+                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{height: "67px"}}/>
+                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center ml-1" style={{ width: "28%" }}>
+                                                                                                        <p className="font-semibold text-sm">Muertes</p>
+                                                                                                        <div className="flex space-x-1 items-center">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                             {selectedWeapon.tracker && (
-                                                                                                                <p className="flex items-center space-x-2 text-xs"> {selectedWeapon.tracker} {selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos" : "Guardianes"}</p>
+                                                                                                                <div className="flex flex-col items-start space-x-2 text-[0.68rem]" style={{ fontWeight: "300" }}>
+                                                                                                                    <p>{selectedWeapon.tracker}</p>
+                                                                                                                    <p>{selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos" : "Guardianes"}</p>
+                                                                                                                </div>
                                                                                                             )}
                                                                                                         </div>
                                                                                                     </div>
@@ -1292,16 +1324,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
                                                                                 <div
                                                                                     className="text-white relative"
-                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "24%" }}
+                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "34%" }}
                                                                                     onClick={(e) => e.stopPropagation()}
                                                                                 >
                                                                                     <div className="rounded-t-lg p-2 px-3" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
-                                                                                        <h1 className="text-2xl font-semibold flex items-center">
-                                                                                            {selectedArmor.name}
-                                                                                            <h1 className='lightlevel ml-2' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                                                                                <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.40rem' }} />{selectedArmor.power}
-                                                                                            </h1>
-                                                                                        </h1>
+                                                                                        <div className="flex flex-col">
+                                                                                            <p className="text-2xl font-semibold place-self-start">{selectedArmor.name}</p>
+                                                                                            <div className="flex justify-evenly items-center justify-center">
+                                                                                                <p className="opacity-75">{selectedArmor.armorCategory}</p>
+                                                                                                <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedArmor.power}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
                                                                                     <div className="flex space-x-2 p-4 justify-center rounded-b-lg" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
                                                                                         {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
