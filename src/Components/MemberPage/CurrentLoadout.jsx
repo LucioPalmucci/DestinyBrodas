@@ -236,7 +236,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         weaponLevel = getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -449,6 +449,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
         const group = item.stats.statGroupHash;
         const name = item.displayProperties.name;
+        if(item.itemTypeDisplayName == "Escopeta")console.log("stats escopeta base", stats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
@@ -469,8 +470,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     (invStat) => invStat.statTypeHash === stat.statTypeHash
                 );
                 if (matchingStat && perksinvestmentStat.hash !== 2728416796) { //evitar mejora lvl 3
-                    modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
-                    if(matchingStat.statTypeHash == 3736848092) console.log("la stat de la espada",matchingStat.value, "gracias a", perksinvestmentStat.name)
+                    if(perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias
+                    else modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
+                    if(item.itemTypeDisplayName == "Escopeta") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.data.Response.displayProperties.name, ":", matchingStat.value);
                     if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
                         if (name.includes("(") && name.includes(")")) {
                             modifiedValue += 1; // Si el nivel de la arma es mayor o igual a 20 y se es mejorado sin craftear, sumar 1
