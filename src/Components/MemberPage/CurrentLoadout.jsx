@@ -222,6 +222,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             hash: perk.plugHash,
                         }));
                         weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemD.data.Response.stats.data.stats);
+                        colorStats(itemResponse.data.Response, perks.filter(perk => perk != null), weaponStats)
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -236,7 +237,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         weaponLevel = getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 0) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -440,7 +441,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getWeaponStats(item, perksinvestmentStats, weaponLevel) {
         const stats = item.investmentStats;
-        if(item.itemTypeDisplayName == "Espada"){ //Si es espada agregar resistencia de guardia
+        if (item.itemTypeDisplayName == "Espada") { //Si es espada agregar resistencia de guardia
             stats.push({
                 statTypeHash: 3736848092,
                 value: 0,
@@ -449,7 +450,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
         const group = item.stats.statGroupHash;
         const name = item.displayProperties.name;
-        if(item.itemTypeDisplayName == "Escopeta")console.log("stats escopeta base", stats)
+        //if (item.itemTypeDisplayName == "Escopeta") console.log("stats escopeta base", stats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
@@ -470,9 +471,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     (invStat) => invStat.statTypeHash === stat.statTypeHash
                 );
                 if (matchingStat && perksinvestmentStat.hash !== 2728416796) { //evitar mejora lvl 3
-                    if(perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias
-                    else modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
-                    if(item.itemTypeDisplayName == "Escopeta") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.data.Response.displayProperties.name, ":", matchingStat.value);
+
+                    if (perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias de obra maestra
+                    else {
+                        modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
+                        //if (item.itemTypeDisplayName == "Cañón de mano") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.data.Response.displayProperties.name, ":", matchingStat.value);
+                    }
+
                     if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
                         if (name.includes("(") && name.includes(")")) {
                             modifiedValue += 1; // Si el nivel de la arma es mayor o igual a 20 y se es mejorado sin craftear, sumar 1
@@ -576,6 +581,123 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             }
         });
         return interpolatedStats;
+    }
+
+    function colorStats(item, perks, stats) {
+        //#68a0b7 si es un mod insertado
+        //#e8a534 si es obra maestra
+        //blaco pero con opacidad 0.88 para el que esta en el indice 1 y es +
+        //blanco pero con opacidad 0.76 para el que esta en el indice 2 y es -
+        //#7a2727 si es negativo
+        if (item.itemTypeDisplayName == "Escopeta") console.log("pers", perks, stats)
+        stats.forEach((stat) => {
+            let blancobase = 0, blancoFFFFFF1F = 0, blancoFFFFFF3D = 0, azul = 0, rojo = 0, amarillo = 0;
+            let perk1F, perk3D, perkAzul, perkRojo, perkAmarillo;
+            perks.forEach(perk => {
+                perk.investmentStats.forEach(invStat => {
+                    if (invStat.statTypeHash == stat.statHash) {
+                        if (perks[0] === perk || perk.name.includes("Obra Maestra")) { //Si esta en la posicion cero es el arquetipo o tiene obra maestra
+                            if(perk.name.includes("Obra Maestra") && invStat.value == 3); //Si es una obra maestra no crafteada, no sumar stats secundarias
+                            else if(perk.name.includes("Obra Maestra") && invStat.value == 10) {
+                                amarillo += invStat.value;
+                                perkAmarillo = invStat.value + " Estadística Obra Maestra";
+                            }
+                            else {
+                                amarillo += invStat.value;
+                                perkAmarillo = invStat.value + " Estadística Obra Maestra"; //Gaurdo en un a veriable el nombre de la perk y el valor
+                            }
+                        }
+                        else if (perks[1] === perk) { // cañon
+                            if (invStat.value > 0) {//Si el value del cañon es positivo
+                                blancoFFFFFF1F += invStat.value;
+                                perk1F = invStat.value + " " + perk.name;
+                            } else if (invStat.value < 0) { //Si el value del cañon es negativo
+                                rojo += invStat.value;
+                                perkRojo = invStat.value + " " + perk.name;
+                            }
+                        }
+                        else if (perks[2] === perk || perk.perkType == "grips") { //cargador o empuñadura
+                            if (invStat.value > 0) {//Si el value del cargador es positivo
+                                blancoFFFFFF3D += invStat.value;
+                                perk3D = invStat.value + " " + perk.name;
+                            } else if (invStat.value < 0) { //Si el value del cargador es negativo
+                                rojo += invStat.value;
+                                perkRojo = invStat.value + " " + perk.name;
+                            }
+                        }
+                        else if (perk.perkType.includes("weapon.mod_")) { //Si es un mod insertado
+                            azul += invStat.value;
+                            perkAzul = invStat.value + " " + perk.name;
+                        }
+                    }
+                })
+            })
+            let sumaColores = rojo + amarillo + blancoFFFFFF1F + blancoFFFFFF3D + azul;
+            if (sumaColores < 0) blancobase = stat.value + Math.abs(sumaColores); //Si la suma de colores es negativa, se le resta al stat base
+            else blancobase = stat.value - sumaColores; //Si no, se queda con el valor base
+
+            if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Estabilidad") console.log(blancobase)
+            let valorAbsolutoRojo = Math.abs(rojo);
+            let aux = 0;
+            
+            if (valorAbsolutoRojo >= azul) { //El valorAbsolutoRojo se come al resto de sumas
+                aux += azul;
+                azul = 0;
+                if (valorAbsolutoRojo >= aux + amarillo) {
+                    aux += amarillo;
+                    amarillo = 0;
+                    if (valorAbsolutoRojo >= aux + blancoFFFFFF1F) {
+                        aux += blancoFFFFFF1F;
+                        blancoFFFFFF1F = 0;
+                        //if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Manejo") console.log("LLego aca",  aux + blancoFFFFFF3D, valorAbsolutoRojo)
+                        if (valorAbsolutoRojo >= aux + blancoFFFFFF3D) {
+                            aux += blancoFFFFFF3D;
+                            blancoFFFFFF3D = 0;
+                            if (valorAbsolutoRojo > aux + blancoFFFFFF3D) { //Si es mas grande que todas las perks, le empieza a comer al stat base
+                                blancobase = blancobase - (valorAbsolutoRojo - aux);
+                            }
+                        } else blancoFFFFFF3D = blancoFFFFFF3D - (valorAbsolutoRojo - aux); //Si el rojo no es mas que el auxiliar, le saca puntos en donde se quedó
+                    } else blancoFFFFFF1F = blancoFFFFFF1F - (valorAbsolutoRojo - aux);
+                } else amarillo = amarillo - (valorAbsolutoRojo - aux);
+            } else azul = azul - (valorAbsolutoRojo - aux);
+            //if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Estabilidad") console.log(stat.name, "Total", blancobase ,"blancoFFFFFF1F", blancoFFFFFF1F, "blancoFFFFFF3D", blancoFFFFFF3D, "azul", azul, "rojo", rojo, "amarillo", amarillo);
+            stat.secciones = {
+                base: {
+                    value: blancobase,
+                    color: "#fff",
+                    name: stat.value - sumaColores + " Estadística Base",
+                },
+                blancoFFFFFF1F: {
+                    value: blancoFFFFFF1F,
+                    color: "#FFFFFF1F",
+                    name:  perk1F ? "+" + perk1F : null,
+                },
+                blancoFFFFFF3D: {
+                    value: blancoFFFFFF3D,
+                    color: "#FFFFFF3D",
+                    name: "2da columna",
+                    name: perk3D ? "+" + perk3D : null,
+                },
+                amarillo: {
+                    value: amarillo,
+                    color: "#e8a534",
+                    name: perkAmarillo ? "+" + perkAmarillo: null,
+                },
+                azul: {
+                    value: azul,
+                    color: "#68a0b7",
+                    name: "Mod insertado",
+                    name: azul ? "+" + perkAzul: null,
+                },
+                rojo: {
+                    value: rojo,
+                    color: "#7a2727",
+                    name: "Perk negativa",
+                    name: perkRojo ? perkRojo: null,
+                },
+            }
+        })
+        if (item.itemTypeDisplayName == "Escopeta") console.log("stats d", stats)
     }
 
     async function getdmgType(dmgType) {
@@ -1153,7 +1275,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         </svg>
                                                                                                     )}
                                                                                                     <div className="bg-[#222] w-full relative">
-                                                                                                        <div className="bg-[#d25336] h-full absolute" style={{width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`,}} />
+                                                                                                        <div className="bg-[#d25336] h-full absolute" style={{ width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`, }} />
                                                                                                         <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
                                                                                                             <span>Niv. {selectedWeapon.weaponLevel.weaponLvl}</span>
                                                                                                             <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
