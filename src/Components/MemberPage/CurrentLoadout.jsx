@@ -216,13 +216,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         armorCategory = getArmorCategory(itemResponse.data.Response.itemTypeDisplayName, itemResponse.data.Response.classType);
                     }
                     else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
-                        console.log("Perksss", perks);
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
                             name: perk.name,
                             hash: perk.plugHash,
                         }));
-                        weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug));
+                        weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemD.data.Response.stats.data.stats);
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -234,10 +233,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
-                        weaponLevel = getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug)
+                        weaponLevel = getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 3) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 2) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -441,9 +440,15 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getWeaponStats(item, perksinvestmentStats, weaponLevel) {
         const stats = item.investmentStats;
+        if(item.itemTypeDisplayName == "Espada"){ //Si es espada agregar resistencia de guardia
+            stats.push({
+                statTypeHash: 3736848092,
+                value: 0,
+                isConditionallyActive: false,
+            })
+        }
         const group = item.stats.statGroupHash;
         const name = item.displayProperties.name;
-        console.log("invest stats1", perksinvestmentStats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
@@ -465,6 +470,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 );
                 if (matchingStat && perksinvestmentStat.hash !== 2728416796) { //evitar mejora lvl 3
                     modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
+                    if(matchingStat.statTypeHash == 3736848092) console.log("la stat de la espada",matchingStat.value, "gracias a", perksinvestmentStat.name)
                     if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
                         if (name.includes("(") && name.includes(")")) {
                             modifiedValue += 1; // Si el nivel de la arma es mayor o igual a 20 y se es mejorado sin craftear, sumar 1
@@ -477,7 +483,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 statHash: stat.statTypeHash,
                 name: statResponse.data.Response.displayProperties.name == "Disparos por minuto" ? "DPM" : statResponse.data.Response.displayProperties.name,
                 value: modifiedValue,
-                desc: statResponse.data.Response.displayProperties.description,
+                desc: statResponse.data.Response.displayProperties.description || null,
             };
         }));
 
@@ -529,7 +535,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (interpolatingStat) {
                 const { displayInterpolation } = interpolatingStat;
                 const value = stat.value;
-
                 // Ordenar los valores de displayInterpolation por 'value' en caso de que no estén ordenados
                 displayInterpolation.sort((a, b) => a.value - b.value);
 
@@ -725,6 +730,27 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }
 
+    function getWeaponLevelAndProgression(objectivesPerPlug) {
+        let weaponLvl, levelprogress, levelCompletition;
+        for (const objective of Object.values(objectivesPerPlug)) {
+            //Si el obj es que tiene que ver con el crafteo del arma
+            const levelPercentage = objective.find(sub => sub.objectiveHash === 325548827 || sub.objectiveHash === 2899837482 || sub.objectiveHash === 2981801242);
+            const levelNum = objective.find(sub => sub.objectiveHash === 3077315735);
+            if (levelPercentage) {
+                levelprogress = levelPercentage.progress;
+                levelCompletition = levelPercentage.completionValue;
+            }
+            if (levelNum) {
+                weaponLvl = levelNum.progress;
+            }
+        }
+        return {
+            levelprogress: levelprogress,
+            levelCompletition: levelCompletition,
+            weaponLvl: weaponLvl,
+        };
+    }
+
     async function getOtherEmblems(characters, mostRecentCharacter) {
         let emblems, classe;
         const emblemPromises = Object.values(characters).map(async (char) => {
@@ -858,11 +884,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     function getArmorCategory(armorType, classType) {
         switch (classType) {
             case 0:
-                return "Titán " + armorType ;
+                return "Titán " + armorType;
             case 1:
-                return "Cazador " + armorType ;
+                return "Cazador " + armorType;
             case 2:
-                return "Hechicero " + armorType ;
+                return "Hechicero " + armorType;
             default:
                 return armorType;
         }
@@ -1106,10 +1132,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         )}
                                                                                                     </div>
                                                                                                     <div className="flex items-center">
-                                                                                                        {selectedWeapon.weaponLevel && <div className="text-sm flex items-center space-x-1 opacity-[0.7]">
-                                                                                                            <p>Nv. {selectedWeapon.weaponLevel}</p>
-                                                                                                            <p>/</p>
-                                                                                                        </div>}
                                                                                                         <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                                                                                                             <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedWeapon.power}
                                                                                                         </p>
@@ -1117,9 +1139,28 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
+                                                                                                {selectedWeapon.weaponLevel.weaponLvl && <div className="text-sm flex items-center space-x-1 relative p-2 pb-1">
+                                                                                                    {selectedWeapon.craftedenchanced?.includes("deepsight") && (
+                                                                                                        <svg width="13" height="13" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
+                                                                                                            <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
+                                                                                                        </svg>
+                                                                                                    )}
+                                                                                                    {selectedWeapon.craftedenchanced?.includes("info") && (
+                                                                                                        <svg width="17" height="17" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
+                                                                                                            <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
+                                                                                                        </svg>
+                                                                                                    )}
+                                                                                                    <div className="bg-[#222] w-full relative">
+                                                                                                        <div className="bg-[#d25336] h-full absolute" style={{width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`,}} />
+                                                                                                        <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
+                                                                                                            <span>Niv. {selectedWeapon.weaponLevel.weaponLvl}</span>
+                                                                                                            <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>}
                                                                                                 <div className="flex flex-col py-1.5">
                                                                                                     {selectedWeapon.stats.map((stat) => (
-                                                                                                        <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc}>
+                                                                                                        <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
                                                                                                             <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }}>{stat.name}</p>
                                                                                                             <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }}>{stat.value}</p>
                                                                                                             {stat.statHash === 2715839340 ? (
@@ -1135,7 +1176,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     ))}
                                                                                                 </div>
                                                                                                 <div className="flex space-x-1 rounded-b-lg p-2 justify-center" >
-                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center " style={{ width: "28%" }}>
+                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center " style={{ width: "28%" }}>
                                                                                                         <p className="font-semibold text-sm">Armazón</p>
                                                                                                         <div className="flex space-x-2 w-fit">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
@@ -1145,19 +1186,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                             ))}
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{height: "67px"}}/>
-                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center" style={{ width: "28%" }}>
+                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
+                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "28%" }}>
                                                                                                         <p className="font-semibold text-sm">Diseño</p>
-                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-0.5">
+                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-1.5">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[30px] max-h-[30px]"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{height: "67px"}}/>
-                                                                                                    <div className="space-y-2 flex flex-col justify-top items-center ml-1" style={{ width: "28%" }}>
+                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
+                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center ml-1" style={{ width: "28%" }}>
                                                                                                         <p className="font-semibold text-sm">Muertes</p>
                                                                                                         <div className="flex space-x-1 items-center">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (

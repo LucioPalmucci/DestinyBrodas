@@ -190,8 +190,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
                     let winnerPoints, loserPoints;
                     if (activity.teams.length > 0) {
-                        winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1].score.basic.value;
-                        loserPoints = activity.teams[0].standing.basic.value == 1 ? activity.teams[0].score.basic.value : activity.teams[1].score.basic.value;
+                        winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
+                        loserPoints = activity.teams[0].standing.basic.value == 1 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
                     }
 
                     return (
