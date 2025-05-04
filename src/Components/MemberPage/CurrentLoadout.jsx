@@ -49,13 +49,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     },
                 });
 
+                const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+
                 let totalStats = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218];
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters, mostRecentCharacter);
-                await getSeal(mostRecentCharacter);
+                await getSeal(mostRecentCharacter, manifest);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 getArtifactDetails(responseChar.data.Response.profileProgression.data.seasonalArtifact);
-                const seasonProgress = await getCurrentSeason(seasonHash);
+                const seasonProgress = await getCurrentSeason(seasonHash, manifest);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
                     const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
@@ -140,6 +146,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
+                            //if(perkResponse.data.Response.plug.plugCategoryIdentifier.includes("intrinsics")) console.log("Perks ", perkResponse.data.Response);
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
@@ -147,7 +154,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
                                 isEnhanced: perkResponse.data.Response.itemTypeDisplayName,
-                                investmentStats: perkResponse.data.Response.investmentStats,
+                                investmentStats: perkResponse.data.Response.investmentStats, 
                             };
                         }) || []);
                     }
@@ -222,7 +229,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             hash: perk.plugHash,
                         }));
                         weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemD.data.Response.stats.data.stats);
-                        colorStats(itemResponse.data.Response, perks.filter(perk => perk != null), weaponStats)
+                        weaponStats = colorStats(itemResponse.data.Response, perks.filter(perk => perk != null), weaponStats)
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -235,6 +242,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                         weaponLevel = getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug);
+                        perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
                     }
 
                     if (response.data.Response.equipment.data.items.indexOf(item) == 0) console.log(itemResponse.data.Response, itemD.data.Response);
@@ -584,12 +592,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function colorStats(item, perks, stats) {
-        //#68a0b7 si es un mod insertado
-        //#e8a534 si es obra maestra
-        //blaco pero con opacidad 0.88 para el que esta en el indice 1 y es +
-        //blanco pero con opacidad 0.76 para el que esta en el indice 2 y es -
-        //#7a2727 si es negativo
-        if (item.itemTypeDisplayName == "Escopeta") console.log("pers", perks, stats)
+        if (item.itemTypeDisplayName == "Escopeta") console.log("pers", perks)
         stats.forEach((stat) => {
             let blancobase = 0, blancoFFFFFF1F = 0, blancoFFFFFF3D = 0, azul = 0, rojo = 0, amarillo = 0;
             let perk1F, perk3D, perkAzul, perkRojo, perkAmarillo;
@@ -597,8 +600,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 perk.investmentStats.forEach(invStat => {
                     if (invStat.statTypeHash == stat.statHash) {
                         if (perks[0] === perk || perk.name.includes("Obra Maestra")) { //Si esta en la posicion cero es el arquetipo o tiene obra maestra
-                            if(perk.name.includes("Obra Maestra") && invStat.value == 3); //Si es una obra maestra no crafteada, no sumar stats secundarias
-                            else if(perk.name.includes("Obra Maestra") && invStat.value == 10) {
+                            if (perk.name.includes("Obra Maestra") && invStat.value == 3); //Si es una obra maestra no crafteada, no sumar stats secundarias
+                            else if (perk.name.includes("Obra Maestra") && invStat.value == 10) {
                                 amarillo += invStat.value;
                                 perkAmarillo = invStat.value + " Estadística Obra Maestra";
                             }
@@ -639,7 +642,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Estabilidad") console.log(blancobase)
             let valorAbsolutoRojo = Math.abs(rojo);
             let aux = 0;
-            
+
             if (valorAbsolutoRojo >= azul) { //El valorAbsolutoRojo se come al resto de sumas
                 aux += azul;
                 azul = 0;
@@ -669,35 +672,35 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 },
                 blancoFFFFFF1F: {
                     value: blancoFFFFFF1F,
-                    color: "#FFFFFF1F",
-                    name:  perk1F ? "+" + perk1F : null,
+                    color: "rgba(255,255,255, 0.88)",
+                    name: perk1F ? "+" + perk1F : null,
                 },
                 blancoFFFFFF3D: {
                     value: blancoFFFFFF3D,
-                    color: "#FFFFFF3D",
-                    name: "2da columna",
+                    color: "rgba(255,255,255, 0.76)",
                     name: perk3D ? "+" + perk3D : null,
                 },
                 amarillo: {
                     value: amarillo,
                     color: "#e8a534",
-                    name: perkAmarillo ? "+" + perkAmarillo: null,
+                    name: perkAmarillo ? "+" + perkAmarillo : null,
                 },
                 azul: {
                     value: azul,
                     color: "#68a0b7",
-                    name: "Mod insertado",
-                    name: azul ? "+" + perkAzul: null,
+                    name: azul ? "+" + perkAzul : null,
                 },
                 rojo: {
-                    value: rojo,
+                    value: Math.abs(rojo),
                     color: "#7a2727",
-                    name: "Perk negativa",
-                    name: perkRojo ? perkRojo: null,
+                    name: perkRojo ? perkRojo : null,
                 },
             }
+            if(perkAmarillo) stat.isMw = true; //Atributo de obra maestra
+            else stat.isMw = false;
         })
         if (item.itemTypeDisplayName == "Escopeta") console.log("stats d", stats)
+        return stats;
     }
 
     async function getdmgType(dmgType) {
@@ -918,7 +921,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         setEmblems(emblems);
     }
 
-    async function getSeal(char) {
+    async function getSeal(char, manifest) {
         if (char.titleRecordHash == null) return;
         const sealResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyRecordDefinition/${char.titleRecordHash}/?lc=es`, {
             headers: {
@@ -931,11 +934,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             },
         });
 
-        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
+        
         const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
@@ -971,17 +970,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         });
     }
 
-    async function getCurrentSeason(seasonHash) {
+    async function getCurrentSeason(seasonHash, manifest) {
         const seasonResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySeasonDefinition/${seasonHash}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
             }
         })
-        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
         const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
@@ -1016,6 +1010,38 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             default:
                 return armorType;
         }
+    }
+
+    async function getMwEnchancedWeapons(item, perks, manifest) {
+        const enchancedPerk = perks.find(perk => perk.isEnhanced == "Intrínseco mejorado");
+        if(enchancedPerk){
+            const statMw = enchancedPerk.investmentStats.find(invStat => invStat.value == 10)
+            if (statMw) {
+                const statMwResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${statMw.statTypeHash}/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    }
+                });
+                const statName = statMwResponse.data.Response.displayProperties.name;
+                const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyInventoryItemDefinition;
+                const metricsData = await axios.get(`/api${manifestUrl}`);
+
+                const matchingMetric = Object.values(metricsData.data).find(metric =>
+                    metric.displayProperties.name.toLowerCase() === "obra maestra: " + statName.toLowerCase()
+                );
+                perks[1] = {
+                    ...perks[1],
+                    iconPath: matchingMetric.displayProperties.icon,
+                    name: matchingMetric.displayProperties.name,
+                    perkHash: matchingMetric.hash,
+                }
+                //console.log("perks cambiadas", perks)
+                return perks;
+            } else return null;
+        } else return null;
+        
+        return null;
+
     }
 
     useEffect(() => {
@@ -1285,15 +1311,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 <div className="flex flex-col py-1.5">
                                                                                                     {selectedWeapon.stats.map((stat) => (
                                                                                                         <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
-                                                                                                            <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }}>{stat.name}</p>
-                                                                                                            <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }}>{stat.value}</p>
+                                                                                                            <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                                            <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.value}</p>
                                                                                                             {stat.statHash === 2715839340 ? (
                                                                                                                 <div style={{ width: "34%" }}>
                                                                                                                     <RecoilStat value={stat.value} />
                                                                                                                 </div>
                                                                                                             ) : (
-                                                                                                                <div className="bg-[#333] h-3 overflow-hidden" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
-                                                                                                                    {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (<div className="bg-white h-full" style={{ width: `${Math.min(stat.value, 100)}%` }} />)}
+                                                                                                                <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
+                                                                                                                    {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (
+                                                                                                                        Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                                            <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null}/>
+                                                                                                                        )
+                                                                                                                    ))}
                                                                                                                 </div>
                                                                                                             )}
                                                                                                         </div>
@@ -1305,7 +1335,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         <div className="flex space-x-2 w-fit">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[35px] h-[35px]"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[35px] h-[35px] p-0"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                         </div>
