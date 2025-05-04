@@ -241,11 +241,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
-                        weaponLevel = getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug);
+                        weaponLevel = await getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug, itemD.data.Response.sockets.data.sockets);
                         perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 0) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -592,7 +592,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function colorStats(item, perks, stats) {
-        if (item.itemTypeDisplayName == "Escopeta") console.log("pers", perks)
         stats.forEach((stat) => {
             let blancobase = 0, blancoFFFFFF1F = 0, blancoFFFFFF3D = 0, azul = 0, rojo = 0, amarillo = 0;
             let perk1F, perk3D, perkAzul, perkRojo, perkAmarillo;
@@ -639,7 +638,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (sumaColores < 0) blancobase = stat.value + Math.abs(sumaColores); //Si la suma de colores es negativa, se le resta al stat base
             else blancobase = stat.value - sumaColores; //Si no, se queda con el valor base
 
-            if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Estabilidad") console.log(blancobase)
             let valorAbsolutoRojo = Math.abs(rojo);
             let aux = 0;
 
@@ -699,7 +697,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if(perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
         })
-        if (item.itemTypeDisplayName == "Escopeta") console.log("stats d", stats)
         return stats;
     }
 
@@ -857,8 +854,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }
 
-    function getWeaponLevelAndProgression(objectivesPerPlug) {
-        let weaponLvl, levelprogress, levelCompletition;
+    async function getWeaponLevelAndProgression(objectivesPerPlug, sockets) {
+        let weaponLvl, levelprogress, levelCompletition, mejora;
         for (const objective of Object.values(objectivesPerPlug)) {
             //Si el obj es que tiene que ver con el crafteo del arma
             const levelPercentage = objective.find(sub => sub.objectiveHash === 325548827 || sub.objectiveHash === 2899837482 || sub.objectiveHash === 2981801242);
@@ -871,10 +868,21 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 weaponLvl = levelNum.progress;
             }
         }
+        for (const socket of Object.values(sockets)) { //Recorre los sockets del arma para ver que nivel de mejora esta
+            if (socket.plugHash == 2728416798 || socket.plugHash == 2728416797 || socket.plugHash == 2728416796) { //Si es una mejora de nivel 1 o 3
+                const mejoraResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${socket.plugHash}/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    }});
+                mejora = mejoraResponse.data.Response.displayProperties.name;
+                break;
+            }
+        }
         return {
             levelprogress: levelprogress,
             levelCompletition: levelCompletition,
             weaponLvl: weaponLvl,
+            mejora: mejora,
         };
     }
 
@@ -1037,11 +1045,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 }
                 //console.log("perks cambiadas", perks)
                 return perks;
-            } else return null;
-        } else return null;
-        
-        return null;
-
+            } else return perks;
+        } else return perks;
     }
 
     useEffect(() => {
@@ -1303,7 +1308,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     <div className="bg-[#222] w-full relative">
                                                                                                         <div className="bg-[#d25336] h-full absolute" style={{ width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`, }} />
                                                                                                         <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
-                                                                                                            <span>Niv. {selectedWeapon.weaponLevel.weaponLvl}</span>
+                                                                                                            <span>
+                                                                                                                Niv. {selectedWeapon.weaponLevel.weaponLvl}
+                                                                                                                {selectedWeapon.weaponLevel.mejora && " (" + selectedWeapon.weaponLevel.mejora +")"}
+                                                                                                            </span>
                                                                                                             <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
                                                                                                         </div>
                                                                                                     </div>
@@ -1332,10 +1340,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 <div className="flex space-x-1 rounded-b-lg p-2 justify-center" >
                                                                                                     <div className="space-y-1 flex flex-col justify-top items-center " style={{ width: "28%" }}>
                                                                                                         <p className="font-semibold text-sm">Armazón</p>
-                                                                                                        <div className="flex space-x-2 w-fit">
+                                                                                                        <div className="flex items-center space-x-2 w-fit">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[35px] h-[35px] p-0"} alt={perk.name} title={perk.name} />
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={perk.name.includes("Obra Maestra") ? "w-[30.5px] h-[30.5px]" : "w-[35px] h-[35px]"} alt={perk.name} title={perk.name} />
                                                                                                                 )
                                                                                                             ))}
                                                                                                         </div>
