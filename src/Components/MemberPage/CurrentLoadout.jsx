@@ -191,6 +191,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     ...stat,
                                     name: statResponse.data.Response.displayProperties.name,
                                     iconPath: statResponse.data.Response.displayProperties.icon,
+                                    desc: statResponse.data.Response.displayProperties.description,
                                     value: stat.value,
                                 });
                                 totalStatValue += stat.value;
@@ -199,7 +200,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             }
                         }
                         armorStats.push({
-                            statHash: null,
+                            statHash: 1,
                             name: "Total",
                             iconPath: null,
                             value: totalStatValue,
@@ -219,7 +220,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             hash: perk.plugHash,
                         }));
                         armorStats = getArmorStats(itemResponse.data.Response, investmentStats, armorStats);
-                        console.log("stats armadura ", armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -259,7 +259,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
                         perks: perks,
-                        stats: armorStats != undefined ? armorStats : weaponStats,
+                        stats: weaponStats != null ? weaponStats : armorStats,
                         masterwork: item.state,
                         watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
                         power: itemD.data.Response.instance?.data?.primaryStat?.value,
@@ -323,7 +323,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 12.22 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 4.0, left: rect.right - rect.width * 12.22 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
@@ -386,8 +386,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArmorStats(item, investmentStats, stats) {
+
+        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats base", stats)
+        let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
-            let blancobase , azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
+            let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
                 const matchingStat = perksinvestmentStat.investmentStats.find(
                     (invStat) => invStat.statTypeHash === stat.statHash
@@ -404,41 +407,58 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             break;
                         case 10: //Si es 10 por el mod insertado
                             azul68a0b7 += matchingStat.value || 0;
-                            perkAz8= "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             break;
                         default:
                             break;
                     }
                 }
             });
-            if(item.itemTypeDisplayName == "Armadura de pierna")console.log("msum", stat.value , azul68a0b7, azul68a0b7_op8, amarillo )
             blancobase = stat.value - (azul68a0b7 + azul68a0b7_op8 + amarillo);
             stat.secciones = {
                 base: {
                     value: blancobase,
                     color: "#fff",
-                    name : blancobase + " Estadísticas Base",
+                    name: blancobase + " Estadísticas Base",
                 },
                 azul68a0b7: {
                     value: azul68a0b7,
                     color: "#68a0b7",
-                    name: perkAz68 || null,
+                    name: perkAz8 || null,
                 },
                 azul68a0b7_op8: {
                     value: azul68a0b7_op8,
                     color: "rgba(104, 160, 183, 0.8)",
-                    name: perkAz8 || null,
+                    name: perkAz68 || null,
                 },
                 amarillo: {
                     value: amarillo,
-                    color: "#f0c674",
+                    color: "#e8a534",
                     name: perkAmarillo || null,
                 },
             }
             if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
+            if (stat.name != "Total") {
+                if(item.itemTypeDisplayName == "Armadura de pierna") console.log("stats sumada", blancobase, amarillo, azul68a0b7, azul68a0b7_op8, stat.name)
+                sumaBase += blancobase;
+                sumaAzul += azul68a0b7 + azul68a0b7_op8;
+                sumaAmarillo += amarillo;
+            }
         })
-        if(item.itemTypeDisplayName == "Armadura de pierna")console.log("stats ", stats)
+
+        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats acumulada", sumaAzul, sumaAmarillo, sumaBase)
+        stats.forEach((stat => {
+            if (stat.name == "Total") { //Acomodo los valores del total
+                stat.secciones.base.value = stat.value - (sumaAzul + sumaAmarillo);
+                stat.secciones.base.name = stat.value - (sumaAzul + sumaAmarillo) + " Estadísticas Base";
+                stat.secciones.azul68a0b7.value =  sumaAzul;
+                stat.secciones.amarillo.value =  sumaAmarillo;
+                delete stat.secciones.azul68a0b7_op8;
+            }
+        }))
+        
+        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats ord ", stats)
         return stats;
     }
 
@@ -1582,7 +1602,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         <div className="flex space-x-2">
                                                                             {items[index].stats
                                                                                 ?.sort((a, b) => {
-                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218];
+                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
                                                                                     return order.indexOf(a.statHash) - order.indexOf(b.statHash);
                                                                                 })
                                                                                 .map((stat) => (
@@ -1613,20 +1633,49 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="rounded-b-lg pb-1 px-2.5 py-0.5 space-y-3" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
-                                                                                        <div>
-
+                                                                                        <div className="flex flex-col py-1.5">
+                                                                                            {selectedArmor.stats
+                                                                                            ?.sort((a, b) => {
+                                                                                                const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
+                                                                                                return order.indexOf(a.statHash) - order.indexOf(b.statHash);
+                                                                                            })
+                                                                                            .map((stat) => (
+                                                                                                <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
+                                                                                                    <p style={{ width: "25%", textAlign: "right", fontWeight: "300",marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                                    <p style={{ width: "6%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
+                                                                                                    {stat.iconPath ? (
+                                                                                                        <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
+                                                                                                    ) : (
+                                                                                                        <div style={{ width: "3.5%" }} />
+                                                                                                    )
+                                                                                                    }
+                                                                                                    {stat.statHash === 1 ? (
+                                                                                                        <div style={{ width: "45%" }} className="overflow-hidden flex font-[300] items-center">
+                                                                                                            {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                                <p key={key} style={{color: section.color, marginRight: "4px"}}>{section.color !== "#fff" && "+"} {section.value}</p>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "45%" }}>
+                                                                                                            {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                                <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            ))}
                                                                                         </div>
                                                                                         <div className="flex flex-col justify-start font-[200]">
                                                                                             <span className="text-sm flex"><p className="font-semibold mr-1">{selectedArmor.armorEnergy.energyCapacity}</p> ENERGÍA</span>
                                                                                             <div className="flex w-full space-x-0.5" >
                                                                                                 {Array.from({ length: selectedArmor.armorEnergy.energyUsed }).map((_, index) => (
-                                                                                                    <div key={index} style={{width: "18%",height: "10px",backgroundColor: "white"}}/>
+                                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
                                                                                                 ))}
                                                                                                 {Array.from({ length: selectedArmor.armorEnergy.energyUnused }).map((_, index) => (
-                                                                                                    <div key={index} style={{width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white"}}/>
+                                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
                                                                                                 ))}
                                                                                                 {Array.from({ length: selectedArmor.armorEnergy.energyCapacityUnused }).map((_, index) => (
-                                                                                                    <div key={index} style={{width: "18%", height: "6px", backgroundColor: "#888", marginTop: "2px", marginBottom: "2px"}}/>
+                                                                                                    <div key={index} style={{ width: "18%", height: "6px", backgroundColor: "#888", marginTop: "2px", marginBottom: "2px" }} />
                                                                                                 ))}
                                                                                             </div>
                                                                                         </div>
