@@ -154,7 +154,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
                                 isEnhanced: perkResponse.data.Response.itemTypeDisplayName,
-                                investmentStats: perkResponse.data.Response.investmentStats, 
+                                investmentStats: perkResponse.data.Response.investmentStats,
                             };
                         }) || []);
                     }
@@ -310,7 +310,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 13 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 12.22 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
@@ -694,7 +694,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     name: perkRojo ? perkRojo : null,
                 },
             }
-            if(perkAmarillo) stat.isMw = true; //Atributo de obra maestra
+            if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
         })
         return stats;
@@ -873,7 +873,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 const mejoraResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${socket.plugHash}/?lc=es`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    }});
+                    }
+                });
                 mejora = mejoraResponse.data.Response.displayProperties.name;
                 break;
             }
@@ -942,7 +943,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             },
         });
 
-        
+
         const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
@@ -1022,7 +1023,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getMwEnchancedWeapons(item, perks, manifest) {
         const enchancedPerk = perks.find(perk => perk.isEnhanced == "Intrínseco mejorado");
-        if(enchancedPerk){
+        if (enchancedPerk) {
             const statMw = enchancedPerk.investmentStats.find(invStat => invStat.value == 10)
             if (statMw) {
                 const statMwResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${statMw.statTypeHash}/?lc=es`, {
@@ -1310,7 +1311,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
                                                                                                             <span>
                                                                                                                 Niv. {selectedWeapon.weaponLevel.weaponLvl}
-                                                                                                                {selectedWeapon.weaponLevel.mejora && " (" + selectedWeapon.weaponLevel.mejora +")"}
+                                                                                                                {selectedWeapon.weaponLevel.mejora && " (" + selectedWeapon.weaponLevel.mejora + ")"}
                                                                                                             </span>
                                                                                                             <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
                                                                                                         </div>
@@ -1329,9 +1330,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                                 <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
                                                                                                                     {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (
                                                                                                                         Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                            <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null}/>
+                                                                                                                            <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null} />
                                                                                                                         )
-                                                                                                                    ))}
+                                                                                                                        ))}
                                                                                                                 </div>
                                                                                                             )}
                                                                                                         </div>
@@ -1527,13 +1528,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
                                                                                 <div
                                                                                     className="text-white relative"
-                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "34%" }}
+                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "30%" }}
                                                                                     onClick={(e) => e.stopPropagation()}
                                                                                 >
-                                                                                    <div className="rounded-t-lg p-2 px-3" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
+                                                                                    <div className="py-0.5 pb-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
                                                                                         <div className="flex flex-col">
-                                                                                            <p className="text-2xl font-semibold place-self-start">{selectedArmor.name}</p>
-                                                                                            <div className="flex justify-evenly items-center justify-center">
+                                                                                            <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase">{selectedArmor.name}</p>
+                                                                                            <div className="flex justify-between items-center text-sm">
                                                                                                 <p className="opacity-75">{selectedArmor.armorCategory}</p>
                                                                                                 <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                                                                                                     <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedArmor.power}
@@ -1541,12 +1542,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
-                                                                                    <div className="flex space-x-2 p-4 justify-center rounded-b-lg" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
-                                                                                        {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
-                                                                                            perk.name && perk?.iconPath && (
-                                                                                                <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
-                                                                                            )
-                                                                                        ))}
+                                                                                    <div className="space-x-2 rounded-b-lg pb-1 px-2.5" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
+                                                                                        <div className="space-y-1 flex flex-col justify-start font-[300]">
+                                                                                            <p className="text-sm">COSMÉTICOS DE ARMADURA</p>
+                                                                                            <div className="space-x-2 flex flex justify-start">
+                                                                                                {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
+                                                                                                    perk.name && perk?.iconPath && (
+                                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                    )
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>}
