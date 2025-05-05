@@ -213,6 +213,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
                     let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                        investmentStats = perks.filter(perk => perk != null).map(perk => ({
+                            investmentStats: perk.investmentStats,
+                            name: perk.name,
+                            hash: perk.plugHash,
+                        }));
+                        armorStats = getArmorStats(itemResponse.data.Response, investmentStats, armorStats);
+                        console.log("stats armadura ", armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -245,14 +252,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 1) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 6) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
                         perks: perks,
-                        stats: armorStats.length > 0 ? armorStats : weaponStats,
+                        stats: armorStats != undefined ? armorStats : weaponStats,
                         masterwork: item.state,
                         watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
                         power: itemD.data.Response.instance?.data?.primaryStat?.value,
@@ -267,6 +274,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
                         weaponLevel: weaponLevel,
                         armorCategory: armorCategory,
+                        armorEnergy: {
+                            energyCapacity: itemD.data.Response.instance?.data?.energy?.energyCapacity,
+                            energyUsed: itemD.data.Response.instance?.data?.energy?.energyUsed,
+                            energyUnused: itemD.data.Response.instance?.data?.energy?.energyUnused,
+                            energyCapacityUnused: 10 - itemD.data.Response.instance?.data?.energy?.energyCapacity || 0,
+                        }
                     };
                 }));
 
@@ -370,6 +383,63 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             modifierPerks,
             designPerks,
         };
+    }
+
+    function getArmorStats(item, investmentStats, stats) {
+        stats.forEach((stat) => { //Para cada estat
+            let blancobase , azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
+            investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
+                const matchingStat = perksinvestmentStat.investmentStats.find(
+                    (invStat) => invStat.statTypeHash === stat.statHash
+                );
+                if (matchingStat) {
+                    switch (matchingStat.value) {
+                        case 2: //Si es 2 por la obra maestra
+                            amarillo += matchingStat.value || 0;
+                            perkAmarillo = "+" + matchingStat.value + " Estadística Obra Maestra";
+                            break;
+                        case 3: //Si es 3 por el mod artificio
+                            azul68a0b7_op8 += matchingStat.value || 0;
+                            perkAz68 = "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            break;
+                        case 10: //Si es 10 por el mod insertado
+                            azul68a0b7 += matchingStat.value || 0;
+                            perkAz8= "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+            if(item.itemTypeDisplayName == "Armadura de pierna")console.log("msum", stat.value , azul68a0b7, azul68a0b7_op8, amarillo )
+            blancobase = stat.value - (azul68a0b7 + azul68a0b7_op8 + amarillo);
+            stat.secciones = {
+                base: {
+                    value: blancobase,
+                    color: "#fff",
+                    name : blancobase + " Estadísticas Base",
+                },
+                azul68a0b7: {
+                    value: azul68a0b7,
+                    color: "#68a0b7",
+                    name: perkAz68 || null,
+                },
+                azul68a0b7_op8: {
+                    value: azul68a0b7_op8,
+                    color: "rgba(104, 160, 183, 0.8)",
+                    name: perkAz8 || null,
+                },
+                amarillo: {
+                    value: amarillo,
+                    color: "#f0c674",
+                    name: perkAmarillo || null,
+                },
+            }
+            if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
+            else stat.isMw = false;
+        })
+        if(item.itemTypeDisplayName == "Armadura de pierna")console.log("stats ", stats)
+        return stats;
     }
 
     function sortWeaponPerks(perks) {
@@ -1536,14 +1606,31 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase">{selectedArmor.name}</p>
                                                                                             <div className="flex justify-between items-center text-sm">
                                                                                                 <p className="opacity-75">{selectedArmor.armorCategory}</p>
-                                                                                                <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                                                                <p className='lightlevel text-sm flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                                                                                                     <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedArmor.power}
                                                                                                 </p>
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
-                                                                                    <div className="space-x-2 rounded-b-lg pb-1 px-2.5" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
-                                                                                        <div className="space-y-1 flex flex-col justify-start font-[300]">
+                                                                                    <div className="rounded-b-lg pb-1 px-2.5 py-0.5 space-y-3" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
+                                                                                        <div>
+
+                                                                                        </div>
+                                                                                        <div className="flex flex-col justify-start font-[200]">
+                                                                                            <span className="text-sm flex"><p className="font-semibold mr-1">{selectedArmor.armorEnergy.energyCapacity}</p> ENERGÍA</span>
+                                                                                            <div className="flex w-full space-x-0.5" >
+                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUsed }).map((_, index) => (
+                                                                                                    <div key={index} style={{width: "18%",height: "10px",backgroundColor: "white"}}/>
+                                                                                                ))}
+                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUnused }).map((_, index) => (
+                                                                                                    <div key={index} style={{width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white"}}/>
+                                                                                                ))}
+                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyCapacityUnused }).map((_, index) => (
+                                                                                                    <div key={index} style={{width: "18%", height: "6px", backgroundColor: "#888", marginTop: "2px", marginBottom: "2px"}}/>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="space-y-1 flex flex-col justify-start font-[200]">
                                                                                             <p className="text-sm">COSMÉTICOS DE ARMADURA</p>
                                                                                             <div className="space-x-2 flex flex justify-start">
                                                                                                 {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
