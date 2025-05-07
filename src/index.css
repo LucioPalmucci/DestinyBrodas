@@ -399,4 +399,7 @@ body {
     transition: 0.5s ease;
 }
 
+title{
+    width: 30px;
+}
 @import "tailwindcss";

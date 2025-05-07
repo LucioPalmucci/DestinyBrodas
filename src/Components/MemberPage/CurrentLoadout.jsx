@@ -212,7 +212,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
@@ -228,6 +228,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         armorCategory = getArmorCategory(itemResponse.data.Response.itemTypeDisplayName, itemResponse.data.Response.classType);
+                        armorIntrinsic = await getArmorIntrinsicDetails(perks.modifierPerks);
                     }
                     else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
@@ -279,7 +280,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             energyUsed: itemD.data.Response.instance?.data?.energy?.energyUsed,
                             energyUnused: itemD.data.Response.instance?.data?.energy?.energyUnused,
                             energyCapacityUnused: 10 - itemD.data.Response.instance?.data?.energy?.energyCapacity || 0,
-                        }
+                        },
+                        armorIntrinsic: armorIntrinsic,
                     };
                 }));
 
@@ -323,7 +325,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const handleArmorClick = (armor, event) => {
         const rect = event.target.getBoundingClientRect();
-        setPopupPosition({ top: rect.top - rect.height * 4.0, left: rect.right - rect.width * 12.22 }); // Posición a la izquierda de la imagen
+        setPopupPosition({ top: rect.top - rect.height * 5, left: rect.right - rect.width * 11.6 }); // Posición a la izquierda de la imagen
         setSelectedArmor(armor);
     }
 
@@ -387,7 +389,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     function getArmorStats(item, investmentStats, stats) {
 
-        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats base", stats)
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
@@ -440,26 +441,45 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
             if (stat.name != "Total") {
-                if(item.itemTypeDisplayName == "Armadura de pierna") console.log("stats sumada", blancobase, amarillo, azul68a0b7, azul68a0b7_op8, stat.name)
                 sumaBase += blancobase;
                 sumaAzul += azul68a0b7 + azul68a0b7_op8;
                 sumaAmarillo += amarillo;
             }
         })
 
-        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats acumulada", sumaAzul, sumaAmarillo, sumaBase)
         stats.forEach((stat => {
             if (stat.name == "Total") { //Acomodo los valores del total
                 stat.secciones.base.value = stat.value - (sumaAzul + sumaAmarillo);
                 stat.secciones.base.name = stat.value - (sumaAzul + sumaAmarillo) + " Estadísticas Base";
-                stat.secciones.azul68a0b7.value =  sumaAzul;
-                stat.secciones.amarillo.value =  sumaAmarillo;
+                stat.secciones.azul68a0b7.value = sumaAzul;
+                stat.secciones.amarillo.value = sumaAmarillo;
                 delete stat.secciones.azul68a0b7_op8;
             }
         }))
-        
-        if (item.itemTypeDisplayName == "Armadura de pierna") console.log("stats ord ", stats)
+
         return stats;
+    }
+
+    async function getArmorIntrinsicDetails(perks) {
+        let intrinsics = [];
+        Object.values(perks).forEach(async (perk) => {
+            if (perk.perkType == "intrinsics" && perk.name != "") {
+                const perkDets = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                console.log("b", perkDets.data.Response)
+                intrinsics.push({
+                    name: perkDets.data.Response.displayProperties.name,
+                    iconPath: perkDets.data.Response.displayProperties.icon,
+                    desc: perkDets.data.Response.displayProperties.description,
+                });
+
+            }
+        })
+        console.log("ints", intrinsics)
+        return intrinsics;
     }
 
     function sortWeaponPerks(perks) {
@@ -1101,11 +1121,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     function getArmorCategory(armorType, classType) {
         switch (classType) {
             case 0:
-                return "Titán " + armorType;
+                if (armorType.includes("titan")) return armorType;
+                else return "Titán " + armorType;
             case 1:
-                return "Cazador " + armorType;
+                if (armorType.includes("cazador")) return armorType;
+                else return "Cazador " + armorType;
             case 2:
-                return "Hechicero " + armorType;
+                if (armorType.includes("hechicero")) return armorType;
+                else return "Hechicero " + armorType;
             default:
                 return armorType;
         }
@@ -1213,8 +1236,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         Ver Más</a>
                 </div>
                 {isVisible && (
-                    <div className="fixed inset-0 flex items-center justify-center w-full z-50 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div className="fixed inset-0 flex items-center justify-center w-full z-40 bg-black/50" onClick={() => setShowPopup(false)}>
+                        <div className={`rounded-lg relative bg-neutral-600 text-white overflow-visible transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center justify-center h-full">
                                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
                                     <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
@@ -1618,12 +1641,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
                                                                                 <div
                                                                                     className="text-white relative"
-                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "30%" }}
+                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
                                                                                     onClick={(e) => e.stopPropagation()}
                                                                                 >
-                                                                                    <div className="py-0.5 pb-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
+                                                                                    <div className="py-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
                                                                                         <div className="flex flex-col">
-                                                                                            <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase">{selectedArmor.name}</p>
+                                                                                            <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase leading-7">{selectedArmor.name}</p>
                                                                                             <div className="flex justify-between items-center text-sm">
                                                                                                 <p className="opacity-75">{selectedArmor.armorCategory}</p>
                                                                                                 <p className='lightlevel text-sm flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
@@ -1632,38 +1655,38 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
-                                                                                    <div className="rounded-b-lg pb-1 px-2.5 py-0.5 space-y-3" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
-                                                                                        <div className="flex flex-col py-1.5">
+                                                                                    <div className="rounded-b-lg pb-3 px-2.5 py-0.5 space-y-2" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
+                                                                                        <div className="flex flex-col pt-1">
                                                                                             {selectedArmor.stats
-                                                                                            ?.sort((a, b) => {
-                                                                                                const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
-                                                                                                return order.indexOf(a.statHash) - order.indexOf(b.statHash);
-                                                                                            })
-                                                                                            .map((stat) => (
-                                                                                                <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
-                                                                                                    <p style={{ width: "25%", textAlign: "right", fontWeight: "300",marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
-                                                                                                    <p style={{ width: "6%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
-                                                                                                    {stat.iconPath ? (
-                                                                                                        <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
-                                                                                                    ) : (
-                                                                                                        <div style={{ width: "3.5%" }} />
-                                                                                                    )
-                                                                                                    }
-                                                                                                    {stat.statHash === 1 ? (
-                                                                                                        <div style={{ width: "45%" }} className="overflow-hidden flex font-[300] items-center">
-                                                                                                            {Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                <p key={key} style={{color: section.color, marginRight: "4px"}}>{section.color !== "#fff" && "+"} {section.value}</p>
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    ) : (
-                                                                                                        <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "45%" }}>
-                                                                                                            {Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            ))}
+                                                                                                ?.sort((a, b) => {
+                                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
+                                                                                                    return order.indexOf(a.statHash) - order.indexOf(b.statHash);
+                                                                                                })
+                                                                                                .map((stat) => (
+                                                                                                    <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
+                                                                                                        <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                                        <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
+                                                                                                        {stat.iconPath ? (
+                                                                                                            <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
+                                                                                                        ) : (
+                                                                                                            <div style={{ width: "3.5%" }} />
+                                                                                                        )
+                                                                                                        }
+                                                                                                        {stat.statHash === 1 ? (
+                                                                                                            <div style={{ width: "38%" }} className={`h-[15.5px] overflow-hidden flex font-[300] items-center  ${stat.secciones.base.value != 0 ? "" : "invisible"}`}>
+                                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                                    <p key={key} className="h-full" style={{ color: section.color, marginRight: "4px" }}>{section.color !== "#fff" && "+"} {section.value}</p>
+                                                                                                                ))}
+                                                                                                            </div>
+                                                                                                        ) : (
+                                                                                                            <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "38%" }}>
+                                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                                    <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
+                                                                                                                ))}
+                                                                                                            </div>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
                                                                                         </div>
                                                                                         <div className="flex flex-col justify-start font-[200]">
                                                                                             <span className="text-sm flex"><p className="font-semibold mr-1">{selectedArmor.armorEnergy.energyCapacity}</p> ENERGÍA</span>
@@ -1679,14 +1702,34 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 ))}
                                                                                             </div>
                                                                                         </div>
-                                                                                        <div className="space-y-1 flex flex-col justify-start font-[200]">
-                                                                                            <p className="text-sm">COSMÉTICOS DE ARMADURA</p>
-                                                                                            <div className="space-x-2 flex flex justify-start">
-                                                                                                {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
-                                                                                                    perk.name && perk?.iconPath && (
-                                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
-                                                                                                    )
-                                                                                                ))}
+                                                                                        <div className="flex space-x-4 justify-center">
+                                                                                            {selectedArmor.armorIntrinsic.length > 0 && (
+                                                                                                <>
+                                                                                                    <div className="space-y-1 flex flex-col justify-center items-center font-[200]" style={{ width: "27%" }}>
+                                                                                                        <p className="text-sm font-semibold">Ventajas</p>
+                                                                                                        <div className="flex flex space-x-2">
+                                                                                                            {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
+                                                                                                                <div key={index} className="relative w-fit group">
+                                                                                                                    <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
+                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-[210px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                                                        <strong>{intrinsic.name}</strong>: {intrinsic.desc}
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div class="border-l border-0.5 border-white/25 mr-4.5" style={{ height: "58px" }} />
+                                                                                                </>
+                                                                                            )}
+                                                                                            <div className="space-y-1 flex flex-col justify-center items-center  font-[200]" style={{ width: "27%" }}>
+                                                                                                <p className="text-sm font-semibold">Diseño</p>
+                                                                                                <div className="space-x-2 flex flex ">
+                                                                                                    {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
+                                                                                                        perk.name && perk?.iconPath && (
+                                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
+                                                                                                        )
+                                                                                                    ))}
+                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
