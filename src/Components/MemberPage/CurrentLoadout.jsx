@@ -147,9 +147,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 },
                             });
                             //if(perkResponse.data.Response.plug.plugCategoryIdentifier.includes("intrinsics")) console.log("Perks ", perkResponse.data.Response);
+
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
+                                desc: await getDescription(perkResponse.data.Response.perks[0]?.perkHash) || perkResponse.data.Response.displayProperties.description,
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
@@ -251,6 +253,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                         weaponLevel = await getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug, itemD.data.Response.sockets.data.sockets);
                         perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
+                        perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks);
                     }
 
                     if (response.data.Response.equipment.data.items.indexOf(item) == 6) console.log(itemResponse.data.Response, itemD.data.Response);
@@ -388,7 +391,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArmorStats(item, investmentStats, stats) {
-
+        if (item.itemTypeDisplayName == "Armadura de pecho") console.log("stats armadura ", investmentStats);
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
@@ -397,6 +400,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     (invStat) => invStat.statTypeHash === stat.statHash
                 );
                 if (matchingStat) {
+                    if (item.itemTypeDisplayName == "Armadura de pecho" && matchingStat.value == 5) console.log("stats armadura ", perksinvestmentStat);
                     switch (matchingStat.value) {
                         case 2: //Si es 2 por la obra maestra
                             amarillo += matchingStat.value || 0;
@@ -409,6 +413,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         case 10: //Si es 10 por el mod insertado
                             azul68a0b7 += matchingStat.value || 0;
                             perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            break;
+                        case 5: //Si es 5 por el mod insertado
+                            if (perksinvestmentStat.name != "") {
+                                if (item.itemTypeDisplayName == "Armadura de pecho") console.log("perk entro ", perksinvestmentStat);
+                                azul68a0b7 += matchingStat.value || 0;
+                                perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            }
                             break;
                         default:
                             break;
@@ -469,7 +480,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                console.log("b", perkDets.data.Response)
                 intrinsics.push({
                     name: perkDets.data.Response.displayProperties.name,
                     iconPath: perkDets.data.Response.displayProperties.icon,
@@ -478,7 +488,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
             }
         })
-        console.log("ints", intrinsics)
         return intrinsics;
     }
 
@@ -1163,6 +1172,58 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         } else return perks;
     }
 
+    async function getDescription(hash) {
+        if (hash == null) return;
+        let color;
+        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${hash}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            }
+        });
+        if (response.data.Response.displayProperties.description.includes("+10") || response.data.Response.displayProperties.description.includes("+5")) {
+            color = "#68a0b7";
+        } else if (response.data.Response.displayProperties.description.includes("+3")) {
+            color = "rgba(104, 160, 183, 0.8)";
+        }
+        if (response.data.Response.displayProperties.description == "") return null;
+        else return {
+            description: response.data.Response.displayProperties.description,
+            color: color,
+        }
+    }
+
+    async function getDescriptionPerksWeapons(perks) {
+        perks.forEach((perk) => {
+            perk.statDescripton = [];
+            perk?.investmentStats?.forEach(async (invStat) => {
+                let color, num;
+                const statName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${invStat.statTypeHash}/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    }
+                });
+                if (invStat.value < 0) { //perk negativa
+                    color = "#7a2727";
+                    num = invStat.value;
+                } else if (perk == perks[0]) { //primera perk
+                    color = "rgba(255,255,255, 0.88)";
+                    num = "+" + invStat.value;
+                } else if (perk == perks[1]) { //segunda perk
+                    color = "rgba(255,255,255, 0.76)";
+                    num = "+" + invStat.value;
+                } else if (perk.perkType.includes("weapon.mod_")) { //mod insertado
+                    color = "#68a0b7";
+                    num = "+" + invStat.value;
+                } else color = "#FFF";
+                perk.statDescripton.push({
+                    name: num + " " + statName.data.Response.displayProperties.name,
+                    color: color,
+                });
+            })
+        })
+        return perks;
+    }
+
     useEffect(() => {
         if (isVisible) {
             const handleKeyDown = (event) => {
@@ -1349,8 +1410,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                     {items[index].perks.modifierPerks.map((perk) => (
                                                                                         perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
                                                                                             !perk.perkType?.includes("v400.weapon.mod_") ?
-                                                                                                (<div key={perk.perkHash} title={perk.name}>
-                                                                                                    <svg viewBox="0 0 100 100" width="40" height="40" >
+                                                                                                (<div key={perk.perkHash} className="relative group ">
+                                                                                                    <svg viewBox="0 0 100 100" width="40" height="40" className="group">
                                                                                                         <defs>
                                                                                                             <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
                                                                                                                 <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
@@ -1372,8 +1433,21 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
                                                                                                         <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
                                                                                                     </svg>
+                                                                                                    <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                                        <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                                        {perk?.statDescripton?.map((stat) => (
+                                                                                                            <div>
+                                                                                                                <p key={stat.name} className="text-xs" style={{ color: stat.color }}>{stat.name}</p>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
                                                                                                 </div>) : (
-                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                                                    <div key={perk.perkHash} className="relative group ">
+                                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
+                                                                                                        <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""} </p>
+                                                                                                        </div>
+                                                                                                    </div>
                                                                                                 )
                                                                                         )
                                                                                     ))}
@@ -1440,8 +1514,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                                     <RecoilStat value={stat.value} />
                                                                                                                 </div>
                                                                                                             ) : (
-                                                                                                                <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036].includes(stat.statHash) ? "hidden" : "visible" }}>
-                                                                                                                    {!([4284893193, 2715839340, 3871231066].includes(stat.statHash)) && (
+                                                                                                                <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036, 2961396640].includes(stat.statHash) ? "hidden" : "visible" }}>
+                                                                                                                    {!([4284893193, 2715839340, 3871231066, 2961396640].includes(stat.statHash)) && (
                                                                                                                         Object.entries(stat.secciones || {}).map(([key, section]) => (
                                                                                                                             <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null} />
                                                                                                                         )
@@ -1617,25 +1691,26 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                     <div className="ml-4 justify-between flex flex-col">
                                                                         <div className="flex space-x-2 mb-1">
                                                                             {items[index].perks.modifierPerks.map((perk) => (
-                                                                                perk && perk.isVisible && perk.name !== "Mejorar armadura" && (
-                                                                                    <img src={`/api${perk.iconPath}`} width={32} height={32} alt={perk.name} title={perk.name} />
+                                                                                perk && perk.isVisible && perk.name !== "Mejorar armadura" && perk.perkType != "intrinsics" && (
+                                                                                    <div className="relative w-[40px] h-[40px] group">
+                                                                                        <img
+                                                                                            src={`/api${perk.iconPath}`}
+                                                                                            width={40}
+                                                                                            height={40}
+                                                                                            alt={perk.name}
+                                                                                            className="w-full h-full group"
+                                                                                        />
+                                                                                        {perk.investmentStats?.[0]?.value && (
+                                                                                            <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
+                                                                                                {perk.investmentStats[0].value}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`} style={{ color: perk.desc?.color ?? "#FFF" }}>{perk.desc?.description || null} </p>
+                                                                                        </div>
+                                                                                    </div>
                                                                                 )
                                                                             ))}
-                                                                        </div>
-                                                                        <div className="flex space-x-2">
-                                                                            {items[index].stats
-                                                                                ?.sort((a, b) => {
-                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
-                                                                                    return order.indexOf(a.statHash) - order.indexOf(b.statHash);
-                                                                                })
-                                                                                .map((stat) => (
-                                                                                    stat.iconPath && (
-                                                                                        <p className="flex items-center font-lg">
-                                                                                            <img src={`/api${stat.iconPath}`} width={18} height={18} alt={stat.name} title={stat.name} style={{ marginRight: "1px" }} />
-                                                                                            {stat.value}
-                                                                                        </p>
-                                                                                    )
-                                                                                ))}
                                                                         </div>
                                                                         {selectedArmor &&
                                                                             <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
@@ -1711,8 +1786,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                             {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
                                                                                                                 <div key={index} className="relative w-fit group">
                                                                                                                     <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
-                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-[210px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                                                                                                                        <strong>{intrinsic.name}</strong>: {intrinsic.desc}
+                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                                                        <strong>{intrinsic.name}</strong><br />{intrinsic.desc}
                                                                                                                     </div>
                                                                                                                 </div>
                                                                                                             ))}
