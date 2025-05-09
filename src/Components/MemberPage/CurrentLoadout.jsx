@@ -391,7 +391,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArmorStats(item, investmentStats, stats) {
-        if (item.itemTypeDisplayName == "Armadura de pecho") console.log("stats armadura ", investmentStats);
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
@@ -400,7 +399,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     (invStat) => invStat.statTypeHash === stat.statHash
                 );
                 if (matchingStat) {
-                    if (item.itemTypeDisplayName == "Armadura de pecho" && matchingStat.value == 5) console.log("stats armadura ", perksinvestmentStat);
                     switch (matchingStat.value) {
                         case 2: //Si es 2 por la obra maestra
                             amarillo += matchingStat.value || 0;
@@ -416,7 +414,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             break;
                         case 5: //Si es 5 por el mod insertado
                             if (perksinvestmentStat.name != "") {
-                                if (item.itemTypeDisplayName == "Armadura de pecho") console.log("perk entro ", perksinvestmentStat);
                                 azul68a0b7 += matchingStat.value || 0;
                                 perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             }
@@ -780,7 +777,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     } else blancoFFFFFF1F = blancoFFFFFF1F - (valorAbsolutoRojo - aux);
                 } else amarillo = amarillo - (valorAbsolutoRojo - aux);
             } else azul = azul - (valorAbsolutoRojo - aux);
-            //if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Estabilidad") console.log(stat.name, "Total", blancobase ,"blancoFFFFFF1F", blancoFFFFFF1F, "blancoFFFFFF3D", blancoFFFFFF3D, "azul", azul, "rojo", rojo, "amarillo", amarillo);
+
             stat.secciones = {
                 base: {
                     value: blancobase,
@@ -1166,7 +1163,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     name: matchingMetric.displayProperties.name,
                     perkHash: matchingMetric.hash,
                 }
-                //console.log("perks cambiadas", perks)
                 return perks;
             } else return perks;
         } else return perks;
@@ -1202,23 +1198,29 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     }
                 });
-                if (invStat.value < 0) { //perk negativa
-                    color = "#7a2727";
-                    num = invStat.value;
-                } else if (perk == perks[0]) { //primera perk
-                    color = "rgba(255,255,255, 0.88)";
-                    num = "+" + invStat.value;
-                } else if (perk == perks[1]) { //segunda perk
-                    color = "rgba(255,255,255, 0.76)";
-                    num = "+" + invStat.value;
-                } else if (perk.perkType.includes("weapon.mod_")) { //mod insertado
-                    color = "#68a0b7";
-                    num = "+" + invStat.value;
-                } else color = "#FFF";
-                perk.statDescripton.push({
-                    name: num + " " + statName.data.Response.displayProperties.name,
-                    color: color,
-                });
+                if (invStat.value != 0) {
+                    if (invStat.value < 0) { //perk negativa
+                        color = "#A42323";
+                        num = invStat.value;
+                    } else if (perk == perks[0]) { //primera perk o 3/4
+                        color = "#bdbdbd";
+                        num = "+" + invStat.value;
+                    } else if (perk == perks[1] || perk.perkType == "grips") { //segunda perk
+                        color = "#9d9e9e";
+                        num = "+" + invStat.value;
+                    } else if (perk.perkType.includes("weapon.mod_")) { //mod insertado
+                        color = "#68a0b7";
+                        num = "+" + invStat.value;
+                    } else {
+                        color = "#FFF";
+                        num = "+" + invStat.value;
+                    }
+                    perk.statDescripton.push({
+                        name: `<strong>${num}</strong> ${statName.data.Response.displayProperties.name}`,
+                        color: color,
+                    });
+                }
+                console.log("descrip", perk.statDescripton, perk.name, perk.investmentStats);
             })
         })
         return perks;
@@ -1409,7 +1411,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 <div className="flex space-x-2 justify-end">
                                                                                     {items[index].perks.modifierPerks.map((perk) => (
                                                                                         perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                            !perk.perkType?.includes("v400.weapon.mod_") ?
+                                                                                            !perk.perkType?.includes("weapon.mod_") ?
                                                                                                 (<div key={perk.perkHash} className="relative group ">
                                                                                                     <svg viewBox="0 0 100 100" width="40" height="40" className="group">
                                                                                                         <defs>
@@ -1437,7 +1439,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
                                                                                                         {perk?.statDescripton?.map((stat) => (
                                                                                                             <div>
-                                                                                                                <p key={stat.name} className="text-xs" style={{ color: stat.color }}>{stat.name}</p>
+                                                                                                                <p key={stat.name} lassName="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
                                                                                                             </div>
                                                                                                         ))}
                                                                                                     </div>
@@ -1445,7 +1447,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     <div key={perk.perkHash} className="relative group ">
                                                                                                         <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
                                                                                                         <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""} </p>
+                                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                                            {perk?.statDescripton?.map((stat) => (
+                                                                                                                <div>
+                                                                                                                    <p key={stat.name} lassName="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
+                                                                                                                </div>
+                                                                                                            ))}
                                                                                                         </div>
                                                                                                     </div>
                                                                                                 )
@@ -1706,7 +1713,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             </span>
                                                                                         )}
                                                                                         <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`} style={{ color: perk.desc?.color ?? "#FFF" }}>{perk.desc?.description || null} </p>
+                                                                                            <strong>{perk.name}</strong><br />
+                                                                                            {perk.desc?.description && (<p className={`text-xs whitespace-pre-line`} style={{ color: perk.desc?.color ?? "#FFF" }} dangerouslySetInnerHTML={{ __html: `${perk.desc?.description}` }} />)}
                                                                                         </div>
                                                                                     </div>
                                                                                 )
