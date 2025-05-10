@@ -151,7 +151,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
-                                desc: await getDescription(perkResponse.data.Response.perks[0]?.perkHash) || perkResponse.data.Response.displayProperties.description,
+                                desc: perkResponse.data.Response.displayProperties.description || await getDescription(perkResponse.data.Response.perks[0]?.perkHash),
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
                                 perkHash: perkResponse.data.Response.perks[0]?.perkHash,
                                 perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
@@ -253,10 +253,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
                         weaponLevel = await getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug, itemD.data.Response.sockets.data.sockets);
                         perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
-                        perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks);
+                        perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks, itemResponse.data.Response);
+                        perks.cosmeticPerks.archetype = await getDescriptionPerksWeapons(perks.cosmeticPerks.archetype, itemResponse.data.Response);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 6) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 6) console.log(itemResponse.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -708,6 +709,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function colorStats(item, perks, stats) {
+        if (item.itemTypeDisplayName == "Cañón de mano") console.log("Perks antes de color", perks)
         stats.forEach((stat) => {
             let blancobase = 0, blancoFFFFFF1F = 0, blancoFFFFFF3D = 0, azul = 0, rojo = 0, amarillo = 0;
             let perk1F, perk3D, perkAzul, perkRojo, perkAmarillo;
@@ -1160,6 +1162,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 perks[1] = {
                     ...perks[1],
                     iconPath: matchingMetric.displayProperties.icon,
+                    desc: matchingMetric.displayProperties.description,
                     name: matchingMetric.displayProperties.name,
                     perkHash: matchingMetric.hash,
                 }
@@ -1188,39 +1191,53 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }
 
-    async function getDescriptionPerksWeapons(perks) {
+    async function getDescriptionPerksWeapons(perks, item) {
+        //console.log("statsGroup", perks, item.stats.statGroupHash)
+        const group = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${item.stats.statGroupHash}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            }
+        });
+        const statsOfGroup = group.data.Response.scaledStats;
         perks.forEach((perk) => {
             perk.statDescripton = [];
             perk?.investmentStats?.forEach(async (invStat) => {
                 let color, num;
-                const statName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${invStat.statTypeHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    }
-                });
-                if (invStat.value != 0) {
-                    if (invStat.value < 0) { //perk negativa
-                        color = "#A42323";
-                        num = invStat.value;
-                    } else if (perk == perks[0]) { //primera perk o 3/4
-                        color = "#bdbdbd";
-                        num = "+" + invStat.value;
-                    } else if (perk == perks[1] || perk.perkType == "grips") { //segunda perk
-                        color = "#9d9e9e";
-                        num = "+" + invStat.value;
-                    } else if (perk.perkType.includes("weapon.mod_")) { //mod insertado
-                        color = "#68a0b7";
-                        num = "+" + invStat.value;
-                    } else {
-                        color = "#FFF";
-                        num = "+" + invStat.value;
-                    }
-                    perk.statDescripton.push({
-                        name: `<strong>${num}</strong> ${statName.data.Response.displayProperties.name}`,
-                        color: color,
+                if (statsOfGroup.find(stat => stat.statHash == invStat.statTypeHash)) {//Si la stat esta en el grupo, conitnuo
+                    const statName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${invStat.statTypeHash}/?lc=es`, {
+                        headers: {
+                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                        }
                     });
+                    if (invStat.value != 0 && !(perk.perkType.includes("masterworks") && invStat.value === 3)) { //Si la stat no es cero o es una obra maestra de un arma comun
+                    if(perk.perkType.includes("masterworks"))console.log("obraaaa", perk.name, invStat.value)
+                        if (invStat.value < 0) { //perk negativa
+                            color = "#A42323";
+                            num = invStat.value;
+                        } else if (perks.length == 2){ // Armazón/Obra maestra
+                            color = "#e8a534"
+                            num = "+" + invStat.value;
+
+                        }else if (perk == perks[0]) { //primera perk o 3/4
+                            color = "#bdbdbd";
+                            num = "+" + invStat.value;
+                        } else if (perk == perks[1] || perk.perkType == "grips") { //segunda perk
+                            color = "#9d9e9e";
+                            num = "+" + invStat.value;
+                        } else if (perk.perkType.includes("weapon.mod_")) { //mod insertado
+                            color = "#68a0b7";
+                            num = "+" + invStat.value;
+                        } else {
+                            color = "#FFF";
+                            num = "+" + invStat.value;
+                        }
+                        perk.statDescripton.push({
+                            name: `<strong>${num}</strong> ${statName.data.Response.displayProperties.name}`,
+                            color: color,
+                        });
+                    }
                 }
-                console.log("descrip", perk.statDescripton, perk.name, perk.investmentStats);
+                //console.log("descrip", perk.statDescripton, perk.name, perk.investmentStats);
             })
         })
         return perks;
@@ -1537,9 +1554,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                         <p className="font-semibold text-sm">Armazón</p>
                                                                                                         <div className="flex items-center space-x-2 w-fit">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
-                                                                                                                perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={perk.name.includes("Obra Maestra") ? "w-[30.5px] h-[30.5px]" : "w-[35px] h-[35px]"} alt={perk.name} title={perk.name} />
-                                                                                                                )
+                                                                                                                <div key={index} className="relative w-fit group">
+                                                                                                                    <img src={`/api${perk.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={perk.name} />
+                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                                                        <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                                                        {perk?.statDescripton?.map((stat) => (
+                                                                                                                            <div>
+                                                                                                                                <p key={stat.name} lassName="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
+                                                                                                                            </div>
+                                                                                                                        ))}
+                                                                                                                    </div>
+                                                                                                                </div>
                                                                                                             ))}
                                                                                                         </div>
                                                                                                     </div>
@@ -1788,7 +1813,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex space-x-4 justify-center">
                                                                                             {selectedArmor.armorIntrinsic.length > 0 && (
                                                                                                 <>
-                                                                                                    <div className="space-y-1 flex flex-col justify-center items-center font-[200]" style={{ width: "27%" }}>
+                                                                                                    <div className="space-y-1 flex flex-col justify-center items-center" style={{ width: "27%" }}>
                                                                                                         <p className="text-sm font-semibold">Ventajas</p>
                                                                                                         <div className="flex flex space-x-2">
                                                                                                             {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
