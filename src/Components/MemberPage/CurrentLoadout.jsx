@@ -5,6 +5,7 @@ import inventory from "../../assets/inventory.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import "../../index.css";
 import RecoilStat from "./RecoliStat";
+import frasesES from "./frasesES";
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
@@ -1326,8 +1327,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }, []);
 
-    const palabrasClave = ["Aumento", "es", "hay hasta"];
-    const regex = new RegExp(`(${palabrasClave.join("|")})`, "gi");
+    const regex = new RegExp(`(${frasesES.join("|")})`, "gi");
 
     return (
         totalStats && background && items && (
@@ -1487,7 +1487,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 dangerouslySetInnerHTML={{
                                                                                     __html: (perk.desc ?? "").replace(
                                                                                         regex,
-                                                                                        '<span style="color:#00d4d4;font-weight:bold;">$1</span>'
+                                                                                        '<span style="color:#799AB5;">$1</span>'
                                                                                     ),
                                                                                 }}
                                                                             />
