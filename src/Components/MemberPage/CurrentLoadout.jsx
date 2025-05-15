@@ -1329,6 +1329,45 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     const regex = new RegExp(`(${frasesES.join("|")})`, "gi");
 
+
+    const reemplazos = {
+        "cuerpo a cuerpo": '<i class="icon-melee" style="font-style:normal"></i>',
+        "granada": '<i class="icon-granada" style="font-style:normal"></i>',
+        "estasis": '<i class="icon-estasis" style="font-style:normal"></i>',
+        "cuerda": '<i class="icon-cuerda" style="font-style:normal"></i>',
+        "atadura": '<i class="icon-cuerda" style="font-style:normal"></i>',
+        "solar": '<i class="icon-solar" style="font-style:normal"></i>',
+        "vacío": '<i class="icon-vacío" style="font-style:normal"></i>',
+        "arco": '<i class="icon-arco" style="font-style:normal"></i>',
+    }
+
+    // Reemplazar [palabra] por el símbolo/texto correspondiente
+    function reemplazarCorchetes(texto) {
+        return texto.replace(/\[([^\]]+)\]/gi, (match, palabra) => {
+            const clave = palabra.trim().toLowerCase();
+            return reemplazos[clave] || match;
+        });
+    }
+
+    function contieneCorchetes(texto) {
+        return /\[[^\]]+\]/.test(texto);
+    }
+
+    function reemplazarCorchetesYColorear(texto) {
+        // Primero reemplaza los corchetes por íconos
+        const conIconos = reemplazarCorchetes(texto ?? "");
+        // Luego colorea, pero NO dentro de etiquetas <i>
+        return conIconos.replace(regex, (match, ...args) => {
+            // Si el match está dentro de una etiqueta <i>, no lo colorees
+            const offset = args[args.length - 2];
+            const before = conIconos.slice(0, offset);
+            const openTag = before.lastIndexOf('<i');
+            const closeTag = before.lastIndexOf('</i>');
+            if (openTag > closeTag) return match; // Está dentro de <i>...</i>
+            return `<span style="color:#799AB5;">${match}</span>`;
+        });
+    }
+
     return (
         totalStats && background && items && (
             <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
@@ -1449,7 +1488,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
                                                                             </div>
                                                                             <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
-                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`}>{items[11].perks[0].desc ?? ""}</p>
+                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
+                                                                                __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
+                                                                            }} />
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -1464,7 +1505,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 <p className="font-[300] opacity-75">{perk.type}</p>
                                                                             </div>
                                                                             <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
-                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`}>{perk.desc ?? ""}</p>
+                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
+                                                                                __html: reemplazarCorchetesYColorear(perk.desc ?? "")
+                                                                            }} />
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1485,10 +1528,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             <p
                                                                                 className="whitespace-pre-line w-fit p-1 px-2 bg-black/80"
                                                                                 dangerouslySetInnerHTML={{
-                                                                                    __html: (perk.desc ?? "").replace(
-                                                                                        regex,
-                                                                                        '<span style="color:#799AB5;">$1</span>'
-                                                                                    ),
+                                                                                    __html: reemplazarCorchetesYColorear(perk.desc ?? "")
                                                                                 }}
                                                                             />
                                                                         </div>
@@ -1507,7 +1547,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 </div>
                                                                                 <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
                                                                                 <div className="w-fit p-1 px-2 bg-black/80">
-                                                                                    <p className={`whitespace-pre-line`}>{perk.desc ?? ""}</p>
+                                                                                    <p className={`whitespace-pre-line`} dangerouslySetInnerHTML={{
+                                                                                        __html: (perk.desc ?? "").replace(
+                                                                                            regex,
+                                                                                            '<span style="color:#799AB5;">$1</span>'
+                                                                                        ),
+                                                                                    }} />
                                                                                     {perk.fragmentsStats?.map((stat) => (
                                                                                         <div key={stat.statHash} className="flex space-x-0.5 mt-1 items-center opacity-80" style={{ color: stat.color }}>
                                                                                             <p>&nbsp;&nbsp;{stat.value}</p>

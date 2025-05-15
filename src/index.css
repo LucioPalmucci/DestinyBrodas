@@ -156,6 +156,21 @@ body {
     font-family: "Destiny Symbols Common";
 }
 
+.icon-solarblanco::before {
+    content: "\E140";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-melee::before {
+    content: "\E110";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-granada::before {
+    content: "\E111";
+    font-family: "Destiny Symbols Common";
+}
+
 .icon-prismatico::before {
     content: "";
     display: inline-block;
@@ -245,6 +260,8 @@ body {
     background-repeat: no-repeat;
     vertical-align: middle;
 }
+
+
 
 .custom-arrow::hover {
     cursor: pointer;
