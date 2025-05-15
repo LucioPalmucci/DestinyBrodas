@@ -1327,7 +1327,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }, []);
 
-    const regex = new RegExp(`(${frasesES.join("|")})`, "gi");
+    // Frases a buscar exactas
+    function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    // Ordena de mayor a menor longitud para evitar solapamientos
+    const frasesOrdenadas = [...frasesES].sort((a, b) => b.length - a.length);
+    // Regex con delimitadores de palabra
+    const regex = new RegExp(`\\b(${frasesOrdenadas.map(escapeRegex).join('|')})\\b`, "gi");
 
 
     const reemplazos = {
@@ -1347,10 +1354,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             const clave = palabra.trim().toLowerCase();
             return reemplazos[clave] || match;
         });
-    }
-
-    function contieneCorchetes(texto) {
-        return /\[[^\]]+\]/.test(texto);
     }
 
     function reemplazarCorchetesYColorear(texto) {
