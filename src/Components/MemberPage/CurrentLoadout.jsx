@@ -11,6 +11,7 @@ import bgStrand from "../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../assets/subClassBg/subclass-void.png";
 import "../../index.css";
 import RecoilStat from "./RecoliStat";
+import frasesArtefactoES from "./frasesArtefactoES";
 import frasesES from "./frasesES";
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
@@ -1385,8 +1386,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
     // Ordena de mayor a menor longitud para evitar solapamientos
     const frasesOrdenadas = [...frasesES].sort((a, b) => b.length - a.length);
+    const frasesOrdenadasArtf = [...frasesArtefactoES].sort((a, b) => b.length - a.length);
     // Regex con delimitadores de palabra
     const regex = new RegExp(`\\b(${frasesOrdenadas.map(escapeRegex).join('|')})\\b`, "gi");
+    const regexArtf = new RegExp(`\\b(${frasesOrdenadasArtf.map(escapeRegex).join('|')})\\b`, "gi");
 
 
     const reemplazos = {
@@ -1421,6 +1424,18 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         // Luego colorea, pero NO dentro de etiquetas <i>
         return conIconos.replace(regex, (match, ...args) => {
             // Si el match está dentro de una etiqueta <i>, no lo colorees
+            const offset = args[args.length - 2];
+            const before = conIconos.slice(0, offset);
+            const openTag = before.lastIndexOf('<i');
+            const closeTag = before.lastIndexOf('</i>');
+            if (openTag > closeTag) return match; // Está dentro de <i>...</i>
+            return `<span style="color:#799AB5;">${match}</span>`;
+        });
+    }
+
+    function reemplazarCorchetesYColorearArtefacto(texto) {
+        const conIconos = reemplazarCorchetes(texto ?? "");
+        return conIconos.replace(regexArtf, (match, ...args) => {
             const offset = args[args.length - 2];
             const before = conIconos.slice(0, offset);
             const openTag = before.lastIndexOf('<i');
@@ -1648,8 +1663,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
                                                                                         <div  dir="ltr" className={`${ index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
                                                                                             <strong>{perk.name}</strong><br />
-                                                                                            <p className={`w-fit whitespace-pre-line`} dangerouslySetInnerHTML={{
-                                                                                                __html: reemplazarCorchetes(perk.desc.description ?? perk.desc ??"")
+                                                                                            <p className={`w-fit whitespace-pre-line text-[0.7rem]`} dangerouslySetInnerHTML={{
+                                                                                                __html: reemplazarCorchetesYColorearArtefacto(perk.desc.description ?? perk.desc ??"")
                                                                                             }} />
                                                                                         </div>
                                                                                     </div>
