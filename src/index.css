@@ -171,6 +171,21 @@ body {
     font-family: "Destiny Symbols Common";
 }
 
+.icon-perforacion::before {
+    content: "\E070";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-perturbacion::before {
+    content: "\E071";
+    font-family: "Destiny Symbols Common";
+}
+
+.icon-aturdimiento::before {
+    content: "\E072";
+    font-family: "Destiny Symbols Common";
+}
+
 .icon-prismatico::before {
     content: "";
     display: inline-block;

@@ -97,11 +97,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
-
+                            const sanbox = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkResponse.data.Response.perks[0]?.perkHash}/?lc=es`, {
+                                headers: {
+                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                                },
+                            });
+                            console.log("perk", perkResponse.data.Response);
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
                                 iconPath: perkResponse.data.Response.displayProperties.icon,
+                                desc: sanbox.data.Response.displayProperties.description,
                             };
                         })) || [];
 
@@ -1392,10 +1398,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         "solar": '<i class="icon-solar" style="font-style:normal"></i>',
         "vacío": '<i class="icon-vacío" style="font-style:normal"></i>',
         "arco": '<i class="icon-arco" style="font-style:normal"></i>',
+        "perturbación": '<i class="icon-perturbacion" style="font-style:normal"></i>',
+        "perforación de escudos": '<i class="icon-perforacion" style="font-style:normal"></i>',
+        "aturdimiento": '<i class="icon-aturdimiento" style="font-style:normal"></i>',
     }
 
     // Reemplazar [palabra] por el símbolo/texto correspondiente
     function reemplazarCorchetes(texto) {
+        if (typeof texto !== "string") {
+            console.log("Tipo de texto", typeof texto, texto);
+            return texto;
+        }
         return texto.replace(/\[([^\]]+)\]/gi, (match, palabra) => {
             const clave = palabra.trim().toLowerCase();
             return reemplazos[clave] || match;
@@ -1556,8 +1569,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         </svg>}
                                                                     </div>
                                                                     <div className="absolute left-18 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                        <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                            <p className="font-semibold text-xl uppercase">{items[11].perks[0].name}</p>
+                                                                        <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                            <p className="font-semibold text-xl uppercase leading-6">{items[11].perks[0].name}</p>
                                                                             <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
                                                                         </div>
                                                                         <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
@@ -1627,14 +1640,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-end">
-                                                                    <div dir={index == 16 ? "rtl" : ""} className={index == 16 ? "grid grid-cols-6 gap-2 text-right justify-end rtl mr-4" : "flex space-x-2 mr-4"}>
+                                                                    <div dir={index == 16 ? "rtl" : ""} className={index == 16 ? "grid grid-cols-6 gap-2 justify-end mr-4" : "flex space-x-2 mr-4"}>
                                                                         {index == 8 || index == 16 ? (
                                                                             items[index].perks?.map((perk) => (
                                                                                 perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && (
                                                                                     <div className="group relative">
-                                                                                        <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[35px] h-[35px]"} alt={perk.name} />
-                                                                                        <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                        <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
+                                                                                        <div  dir="ltr" className={`${ index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
+                                                                                            <strong>{perk.name}</strong><br />
+                                                                                            <p className={`w-fit whitespace-pre-line`} dangerouslySetInnerHTML={{
+                                                                                                __html: reemplazarCorchetes(perk.desc.description ?? perk.desc ??"")
+                                                                                            }} />
                                                                                         </div>
                                                                                     </div>
                                                                                 )
@@ -1701,7 +1717,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         >
                                                                                             <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
                                                                                                 <div className="text-xl font-semibold flex items-center translate-y-1">
-                                                                                                    <a href={`https://www.light.gg/db/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedWeapon.name}</a>
+                                                                                                    <a href={`https://www.light.gg/db/es/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedWeapon.name}</a>
                                                                                                 </div>
                                                                                                 <div className="flex items-center justify-between text-sm ">
                                                                                                     <div className="flex items-center">
@@ -1787,7 +1803,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
                                                                                                     <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "28%" }}>
                                                                                                         <p className="font-semibold text-sm">Diseño</p>
-                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-1.5">
+                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-1">
                                                                                                             {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
                                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
                                                                                                                     <img src={`/api${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
@@ -1987,7 +2003,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                     return order.indexOf(a.statHash) - order.indexOf(b.statHash);
                                                                                                 })
                                                                                                 .map((stat) => (
-                                                                                                    <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
+                                                                                                    <div key={stat.statHash} className="flex items-center text-xs relative w-fit group" style={{ width: "100%", justifyContent: "center" }}>
+                                                                                                        <div className="absolute left-70 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                                            <p>{stat.desc}</p>
+                                                                                                        </div>
                                                                                                         <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
                                                                                                         <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
                                                                                                         {stat.iconPath ? (
@@ -2098,7 +2117,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         {[9, 10].map((index) => (
                                                             <div key={index} className="flex mb-4 space-x-4 mr-0">
                                                                 <div className={`relative`}>
-                                                                    <a href={`https://www.light.gg/db/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                                    <a href={`https://www.light.gg/db/es/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
                                                                         <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
                                                                     </a>
                                                                     {items[index].watermark && (
@@ -2182,7 +2201,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             <div className="flex mb-4 ">
                                                                 {perk.iconPath && (
                                                                     <div className="relative">
-                                                                        <a href={`https://www.light.gg/db/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                                        <a href={`https://www.light.gg/db/es/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
                                                                             <div className="relative group">
                                                                                 <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} />
                                                                                 <div className="absolute left-12 top-10 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
