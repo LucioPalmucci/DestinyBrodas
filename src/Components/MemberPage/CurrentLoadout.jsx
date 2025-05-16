@@ -3,6 +3,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import inventory from "../../assets/inventory.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
+import bgArc from "../../assets/subClassBg/subclass-arc.png";
+import bgKinetic from "../../assets/subClassBg/subclass-kinetic.png";
+import bgSolar from "../../assets/subClassBg/subclass-solar.png";
+import bgStasis from "../../assets/subClassBg/subclass-stasis.png";
+import bgStrand from "../../assets/subClassBg/subclass-strand.png";
+import bgVoid from "../../assets/subClassBg/subclass-void.png";
 import "../../index.css";
 import RecoilStat from "./RecoliStat";
 import frasesES from "./frasesES";
@@ -143,7 +149,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             }
                             let fragmentsStats;
 
-                            if (perkResponse.data.Response.investmentStats.length >= 2) fragmentsStats = await getFragemtsStats(perkResponse.data.Response.investmentStats);
+                            if (perkResponse.data.Response.investmentStats.length >= 2) fragmentsStats = await getFragemtsStats(perkResponse.data.Response.investmentStats, perkResponse.data.Response.hash, classType);
 
                             return {
                                 ...perk,
@@ -230,7 +236,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor, secondaryBgImg;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
@@ -273,6 +279,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         perks.cosmeticPerks.archetype = await getDescriptionPerksWeapons(perks.cosmeticPerks.archetype, itemResponse.data.Response);
                     } else if (response.data.Response.equipment.data.items.indexOf(item) == 11) {
                         elementalColor = await getElementalColor(itemResponse.data.Response.talentGrid?.hudDamageType, manifest)
+                        secondaryBgImg = getSecondaryBgImg(itemResponse.data.Response.talentGrid?.hudDamageType);
                     }
 
                     if (response.data.Response.equipment.data.items.indexOf(item) == 11) console.log(itemResponse.data.Response, itemD.data.Response);
@@ -305,6 +312,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         },
                         armorIntrinsic: armorIntrinsic,
                         elementalColor: elementalColor,
+                        secondaryBgImg: secondaryBgImg,
                     };
                 }));
 
@@ -1270,15 +1278,35 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const matchingMetric = Object.values(metricsData.data).find(metric =>
             metric.enumValue == elementindex
         );
-        let rgbaColor = "rgba(" + matchingMetric?.color.red + ", " + matchingMetric?.color.green + ", " + matchingMetric?.color.blue + ", 255)";
-        let opacity = "rgba(" + matchingMetric?.color.red + ", " + matchingMetric?.color.green + ", " + matchingMetric?.color.blue + ", 0.7)"
+        let rgbaColor, opacity;
+        if (elementindex == 1) {// prismatic
+            rgbaColor = "rgba(232, 101, 157, 225)";
+            opacity = "rgba(232, 101, 157, 0.7)";
+        } else {
+            rgbaColor = "rgba(" + matchingMetric?.color.red + ", " + matchingMetric?.color.green + ", " + matchingMetric?.color.blue + ", 255)";
+            opacity = "rgba(" + matchingMetric?.color.red + ", " + matchingMetric?.color.green + ", " + matchingMetric?.color.blue + ", 0.7)"
+        }
         return {
             color: rgbaColor,
             opacity: opacity,
         };
     }
 
-    async function getFragemtsStats(investmentStats) {
+    async function getFragemtsStats(investmentStats, hash, classType) {
+        if (hash == 2272984671 || hash == 1727069360) { //Si es un fragmento de clase
+            switch (classType) {
+                case 0: //Titan resto resistencia
+                    investmentStats.splice(1, 2); //Elimina movilidad y recuperacion
+                    break;
+                case 1: //Cazador resto movilidad
+                    investmentStats.splice(3, 1); // Elimina el elemento en el índice 3
+                    investmentStats.splice(1, 1);  //Elimina resistencia y recuperacion
+                    break;
+                case 2: //Hechicero resto recuperacion
+                    investmentStats.splice(2, 3); //Elimina movilidad y resistencia
+                    break;
+            }
+        }
         const stats = await Promise.all(investmentStats.slice(1).map(async (stat) => {
             const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statTypeHash}/?lc=es`, {
                 headers: {
@@ -1296,6 +1324,24 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         return stats;
     }
 
+    function getSecondaryBgImg(subclassIndex) {
+        switch (subclassIndex) {
+            case 1:
+                return bgKinetic;
+            case 2:
+                return bgArc;
+            case 3:
+                return bgSolar;
+            case 4:
+                return bgVoid;
+            case 6:
+                return bgStasis;
+            case 7:
+                return bgStrand;
+            default:
+                return "";
+        }
+    }
     useEffect(() => {
         if (isVisible) {
             const handleKeyDown = (event) => {
@@ -1404,21 +1450,21 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         ))}
                     </div>}
                 </div>
-                <div className="flex">
+                {totalStats && background && items && <div className="flex">
                     <a onClick={() => setShowPopup(true)} className="cristal transform transition-transform duration-200 hover:scale-105">
                         <span></span>
                         <span></span>
                         <span></span>
                         <span></span>
                         Ver Más</a>
-                </div>
+                </div>}
                 {isVisible && (
                     <div className="fixed inset-0 flex items-center justify-center w-full z-40 bg-black/50" onClick={() => setShowPopup(false)}>
                         <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                             <div className="flex flex-col items-center justify-center h-full ">
                                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
                                     <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
-                                        <img src={`/api${emblemElements.icon}`} style={{ width: "17%" }} />
+                                        <img src={`/api${emblemElements.icon}`} style={{ width: "16%" }} />
                                         <div className="flex flex-col items-top ml-4 mt-1.5">
                                             <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
                                             <h2 className="text-2xl font-bold tracking-[0.11em] items-bottom">{name}</h2>
@@ -1477,34 +1523,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             className="w-full justify-center flex items-top mt-4"
                                             style={{ height: "100%" }}
                                         >
-                                            <div className="flex flex-col space-y-4 justify-center w-full">
+                                            <div className="flex flex-col space-y-6 justify-center w-full">
                                                 {items[11] && (
-                                                    <div className={`flex relative w-full justify-center`}>
-                                                        <div className="flex flex-col items-end" style={{ width: "26%" }}>
-                                                            <div className="flex mb-2 rtl">
-                                                                {items[11].perks[0] && (
-                                                                    <div className="group relative">
-                                                                        <img src={`/api${items[11].perks[0].iconPath}`} className="w-[35px] h-[35px]" alt={items[11].perks[0].name} />
-                                                                        <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                            <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                <p className="font-semibold text-xl uppercase">{items[11].perks[0].name}</p>
-                                                                                <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
-                                                                            </div>
-                                                                            <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
-                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
-                                                                                __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
-                                                                            }} />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex mb-2 rtl">
+                                                    <div className={`flex relative w-full justify-center space-x-4`}>
+                                                        <div className="flex flex-col items-end justify-center" style={{ width: "26%" }}>
+                                                            <div className="flex rtl">
                                                                 {items[11].perks.slice(1, 5).map((perk, perkIndex) => (
                                                                     <div className="group relative">
                                                                         <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                            <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                <p className="font-semibold text-xl uppercase">{perk.name}</p>
+                                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                                 <p className="font-[300] opacity-75">{perk.type}</p>
                                                                             </div>
                                                                             <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
@@ -1516,15 +1545,37 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                        <img src={`/api${items[11].icon}`} style={{ width: "7%" }} alt={items[11].name} className="rounded-lg" title={items[11].name} />
+                                                        <div style={{ width: "7%" }}>
+                                                            {items[11].perks[0] && (
+                                                                <div className="group relative">
+                                                                    <div className="realtive">
+                                                                        <img src={items[11].secondaryBgImg} className="absolute z-10" />
+                                                                        <img src={`/api${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
+                                                                        {items[11].name.includes("prismático") && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="absolute z-30">
+                                                                            <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" stroke-width="1" stroke="#bdbdbd" fill="transparent"></rect>
+                                                                        </svg>}
+                                                                    </div>
+                                                                    <div className="absolute left-18 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                        <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                            <p className="font-semibold text-xl uppercase">{items[11].perks[0].name}</p>
+                                                                            <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
+                                                                        </div>
+                                                                        <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
+                                                                        <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
+                                                                            __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
+                                                                        }} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <div className="flex flex-col right-0 mt-1" style={{ width: "26%" }}>
                                                             <div className="flex mb-2">
                                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
                                                                     <div className="group relative">
                                                                         <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                            <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                <p className="font-semibold text-xl uppercase">{perk.name}</p>
+                                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                                 <p className="font-[300] opacity-75">{perk.type}</p>
                                                                             </div>
                                                                             <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
@@ -1544,8 +1595,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         <div className="group relative">
                                                                             <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                                             <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                <div className="p-1 pb-2 px-2 leading-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                    <p className="font-semibold text-xl uppercase">{perk.name}</p>
+                                                                                <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                                    <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                                     <p className="font-[300] opacity-75">{perk.type}</p>
                                                                                 </div>
                                                                                 <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
@@ -2019,8 +2070,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <div className="flex space-x-2">
                                                         {totalStats && totalStats.map((stat) => (
                                                             stat.iconPath && (
-                                                                <p key={stat.statHash} className="flex items-center space-x-2">
-                                                                    <img src={`/api${stat.iconPath}`} width={23} height={23} alt={stat.name} title={stat.name} />
+                                                                <p key={stat.statHash} className="flex items-center">
+                                                                    <img src={`/api${stat.iconPath}`} className="mr-0.5" width={23} height={23} alt={stat.name} title={stat.name} />
                                                                     {stat.value}
                                                                 </p>
                                                             )
@@ -2062,7 +2113,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         perk.iconPath && (
                                                                             <div className="relative">
                                                                                 {perk.perkType?.includes("vehicles.mod") ?
-                                                                                    (<div key={perk.perkHash} className="group relative">
+                                                                                    (<div key={perk.perkHash} title={perk.name}>
                                                                                         <svg viewBox="0 0 100 100" width="40" height="40" >
                                                                                             <defs>
                                                                                                 <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
@@ -2085,10 +2136,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
                                                                                             <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
                                                                                         </svg>
-                                                                                        <div className="absolute left-10 top-1 mt-2 w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                            <strong>{perk.name}</strong><br />
-                                                                                            <p className="w-fit break-all whitespace-pre-line text-xs">{perk.desc?.description ?? perk.desc ?? ""}</p>
-                                                                                        </div>
                                                                                     </div>) : (
                                                                                         <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
                                                                                     )}
