@@ -434,4 +434,16 @@ body {
 title{
     width: 30px;
 }
+.slick-prev, .slick-next {
+  width: 15px !important;
+  height: 15px !important;
+  z-index: 2;
+}
+.slick-prev:before, .slick-next:before {
+  font-size: 15px !important;
+}
+
+.slick-next {
+  right: -14px !important; /* Ajusta el valor según lo que necesites */
+}
 @import "tailwindcss";

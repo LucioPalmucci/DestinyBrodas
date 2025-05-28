@@ -2,6 +2,7 @@ import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import inventory from "../../assets/inventory.png";
+import masterworkBlue from "../../assets/masterworkBlueHeader.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import bgArc from "../../assets/subClassBg/subclass-arc.png";
 import bgKinetic from "../../assets/subClassBg/subclass-kinetic.png";
@@ -10,9 +11,9 @@ import bgStasis from "../../assets/subClassBg/subclass-stasis.png";
 import bgStrand from "../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../assets/subClassBg/subclass-void.png";
 import "../../index.css";
+import CaruselArtefacto from "./CaruselArtefacto";
 import RecoilStat from "./RecoliStat";
-import frasesArtefactoES from "./frasesArtefactoES";
-import frasesES from "./frasesES";
+import frasesES from "./frases/frasesES";
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
@@ -33,6 +34,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [Passlevel, setPassLevel] = useState(null);
     const [triumphRecord, setTriumphRecord] = useState(null);
     const [artifact, setArtifact] = useState(null);
+    const [artifactPage, setArtifactPage] = useState(0);
+    const [artifactDirection, setArtifactDirection] = useState(0);
+    const [prevArtif, setPreviousPageArtifact] = useState(0);
+    const [slidesArtifact, setslidesArtifact] = useState(null);
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             try {
@@ -89,7 +94,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     let perks = [];
                     if (response.data.Response.equipment.data.items.indexOf(item) === 16) { //Artifact
                         const activePerks = response.data.Response.progressions.data.seasonalArtifact.tiers.flatMap(tier =>
-                            tier.items.filter(perk => perk.isActive)
+                            tier.items.filter(perk => perk.isActive && perk.isVisible)
                         );
 
                         perks = await Promise.all(activePerks.map(async (perk) => {
@@ -103,7 +108,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
-                            console.log("perk", perkResponse.data.Response);
                             return {
                                 ...perk,
                                 name: perkResponse.data.Response.displayProperties.name,
@@ -112,6 +116,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             };
                         })) || [];
 
+                        setslidesArtifact(perks);
+                        console.log(slidesArtifact)
 
                     } else if ([11, 15, 14].includes(response.data.Response.equipment.data.items.indexOf(item))) { //Sublcase, gestos y remates
                         perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
@@ -287,12 +293,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     } else if (response.data.Response.equipment.data.items.indexOf(item) == 11) {
                         elementalColor = await getElementalColor(itemResponse.data.Response.talentGrid?.hudDamageType, manifest)
                         secondaryBgImg = getSecondaryBgImg(itemResponse.data.Response.talentGrid?.hudDamageType);
+                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 16) {
+                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                        bgMasterwork = showArtifact.points == 12 ? masterworkBlue : null;
                     }
 
                     if (response.data.Response.equipment.data.items.indexOf(item) == 11) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
+                        desc: itemResponse.data.Response.displayProperties.description || itemResponse.data.Response.flavorText,
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
                         perks: perks,
@@ -1196,10 +1206,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 );
                 perks[1] = {
                     ...perks[1],
-                    iconPath: matchingMetric.displayProperties.icon,
-                    desc: matchingMetric.displayProperties.description,
-                    name: matchingMetric.displayProperties.name,
-                    perkHash: matchingMetric.hash,
+                    iconPath: matchingMetric?.displayProperties?.icon,
+                    desc: matchingMetric?.displayProperties?.description,
+                    name: matchingMetric?.displayProperties?.name,
+                    perkHash: matchingMetric?.hash,
                 }
                 return perks;
             } else return perks;
@@ -1386,11 +1396,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
     // Ordena de mayor a menor longitud para evitar solapamientos
     const frasesOrdenadas = [...frasesES].sort((a, b) => b.length - a.length);
-    const frasesOrdenadasArtf = [...frasesArtefactoES].sort((a, b) => b.length - a.length);
     // Regex con delimitadores de palabra
     const regex = new RegExp(`\\b(${frasesOrdenadas.map(escapeRegex).join('|')})\\b`, "gi");
-    const regexArtf = new RegExp(`\\b(${frasesOrdenadasArtf.map(escapeRegex).join('|')})\\b`, "gi");
-
 
     const reemplazos = {
         "cuerpo a cuerpo": '<i class="icon-melee" style="font-style:normal"></i>',
@@ -1409,7 +1416,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     // Reemplazar [palabra] por el símbolo/texto correspondiente
     function reemplazarCorchetes(texto) {
         if (typeof texto !== "string") {
-            console.log("Tipo de texto", typeof texto, texto);
             return texto;
         }
         return texto.replace(/\[([^\]]+)\]/gi, (match, palabra) => {
@@ -1424,18 +1430,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         // Luego colorea, pero NO dentro de etiquetas <i>
         return conIconos.replace(regex, (match, ...args) => {
             // Si el match está dentro de una etiqueta <i>, no lo colorees
-            const offset = args[args.length - 2];
-            const before = conIconos.slice(0, offset);
-            const openTag = before.lastIndexOf('<i');
-            const closeTag = before.lastIndexOf('</i>');
-            if (openTag > closeTag) return match; // Está dentro de <i>...</i>
-            return `<span style="color:#799AB5;">${match}</span>`;
-        });
-    }
-
-    function reemplazarCorchetesYColorearArtefacto(texto) {
-        const conIconos = reemplazarCorchetes(texto ?? "");
-        return conIconos.replace(regexArtf, (match, ...args) => {
             const offset = args[args.length - 2];
             const before = conIconos.slice(0, offset);
             const openTag = before.lastIndexOf('<i');
@@ -1655,21 +1649,25 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         {[0, 1, 2, 8, 16].map((index) => (
                                                             items[index] && (
                                                                 <div key={index} className="flex items-center justify-end">
-                                                                    <div dir={index == 16 ? "rtl" : ""} className={index == 16 ? "grid grid-cols-6 gap-2 justify-end mr-4" : "flex space-x-2 mr-4"}>
+                                                                    <div className={"flex space-x-2 mr-4"}>
                                                                         {index == 8 || index == 16 ? (
-                                                                            items[index].perks?.map((perk) => (
-                                                                                perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && (
-                                                                                    <div className="group relative">
-                                                                                        <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
-                                                                                        <div  dir="ltr" className={`${ index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
-                                                                                            <strong>{perk.name}</strong><br />
-                                                                                            <p className={`w-fit whitespace-pre-line text-[0.7rem]`} dangerouslySetInnerHTML={{
-                                                                                                __html: reemplazarCorchetesYColorearArtefacto(perk.desc.description ?? perk.desc ??"")
-                                                                                            }} />
+                                                                            index == 8 ? (
+                                                                                items[index].perks?.map((perk) => (
+                                                                                    perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && (
+                                                                                        <div className="group relative">
+                                                                                            <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
+                                                                                            <div dir="ltr" className={`${index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
+                                                                                                <strong>{perk.name}</strong><br />
+                                                                                                <p className={`w-fit whitespace-pre-line text-[0.7rem]`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                            </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                )
-                                                                            ))
+                                                                                    )
+                                                                                ))
+                                                                            ) : (
+                                                                                <div className="h-8 mr-4 mb-1" style={{ width: "200px" }}>
+                                                                                    <CaruselArtefacto elements={slidesArtifact} />
+                                                                                </div>
+                                                                            )
                                                                         ) : (
                                                                             <div className="justify-between flex flex-col">
                                                                                 <div className="flex space-x-2 justify-end">
@@ -1778,7 +1776,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 <div className="flex flex-col py-1.5">
                                                                                                     {selectedWeapon.stats.map((stat) => (
                                                                                                         <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
-                                                                                                            <p style={{ width: "40%", textAlign: "right", fontWeight: "300" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                                            <p style={{ width: "42%", textAlign: "right", fontWeight: "300" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
                                                                                                             <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.value}</p>
                                                                                                             {stat.statHash === 2715839340 ? (
                                                                                                                 <div style={{ width: "34%" }}>
@@ -1848,49 +1846,61 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         </div>
                                                                                     </div>}
                                                                                 {showArtifact && (
-                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50" onClick={() => closeWeaponDetails()} style={{ width: "75%" }}>
+                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
                                                                                         <div
                                                                                             className={`text-white relative`}
                                                                                             style={{
                                                                                                 top: `${popupPosition.top}px`,
-                                                                                                left: `${popupPosition.left}px`,
+                                                                                                left: `${popupPosition.left - 12}px`,
                                                                                                 position: "absolute",
-                                                                                                width: "34%",
+                                                                                                width: "27%",
                                                                                             }}
                                                                                             onClick={(e) => e.stopPropagation()}
                                                                                         >
-                                                                                            <div style={{ backgroundColor: "rgba(10, 55, 62, 0.65)" }} className="p-2 px-4 rounded-lg">
-                                                                                                <div className="flex space-x-2 items-center">
-                                                                                                    <div className="space-x-2 flex">
-                                                                                                        <p className="opacity-[0.90] tracking-wide">Disponibles</p>
-                                                                                                        <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
+                                                                                            <div className="p-2 px-4 rounded-lg">
+                                                                                                <div style={{ backgroundColor: items[16].bgColor.rgb, backgroundImage: `url(${items[16].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                                        <a href={`https://www.light.gg/db/es/items/${items[16].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[16].name}</a>
                                                                                                     </div>
-                                                                                                    <svg width="80" height="80" viewBox="-10 -10 140 140" style={{ padding: "10px" }} className="relative">
-                                                                                                        <polygon
-                                                                                                            points="60,0 120,60 60,120 0,60"
-                                                                                                            fill="transparent"
-                                                                                                            stroke="rgba(0, 0, 0, 0.4)"
-                                                                                                            strokeWidth="7.5"
-                                                                                                        />
-                                                                                                        <polygon
-                                                                                                            points="60,0 120,60 60,120 0,60"
-                                                                                                            fill="none"
-                                                                                                            stroke="#00d4d4"
-                                                                                                            strokeWidth="7.5"
-                                                                                                            strokeDasharray="360"
-                                                                                                            strokeDashoffset={370 * (1 - showArtifact.powerProgress / showArtifact.powerProgressNextLvl)}
-                                                                                                        />
-                                                                                                        <polygon
-                                                                                                            points="60,28 92,60 60,92 28,60"
-                                                                                                            fill="transparent"
-                                                                                                            stroke="white"
-                                                                                                            strokeWidth="15"
-                                                                                                            strokeDasharray="191"
-                                                                                                            strokeLinecap="square"
-                                                                                                            strokeDashoffset={211 * (1 - showArtifact.pointsProgress / showArtifact.pointsProgressNextLvl)}
-                                                                                                        />
-                                                                                                    </svg>
-                                                                                                    <p style={{ color: "#00d4d4" }} className="text-xl font-extrabold">+{showArtifact.powerBonus}</p>
+                                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                                        <p className="opacity-75">{items[16].weaponType}</p>
+                                                                                                        <p className="opacity-25">Leyenda</p>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div style={{ backgroundColor: items[16].bgColor.rgba }} className="pt-2 px-2.5 rounded-b-lg">
+                                                                                                    <p className=" text-xs font-[300]">{items[16].desc}</p>
+                                                                                                    <div className="flex space-x-2 items-center">
+                                                                                                        <div className="space-x-2 flex">
+                                                                                                            <p className="opacity-[0.90] tracking-wide">Disponibles</p>
+                                                                                                            <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
+                                                                                                        </div>
+                                                                                                        <svg  viewBox="-10 -10 140 140" style={{ padding: "5px", width: "60px" }} className="relative">
+                                                                                                            <polygon
+                                                                                                                points="60,0 120,60 60,120 0,60"
+                                                                                                                fill="transparent"
+                                                                                                                stroke="rgba(0, 0, 0, 0.4)"
+                                                                                                                strokeWidth="7.5"
+                                                                                                            />
+                                                                                                            <polygon
+                                                                                                                points="60,0 120,60 60,120 0,60"
+                                                                                                                fill="none"
+                                                                                                                stroke="#00d4d4"
+                                                                                                                strokeWidth="7.5"
+                                                                                                                strokeDasharray="360"
+                                                                                                                strokeDashoffset={370 * (1 - showArtifact.powerProgress / showArtifact.powerProgressNextLvl)}
+                                                                                                            />
+                                                                                                            <polygon
+                                                                                                                points="60,28 92,60 60,92 28,60"
+                                                                                                                fill="transparent"
+                                                                                                                stroke="white"
+                                                                                                                strokeWidth="15"
+                                                                                                                strokeDasharray="191"
+                                                                                                                strokeLinecap="square"
+                                                                                                                strokeDashoffset={211 * (1 - showArtifact.pointsProgress / showArtifact.pointsProgressNextLvl)}
+                                                                                                            />
+                                                                                                        </svg>
+                                                                                                        <p style={{ color: "#00d4d4" }} className="text-xl font-extrabold">+{showArtifact.powerBonus}</p>
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
@@ -2069,7 +2079,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                             {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
                                                                                                                 <div key={index} className="relative w-fit group">
                                                                                                                     <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
-                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                                                    <div className="absolute left-8 -top-14 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                                                                                                                         <strong>{intrinsic.name}</strong><br />{intrinsic.desc}
                                                                                                                     </div>
                                                                                                                 </div>
