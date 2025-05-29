@@ -25,6 +25,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [activeTab, setActiveTab] = useState("Equipamiento");
     const [selectedWeapon, setSelectedWeapon] = useState(null);
     const [showArtifact, setShowArtifact] = useState(false);
+    const [showGhost, setShowGhost] = useState(false);
     const [selectedArmor, setSelectedArmor] = useState(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [emblems, setEmblems] = useState(null);
@@ -249,7 +250,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
 
-                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor, secondaryBgImg;
+                    let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor, secondaryBgImg, ghostEnergy;
                     if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
@@ -293,18 +294,24 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     } else if (response.data.Response.equipment.data.items.indexOf(item) == 11) {
                         elementalColor = await getElementalColor(itemResponse.data.Response.talentGrid?.hudDamageType, manifest)
                         secondaryBgImg = getSecondaryBgImg(itemResponse.data.Response.talentGrid?.hudDamageType);
-                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 16) {
+                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 16) { //Artifact
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
-                        bgMasterwork = showArtifact.points == 12 ? masterworkBlue : null;
+                        bgMasterwork = showArtifact?.points == 12 ? masterworkBlue : null;
+                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 8) { //Ghost
+                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                        bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
+                        ghostEnergy = getGhostEnergy(item.state, perks);
+                        console.log("Energia de espectro " + ghostEnergy);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 11) console.log(itemResponse.data.Response, itemD.data.Response);
+                    if (response.data.Response.equipment.data.items.indexOf(item) == 8) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
                         desc: itemResponse.data.Response.displayProperties.description || itemResponse.data.Response.flavorText,
                         icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
                         rarity: itemResponse.data.Response.inventory.tierType,
+                        rarityName: itemResponse.data.Response.inventory.tierTypeName,
                         perks: perks,
                         stats: weaponStats != null ? weaponStats : armorStats,
                         masterwork: item.state,
@@ -323,8 +330,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         armorCategory: armorCategory,
                         armorEnergy: {
                             energyCapacity: itemD.data.Response.instance?.data?.energy?.energyCapacity,
-                            energyUsed: itemD.data.Response.instance?.data?.energy?.energyUsed,
-                            energyUnused: itemD.data.Response.instance?.data?.energy?.energyUnused,
+                            energyUsed: itemD.data.Response.instance?.data?.energy?.energyUsed || ghostEnergy,
+                            energyUnused: itemD.data.Response.instance?.data?.energy?.energyUnused || 10 - ghostEnergy,
                             energyCapacityUnused: 10 - itemD.data.Response.instance?.data?.energy?.energyCapacity || 0,
                         },
                         armorIntrinsic: armorIntrinsic,
@@ -364,11 +371,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const handleWeaponClick = (weapon, event, index) => {
         const rect = event.target.getBoundingClientRect();
         setPopupPosition({ top: rect.top - rect.height * 2.6, left: rect.right - rect.width * 5.1 }); // Posición a la derecha de la imagen
-        index == 16 ? setShowArtifact(artifact) : setSelectedWeapon(weapon);
+        switch (index) {
+            case 16: setShowArtifact(artifact); break;
+            case 8: setShowGhost(true); break;
+            default: setSelectedWeapon(weapon); break;
+        }
     };
     const closeWeaponDetails = () => {
         setSelectedWeapon(null);
         setShowArtifact(null);
+        setShowGhost(false);
     };
 
     const handleArmorClick = (armor, event) => {
@@ -1359,6 +1371,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 return "";
         }
     }
+
+    function getGhostEnergy(isMw, perks) {
+        console.log("isMw ", isMw, perks);
+        let energyUsed = 0;
+        if (isMw == 5) { //Si es una obra maestra
+            perks.forEach(perk => {
+                if (perk.investmentStats?.[0]?.value && perk.investmentStats?.[0]?.statTypeHash == 514071887) {
+                    console.log("perk.investmentStats[0].value ", perk.investmentStats[0].value);
+                    energyUsed += perk.investmentStats[0].value;
+                }
+            })
+        }
+        return energyUsed;
+    }
     useEffect(() => {
         if (isVisible) {
             const handleKeyDown = (event) => {
@@ -1653,9 +1679,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         {index == 8 || index == 16 ? (
                                                                             index == 8 ? (
                                                                                 items[index].perks?.map((perk) => (
-                                                                                    perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && (
+                                                                                    perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && perk.perkType !== "shader" && perk.perkType !== "hologram" && (
                                                                                         <div className="group relative">
                                                                                             <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
+                                                                                            {perk.investmentStats?.[0]?.value && (
+                                                                                                <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
+                                                                                                    {perk.investmentStats[0].value}
+                                                                                                </span>
+                                                                                            )}
                                                                                             <div dir="ltr" className={`${index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
                                                                                                 <strong>{perk.name}</strong><br />
                                                                                                 <p className={`w-fit whitespace-pre-line text-[0.7rem]`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
@@ -1874,7 +1905,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                             <p className="opacity-[0.90] tracking-wide">Disponibles</p>
                                                                                                             <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
                                                                                                         </div>
-                                                                                                        <svg  viewBox="-10 -10 140 140" style={{ padding: "5px", width: "60px" }} className="relative">
+                                                                                                        <svg viewBox="-10 -10 140 140" style={{ padding: "5px", width: "60px" }} className="relative">
                                                                                                             <polygon
                                                                                                                 points="60,0 120,60 60,120 0,60"
                                                                                                                 fill="transparent"
@@ -1906,6 +1937,55 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
+                                                                                {showGhost && (
+                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
+                                                                                        <div
+                                                                                            className={`text-white relative`}
+                                                                                            style={{
+                                                                                                top: `${popupPosition.top}px`,
+                                                                                                left: `${popupPosition.left - 12}px`,
+                                                                                                position: "absolute",
+                                                                                                width: "27%",
+                                                                                            }}
+                                                                                            onClick={(e) => e.stopPropagation()}
+                                                                                        >
+                                                                                            <div className="p-2 px-4 rounded-lg">
+                                                                                                <div style={{ backgroundColor: items[8].bgColor.rgb, backgroundImage: `url(${items[8].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                                        <a href={`https://www.light.gg/db/es/items/${items[8].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[8].name}</a>
+                                                                                                    </div>
+                                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                                        <p className="opacity-75">{items[8].weaponType}</p>
+                                                                                                        <p className="opacity-50">{items[8].rarityName}</p>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div style={{ backgroundColor: items[8].bgColor.rgba }} className="py-2 px-2.5 rounded-b-lg">
+                                                                                                    <p className=" text-xs font-[300]">{items[8].desc}</p>
+                                                                                                    <div className="flex flex-col justify-start font-[200] mt-2">
+                                                                                                        <span className="text-sm flex"><p className="font-semibold mr-1">10</p> ENERGÍA</span>
+                                                                                                        <div className="flex w-full space-x-0.5">
+                                                                                                            {Array.from({ length: items[8].armorEnergy.energyUsed }).map((_, index) => (
+                                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
+                                                                                                            ))}
+                                                                                                            {Array.from({ length: items[8].armorEnergy.energyUnused }).map((_, index) => (
+                                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div className="space-y-1 justify-center flex flex-col items-center mt-2">
+                                                                                                        <p className="text-sm font-semibold">Diseño</p>
+                                                                                                        <div className="flex space-x-2 items-center mt-1.5">
+                                                                                                            {items[8].perks.slice(0, 2).map((perk) => (
+                                                                                                                perk && perk.iconPath && (
+                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />)
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1916,8 +1996,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             height={60}
                                                                             alt={items[index].name}
                                                                             title={items[index].name}
-                                                                            onClick={(e) => [0, 1, 2, 16].includes(index) && handleWeaponClick(items[index], e, index)}
-                                                                            className={`${[0, 1, 2, 16].includes(index) ? "cursor-pointer" : ""} `}
+                                                                            onClick={(e) => [0, 1, 2, 16, 8].includes(index) && handleWeaponClick(items[index], e, index)}
+                                                                            className={`${[0, 1, 2, 16, 8].includes(index) ? "cursor-pointer" : ""} `}
 
                                                                         />
                                                                         {(items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4) && (

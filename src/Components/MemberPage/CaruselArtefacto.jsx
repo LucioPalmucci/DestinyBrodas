@@ -36,8 +36,6 @@ function CaruselArtefacto({ elements }) {
         });
     }
 
-    console.log("CaruselArtefacto", elements);
-
     const reemplazos = {
         "cuerpo a cuerpo": '<i class="icon-melee" style="font-style:normal"></i>',
         "granada": '<i class="icon-granada" style="font-style:normal"></i>',
