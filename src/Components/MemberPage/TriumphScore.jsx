@@ -14,7 +14,7 @@ export default function TriumphScore({ membershipType, userId }) {
             });
 
             setTriumphs({
-                Total: response.data.Response.profileRecords.data.lifetimeScore.toLocaleString('en-US'),
+                Total: response.data.Response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
                 Active: response.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'),
             });
         }

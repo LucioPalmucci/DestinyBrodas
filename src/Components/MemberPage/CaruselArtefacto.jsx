@@ -77,7 +77,7 @@ function CaruselArtefacto({ elements }) {
                     return (
                         <div className="group relative" key={index}>
                             <img
-                                src={`/api${perk.iconPath}`}
+                                src={`${perk.iconPath}`}
                                 className={`rounded-[5px] p-1 object-cover ${perk.name === "Fusil de francotirador antibarrera" ? "w-[39px] h-[39px]" : "w-[40px] h-[40px]"}`}
                                 alt={perk.name}
                                 onMouseEnter={handleMouseEnter}

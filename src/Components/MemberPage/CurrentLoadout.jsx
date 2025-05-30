@@ -1,7 +1,7 @@
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import inventory from "../../assets/inventory.png";
+import emptyMod from "../../assets/emptyMod.png";
 import masterworkBlue from "../../assets/masterworkBlueHeader.png";
 import masterworkHeader from "../../assets/masterworkHeader.png";
 import bgArc from "../../assets/subClassBg/subclass-arc.png";
@@ -11,6 +11,7 @@ import bgStasis from "../../assets/subClassBg/subclass-stasis.png";
 import bgStrand from "../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../assets/subClassBg/subclass-void.png";
 import "../../index.css";
+import Spinner from "../Spinner";
 import CaruselArtefacto from "./CaruselArtefacto";
 import RecoilStat from "./RecoliStat";
 import frasesES from "./frases/frasesES";
@@ -18,10 +19,7 @@ import frasesES from "./frases/frasesES";
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
     const [totalStats, setTotalStats] = useState([]);
-    const [background, setBackground] = useState(null);
-    const [showPopup, setShowPopup] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
-    const [animatePopup, setAnimatePopup] = useState(false);
     const [activeTab, setActiveTab] = useState("Equipamiento");
     const [selectedWeapon, setSelectedWeapon] = useState(null);
     const [showArtifact, setShowArtifact] = useState(false);
@@ -35,12 +33,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [Passlevel, setPassLevel] = useState(null);
     const [triumphRecord, setTriumphRecord] = useState(null);
     const [artifact, setArtifact] = useState(null);
-    const [artifactPage, setArtifactPage] = useState(0);
-    const [artifactDirection, setArtifactDirection] = useState(0);
-    const [prevArtif, setPreviousPageArtifact] = useState(0);
     const [slidesArtifact, setslidesArtifact] = useState(null);
+    const [loading, setLoading] = useState(true);
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
+            setLoading(true);
             try {
                 const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`, {
                     headers: {
@@ -74,7 +71,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 await getOtherEmblems(characters, mostRecentCharacter);
                 await getSeal(mostRecentCharacter, manifest);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
-                getArtifactDetails(responseChar.data.Response.profileProgression.data.seasonalArtifact);
+                getArtifactDetails(responseChar.data.Response.profileProgression?.data?.seasonalArtifact);
                 const seasonProgress = await getCurrentSeason(seasonHash, manifest);
 
                 const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
@@ -94,31 +91,42 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
                     let perks = [];
                     if (response.data.Response.equipment.data.items.indexOf(item) === 16) { //Artifact
-                        const activePerks = response.data.Response.progressions.data.seasonalArtifact.tiers.flatMap(tier =>
+                        const activePerks = response.data.Response.progressions?.data?.seasonalArtifact.tiers.flatMap(tier =>
                             tier.items.filter(perk => perk.isActive && perk.isVisible)
                         );
 
-                        perks = await Promise.all(activePerks.map(async (perk) => {
-                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
-                                headers: {
-                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                },
-                            });
-                            const sanbox = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkResponse.data.Response.perks[0]?.perkHash}/?lc=es`, {
-                                headers: {
-                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                },
-                            });
-                            return {
-                                ...perk,
-                                name: perkResponse.data.Response.displayProperties.name,
-                                iconPath: perkResponse.data.Response.displayProperties.icon,
-                                desc: sanbox.data.Response.displayProperties.description,
-                            };
-                        })) || [];
+                        if (activePerks) {
+                            perks = await Promise.all(activePerks.map(async (perk) => {
+                                const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
+                                    headers: {
+                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                                    },
+                                });
+                                const sanbox = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkResponse.data.Response.perks[0]?.perkHash}/?lc=es`, {
+                                    headers: {
+                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                                    },
+                                });
+                                return {
+                                    ...perk,
+                                    name: perkResponse.data.Response.displayProperties.name,
+                                    iconPath: "/api" + perkResponse.data.Response.displayProperties.icon,
+                                    desc: sanbox.data.Response.displayProperties.description,
+                                };
+                            })) || [];
 
-                        setslidesArtifact(perks);
-                        console.log(slidesArtifact)
+                            if (perks.length < 12) {
+                                const perksToAdd = 12 - perks.length;
+                                for (let i = 0; i < perksToAdd; i++) {
+                                    perks.push({
+                                        name: "Ranura de artefacto vacía",
+                                        iconPath: emptyMod,
+                                        desc: "",
+                                    });
+                                }
+                            }
+                            setslidesArtifact(perks);
+                        }
 
                     } else if ([11, 15, 14].includes(response.data.Response.equipment.data.items.indexOf(item))) { //Sublcase, gestos y remates
                         perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
@@ -203,7 +211,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (response.data.Response.equipment.data.items.indexOf(item) === 11) {
                         const perkAtIndex2 = perks.splice(2, 1)[0];
                         perks.unshift(perkAtIndex2);
-                        setBackground(itemResponse.data.Response.screenshot);
                         if (perks.some(perk => perk.name === "Trascendencia")) { //Si es prismatico eliminar granada prismatica y trasendencia
                             const trascendenciaIndex = perks.findIndex(perk => perk.name === "Trascendencia");
                             if (trascendenciaIndex !== -1) {
@@ -286,7 +293,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         ammo = await getAmmoType(itemResponse.data.Response.equippingBlock.ammoType)
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
-                        champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions.data.seasonalArtifact.tiers)
+                        champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions?.data?.seasonalArtifact.tiers)
                         weaponLevel = await getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug, itemD.data.Response.sockets.data.sockets);
                         perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
                         perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks, itemResponse.data.Response);
@@ -340,15 +347,18 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     };
                 }));
 
-                setPassLevel(responseChar.data.Response.metrics.data.metrics[seasonProgress]?.objectiveProgress?.progress);
-                setTriumphRecord(responseChar.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'));
+                setPassLevel(responseChar.data.Response.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
+                setTriumphRecord(responseChar.data.Response.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
                 console.log(itemDetails)
                 setTotalStats(totalStats);
 
             } catch (error) {
                 console.error(error);
+            } finally {
+                setLoading(false);
             }
+
         };
         fetchCurrentLoadout();
         const interval = setInterval(() => {
@@ -357,16 +367,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         return () => clearInterval(interval);
 
     }, [membershipType, userId]);
-
-    useEffect(() => {
-        if (showPopup) {
-            setIsVisible(true);
-            setTimeout(() => setAnimatePopup(true), 100);
-        } else {
-            setAnimatePopup(false);
-            setTimeout(() => setIsVisible(false), 200);
-        }
-    }, [showPopup]);
 
     const handleWeaponClick = (weapon, event, index) => {
         const rect = event.target.getBoundingClientRect();
@@ -925,6 +925,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getChampMod(item, artifactMods) {
+        if (!artifactMods) return null;
         if (item.breakerType != 0) {
             const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/${item.breakerTypeHash}/?lc=es`, {
                 headers: {
@@ -1128,7 +1129,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             desc: sealResponse.data.Response.displayProperties.description,
             iconPath: matchingNode.originalIcon || sealResponse.data.Response.displayProperties.icon,
             sealHash: matchingNode.hash,
-            timesGilded: allseals.data.Response.profileRecords.data.records[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
+            timesGilded: allseals.data.Response.profileRecords.data?.records?.[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
     }
 
@@ -1172,6 +1173,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArtifactDetails(artifact) {
+        if (!artifact) return;
         setArtifact({
             points: artifact?.pointsAcquired,
             pointsCap: artifact.pointProgression.levelCap,
@@ -1404,18 +1406,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }, [isVisible]);
 
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setShowPopup(false);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, []);
-
     // Frases a buscar exactas
     function escapeRegex(str) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1466,269 +1456,331 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     return (
-        totalStats && background && items && (
-            <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
-                <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
-                <div className="justify-evenly flex">
-                    <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
-                        {[11, 3, 4, 5, 6, 7, 0, 1, 2].map((index) => (
-                            items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
-                                index != 11 ? (
-                                    <div key={index} className="flex items-center space-x-2">
-                                        <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
-                                        <p className="font-semibold">{items[index].name}</p>
-                                    </div>
-                                ) : (
-                                    <div key={index} className="flex items-center space-x-2">
-                                        <img src={`/api${items[index].perks[0].iconPath}`} width={50} height={50} alt={items[index].perks[0].name} />
-                                        <p className="font-semibold">{items[index].perks[0].name}</p>
-                                    </div>
-                                )
-                            )
-                        ))}
-                    </div>
-                    {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
-                        {totalStats.map((stat) => (
-                            stat.iconPath && (
-                                <p key={stat.statHash} className="flex items-center space-x-4 font-semibold text-xl">
-                                    <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
-                                    {stat.value}
+        !loading ? (
+            <div className="flex flex-col items-center justify-center h-full ">
+                <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
+                    <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
+                        <img src={`/api${emblemElements.icon}`} style={{ width: "16%" }} />
+                        <div className="flex flex-col items-top ml-4 mt-1.5">
+                            <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
+                            <h2 className="text-2xl font-bold tracking-[0.11em] items-bottom">{name}</h2>
+                            <div className="flex flex-row items-top space-x-2.5 opacity-[0.8] tracking-[0.17rem] titulo">
+                                <p className="flex flex-row mt-[2px]">
+                                    <span>Temporada</span>
+                                    <span className="ml-1">{season}</span>
                                 </p>
-                            )
-                        ))}
-                    </div>}
+                                <p><i className="icon-pass" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
+                                <p><i className="icon-rank mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{rank}</p>
+                                <p className='lightlevel flex mt-[2px]'>
+                                    <i className="icon-light" style={{ fontStyle: 'normal', fontSize: '1.6rem', top: '-0.50rem', position: "relative" }} />{light}
+                                </p>
+                                <p><i className="icon-triumph mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{triumphRecord} </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-4 mr-12">
+                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="mt-0.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer">
+                                <g transform="matrix(1 0 0 -1 0 680)">
+                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
+                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM400 382 l305 -305l51 52l-253 253l253 254l-51 51z" />
+                                </g>
+                            </svg>
+                        </button>
+                        <div className="relative flex space-x-4 items-center">
+                            <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Equipamiento" ? "opacity-[.90]" : "opacity-[.70]"}`}>Equipamiento</button>
+                            <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Cosmeticos" ? " opacity-[.90]" : "opacity-[.70]"}`}>Cosméticos</button>
+                            <motion.div className="absolute top-13 h-[2px] bg-white left-0.5" layout initial={false}
+                                animate={{
+                                    x: activeTab === "Equipamiento" ? 0 : 154,
+                                    width: 140,
+                                }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            />
+                        </div>
+                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer" >
+                                <g transform="matrix(1 0 0 -1 0 680)">
+                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
+                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM808 382 l-305 -305l-51 52l253 253l-253 254l51 51z" />
+                                </g>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                {totalStats && background && items && <div className="flex">
-                    <a onClick={() => setShowPopup(true)} className="cristal transform transition-transform duration-200 hover:scale-105">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        Ver Más</a>
-                </div>}
-                {isVisible && (
-                    <div className="fixed inset-0 flex items-center justify-center w-full z-40 bg-black/50" onClick={() => setShowPopup(false)}>
-                        <div className={` rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
-                            <div className="flex flex-col items-center justify-center h-full ">
-                                <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
-                                    <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
-                                        <img src={`/api${emblemElements.icon}`} style={{ width: "16%" }} />
-                                        <div className="flex flex-col items-top ml-4 mt-1.5">
-                                            <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
-                                            <h2 className="text-2xl font-bold tracking-[0.11em] items-bottom">{name}</h2>
-                                            <div className="flex flex-row items-top space-x-2.5 opacity-[0.8] tracking-[0.17rem] titulo">
-                                                <p className="flex flex-row mt-[2px]">
-                                                    <span>Temporada</span>
-                                                    <span className="ml-1">{season}</span>
-                                                </p>
-                                                <p><i className="icon-pass" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} /> {Passlevel} </p>
-                                                <p><i className="icon-rank mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{rank}</p>
-                                                <p className='lightlevel flex mt-[2px]'>
-                                                    <i className="icon-light" style={{ fontStyle: 'normal', fontSize: '1.6rem', top: '-0.50rem', position: "relative" }} />{light}
-                                                </p>
-                                                <p><i className="icon-triumph mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem' }} />{triumphRecord} </p>
+                {!loading ? (<AnimatePresence mode="wait">
+                    {activeTab === "Equipamiento" && (
+                        <motion.div
+                            key="Equipamiento"
+                            initial={{ x: "-100%", opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: "-100%", opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="w-full justify-center flex items-top mt-4"
+                            style={{ height: "100%" }}
+                        >
+                            <div className="flex flex-col space-y-6 justify-center w-full">
+                                {items[11] && (
+                                    <div className={`flex relative w-full justify-center space-x-4`}>
+                                        <div className="flex flex-col items-end justify-center" style={{ width: "26%" }}>
+                                            <div className="flex rtl">
+                                                {items[11].perks.slice(1, 5).map((perk, perkIndex) => (
+                                                    <div className="group relative">
+                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                        <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
+                                                                <p className="font-[300] opacity-75">{perk.type}</p>
+                                                            </div>
+                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
+                                                                __html: reemplazarCorchetesYColorear(perk.desc ?? "")
+                                                            }} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div style={{ width: "7%" }}>
+                                            {items[11].perks[0] && (
+                                                <div className="group relative">
+                                                    <div className="realtive">
+                                                        <img src={items[11].secondaryBgImg} className="absolute z-10" />
+                                                        <img src={`/api${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
+                                                        {items[11].name.includes("prismático") && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="absolute z-30">
+                                                            <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" stroke-width="1" stroke="#bdbdbd" fill="transparent"></rect>
+                                                        </svg>}
+                                                    </div>
+                                                    <div className="absolute left-18 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                        <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                            <p className="font-semibold text-xl uppercase leading-6">{items[11].perks[0].name}</p>
+                                                            <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
+                                                        </div>
+                                                        <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
+                                                        <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
+                                                            __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
+                                                        }} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col right-0 mt-1" style={{ width: "26%" }}>
+                                            <div className="flex mb-2">
+                                                {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
+                                                    <div className="group relative">
+                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                        <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
+                                                                <p className="font-[300] opacity-75">{perk.type}</p>
+                                                            </div>
+                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                            <p
+                                                                className="whitespace-pre-line w-fit p-1 px-2 bg-black/80"
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: reemplazarCorchetesYColorear(perk.desc ?? "")
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex mb-2">
+                                                {items[11].perks.slice(7).map((perk, perkIndex) => (
+                                                    perk.name != "Ranura de fragmento vacía" ? (
+                                                        <div className="group relative">
+                                                            <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                            <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
+                                                                    <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
+                                                                    <p className="font-[300] opacity-75">{perk.type}</p>
+                                                                </div>
+                                                                <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                                <div className="w-fit p-1 px-2 bg-black/80">
+                                                                    <p className={`whitespace-pre-line`} dangerouslySetInnerHTML={{
+                                                                        __html: (perk.desc ?? "").replace(
+                                                                            regex,
+                                                                            '<span style="color:#799AB5;">$1</span>'
+                                                                        ),
+                                                                    }} />
+                                                                    {perk.fragmentsStats?.map((stat) => (
+                                                                        <div key={stat.statHash} className="flex space-x-0.5 mt-1 items-center opacity-80" style={{ color: stat.color }}>
+                                                                            <p>&nbsp;&nbsp;{stat.value}</p>
+                                                                            <img src={`/api${stat.iconPath}`} className="w-[15px] h-[15px] my-0.5" style={{ filter: stat.value < 0 ? "brightness(0) saturate(100%) invert(14%) sepia(90%) saturate(7248%) hue-rotate(356deg) brightness(92%) contrast(121%)" : "" }} alt={stat.name} />
+                                                                            <p>{stat.name}</p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>) : <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-4 mr-12">
-                                        <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className="mt-0.5">
-                                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer">
-                                                <g transform="matrix(1 0 0 -1 0 680)">
-                                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
-                                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM400 382 l305 -305l51 52l-253 253l253 254l-51 51z" />
-                                                </g>
-                                            </svg>
-                                        </button>
-                                        <div className="relative flex space-x-4 items-center">
-                                            <button onClick={() => setActiveTab("Equipamiento")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Equipamiento" ? "opacity-[.90]" : "opacity-[.70]"}`}>Equipamiento</button>
-                                            <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }} className={`titulo text-[0.92rem] cursor-pointer tracking-widest p-2 py-1 uppercase ${activeTab === "Cosmeticos" ? " opacity-[.90]" : "opacity-[.70]"}`}>Cosméticos</button>
-                                            <motion.div className="absolute top-13 h-[2px] bg-white left-0.5" layout initial={false}
-                                                animate={{
-                                                    x: activeTab === "Equipamiento" ? 0 : 154,
-                                                    width: 140,
-                                                }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                            />
-                                        </div>
-                                        <button onClick={() => setActiveTab("Cosmeticos")} style={{ textShadow: "0px 1px 2px rgba(0, 0, 0, 0.5)" }}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="300 -200 700 1200" width="22" height="22" className="cursor-pointer" >
-                                                <g transform="matrix(1 0 0 -1 0 680)">
-                                                    <path fill="black" opacity="0.3" d="M292 -89h616c97 0 182 108 182 188v586c0 93 -93 186 -187 186h-607c-93 0 -186 -93 -186 -186v-586c0 -93 92 -188 182 -188z" />
-                                                    <path fill="white" d="M312 -69h576c77 0 162 88 162 168v566c0 83 -83 166 -167 166h-567c-83 0 -166 -83 -166 -166v-566c0 -83 82 -168 162 -168zM894 -119h-588c-101 0 -206 105 -206 206v588c0 101 105 206 206 206h588c101 0 206 -105 206 -206v-588c0 -101 -105 -206 -206 -206zM808 382 l-305 -305l-51 52l253 253l-253 254l51 51z" />
-                                                </g>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <AnimatePresence mode="wait">
-                                    {activeTab === "Equipamiento" && (
-                                        <motion.div
-                                            key="Equipamiento"
-                                            initial={{ x: "-100%", opacity: 0 }}
-                                            animate={{ x: 0, opacity: 1 }}
-                                            exit={{ x: "-100%", opacity: 0 }}
-                                            transition={{ duration: 0.25 }}
-                                            className="w-full justify-center flex items-top mt-4"
-                                            style={{ height: "100%" }}
-                                        >
-                                            <div className="flex flex-col space-y-6 justify-center w-full">
-                                                {items[11] && (
-                                                    <div className={`flex relative w-full justify-center space-x-4`}>
-                                                        <div className="flex flex-col items-end justify-center" style={{ width: "26%" }}>
-                                                            <div className="flex rtl">
-                                                                {items[11].perks.slice(1, 5).map((perk, perkIndex) => (
-                                                                    <div className="group relative">
-                                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
-                                                                        <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
-                                                                                <p className="font-[300] opacity-75">{perk.type}</p>
-                                                                            </div>
-                                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
-                                                                            <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
-                                                                                __html: reemplazarCorchetesYColorear(perk.desc ?? "")
-                                                                            }} />
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ width: "7%" }}>
-                                                            {items[11].perks[0] && (
-                                                                <div className="group relative">
-                                                                    <div className="realtive">
-                                                                        <img src={items[11].secondaryBgImg} className="absolute z-10" />
-                                                                        <img src={`/api${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
-                                                                        {items[11].name.includes("prismático") && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="absolute z-30">
-                                                                            <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" stroke-width="1" stroke="#bdbdbd" fill="transparent"></rect>
-                                                                        </svg>}
-                                                                    </div>
-                                                                    <div className="absolute left-18 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                        <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                            <p className="font-semibold text-xl uppercase leading-6">{items[11].perks[0].name}</p>
-                                                                            <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
-                                                                        </div>
-                                                                        <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
-                                                                        <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
-                                                                            __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
-                                                                        }} />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-col right-0 mt-1" style={{ width: "26%" }}>
-                                                            <div className="flex mb-2">
-                                                                {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
-                                                                    <div className="group relative">
-                                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
-                                                                        <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                            <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
-                                                                                <p className="font-[300] opacity-75">{perk.type}</p>
-                                                                            </div>
-                                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
-                                                                            <p
-                                                                                className="whitespace-pre-line w-fit p-1 px-2 bg-black/80"
-                                                                                dangerouslySetInnerHTML={{
-                                                                                    __html: reemplazarCorchetesYColorear(perk.desc ?? "")
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                            <div className="flex mb-2">
-                                                                {items[11].perks.slice(7).map((perk, perkIndex) => (
-                                                                    perk.name != "Ranura de fragmento vacía" ? (
+                                )}
+                                <div className="flex justify-center w-full" style={{ height: "65%" }}>
+                                    <div className="flex flex-col justify-between mr-4" style={{ width: "40%" }}>
+                                        {[0, 1, 2, 8, 16].map((index) => (
+                                            items[index] && (
+                                                <div key={index} className="flex items-center justify-end">
+                                                    <div className={"flex space-x-2 mr-4"}>
+                                                        {index == 8 || index == 16 ? (
+                                                            index == 8 ? (
+                                                                items[index].perks?.map((perk) => (
+                                                                    perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && perk.perkType !== "shader" && perk.perkType !== "hologram" && (
                                                                         <div className="group relative">
-                                                                            <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
-                                                                            <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
-                                                                                    <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
-                                                                                    <p className="font-[300] opacity-75">{perk.type}</p>
+                                                                            <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
+                                                                            {perk.investmentStats?.[0]?.value && (
+                                                                                <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
+                                                                                    {perk.investmentStats[0].value}
+                                                                                </span>
+                                                                            )}
+                                                                            <div dir="ltr" className={`${index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
+                                                                                <strong>{perk.name}</strong><br />
+                                                                                <p className={`w-fit whitespace-pre-line text-[0.7rem]`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                ))
+                                                            ) : (
+                                                                slidesArtifact && (<div className="h-8 mr-4 mb-1" style={{ width: "200px" }}>
+                                                                    <CaruselArtefacto elements={slidesArtifact} />
+                                                                </div>)
+                                                            )
+                                                        ) : (
+                                                            <div className="justify-between flex flex-col">
+                                                                <div className="flex space-x-2 justify-end">
+                                                                    {items[index].perks.modifierPerks.map((perk) => (
+                                                                        perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                            !perk.perkType?.includes("weapon.mod_") ?
+                                                                                (<div key={perk.perkHash} className="relative group ">
+                                                                                    <svg viewBox="0 0 100 100" width="40" height="40" className="group">
+                                                                                        <defs>
+                                                                                            <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
+                                                                                                <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
+                                                                                                <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                            </linearGradient>
+                                                                                        </defs>
+                                                                                        <mask id="mask">
+                                                                                            <rect x="0" y="0" width="100" height="100" fill="black"></rect>
+                                                                                            <circle cx="50" cy="50" r="46" fill="white"></circle>
+                                                                                        </mask>
+                                                                                        <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
+                                                                                        {perk.isEnhanced == "Rasgo mejorado" && (
+                                                                                            <>
+                                                                                                <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
+                                                                                                <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
+                                                                                                <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
+                                                                                            </>
+                                                                                        )}
+                                                                                        <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                                        <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                                    </svg>
+                                                                                    <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                        <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                        {perk?.statDescripton?.map((stat) => (
+                                                                                            <div className="w-fit">
+                                                                                                <p key={stat.name} className="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>) : (
+                                                                                    <div key={perk.perkHash} className="relative group ">
+                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
+                                                                                        <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                                            {perk?.statDescripton?.map((stat) => (
+                                                                                                <div className="w-fit">
+                                                                                                    <p key={stat.name} className="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )
+                                                                        )
+                                                                    ))}
+                                                                </div>
+                                                                {selectedWeapon &&
+                                                                    <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeWeaponDetails()} >
+                                                                        <div
+                                                                            className={`text-white relative`}
+                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                    <a href={`https://www.light.gg/db/es/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedWeapon.name}</a>
                                                                                 </div>
-                                                                                <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
-                                                                                <div className="w-fit p-1 px-2 bg-black/80">
-                                                                                    <p className={`whitespace-pre-line`} dangerouslySetInnerHTML={{
-                                                                                        __html: (perk.desc ?? "").replace(
-                                                                                            regex,
-                                                                                            '<span style="color:#799AB5;">$1</span>'
-                                                                                        ),
-                                                                                    }} />
-                                                                                    {perk.fragmentsStats?.map((stat) => (
-                                                                                        <div key={stat.statHash} className="flex space-x-0.5 mt-1 items-center opacity-80" style={{ color: stat.color }}>
-                                                                                            <p>&nbsp;&nbsp;{stat.value}</p>
-                                                                                            <img src={`/api${stat.iconPath}`} className="w-[15px] h-[15px] my-0.5" style={{ filter: stat.value < 0 ? "brightness(0) saturate(100%) invert(14%) sepia(90%) saturate(7248%) hue-rotate(356deg) brightness(92%) contrast(121%)" : "" }} alt={stat.name} />
-                                                                                            <p>{stat.name}</p>
+                                                                                <div className="flex items-center justify-between text-sm ">
+                                                                                    <div className="flex items-center">
+                                                                                        <p className="opacity-[0.7]">{selectedWeapon.weaponType}</p>
+                                                                                        <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
+                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[14px] h-[14px]" title={selectedWeapon.dmgType.name} />
+                                                                                        {selectedWeapon.champmod && (
+                                                                                            <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
+                                                                                                <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="flex items-center">
+                                                                                        <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                                                            <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedWeapon.power}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
+                                                                                {selectedWeapon.weaponLevel.weaponLvl && <div className="text-sm flex items-center space-x-1 relative p-2 pb-1">
+                                                                                    {selectedWeapon.craftedenchanced?.includes("deepsight") && (
+                                                                                        <svg width="13" height="13" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
+                                                                                            <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
+                                                                                        </svg>
+                                                                                    )}
+                                                                                    {selectedWeapon.craftedenchanced?.includes("info") && (
+                                                                                        <svg width="17" height="17" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
+                                                                                            <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
+                                                                                        </svg>
+                                                                                    )}
+                                                                                    <div className="bg-[#222] w-full relative">
+                                                                                        <div className="bg-[#d25336] h-full absolute" style={{ width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`, }} />
+                                                                                        <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
+                                                                                            <span>
+                                                                                                Niv. {selectedWeapon.weaponLevel.weaponLvl}
+                                                                                                {selectedWeapon.weaponLevel.mejora && " (" + selectedWeapon.weaponLevel.mejora + ")"}
+                                                                                            </span>
+                                                                                            <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>}
+                                                                                <div className="flex flex-col py-1.5">
+                                                                                    {selectedWeapon.stats.map((stat) => (
+                                                                                        <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
+                                                                                            <p style={{ width: "42%", textAlign: "right", fontWeight: "300" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                            <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.value}</p>
+                                                                                            {stat.statHash === 2715839340 ? (
+                                                                                                <div style={{ width: "34%" }}>
+                                                                                                    <RecoilStat value={stat.value} />
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036, 2961396640].includes(stat.statHash) ? "hidden" : "visible" }}>
+                                                                                                    {!([4284893193, 2715839340, 3871231066, 2961396640].includes(stat.statHash)) && (
+                                                                                                        Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                            <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null} />
+                                                                                                        )
+                                                                                                        ))}
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
-                                                                            </div>
-                                                                        </div>) : <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-center w-full" style={{ height: "65%" }}>
-                                                    <div className="flex flex-col justify-between mr-4" style={{ width: "40%" }}>
-                                                        {[0, 1, 2, 8, 16].map((index) => (
-                                                            items[index] && (
-                                                                <div key={index} className="flex items-center justify-end">
-                                                                    <div className={"flex space-x-2 mr-4"}>
-                                                                        {index == 8 || index == 16 ? (
-                                                                            index == 8 ? (
-                                                                                items[index].perks?.map((perk) => (
-                                                                                    perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && perk.perkType !== "shader" && perk.perkType !== "hologram" && (
-                                                                                        <div className="group relative">
-                                                                                            <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
-                                                                                            {perk.investmentStats?.[0]?.value && (
-                                                                                                <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
-                                                                                                    {perk.investmentStats[0].value}
-                                                                                                </span>
-                                                                                            )}
-                                                                                            <div dir="ltr" className={`${index == 16 ? "-top-24" : "top-2"} absolute left-8 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none`} >
-                                                                                                <strong>{perk.name}</strong><br />
-                                                                                                <p className={`w-fit whitespace-pre-line text-[0.7rem]`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )
-                                                                                ))
-                                                                            ) : (
-                                                                                <div className="h-8 mr-4 mb-1" style={{ width: "200px" }}>
-                                                                                    <CaruselArtefacto elements={slidesArtifact} />
-                                                                                </div>
-                                                                            )
-                                                                        ) : (
-                                                                            <div className="justify-between flex flex-col">
-                                                                                <div className="flex space-x-2 justify-end">
-                                                                                    {items[index].perks.modifierPerks.map((perk) => (
-                                                                                        perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                            !perk.perkType?.includes("weapon.mod_") ?
-                                                                                                (<div key={perk.perkHash} className="relative group ">
-                                                                                                    <svg viewBox="0 0 100 100" width="40" height="40" className="group">
-                                                                                                        <defs>
-                                                                                                            <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
-                                                                                                                <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
-                                                                                                                <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
-                                                                                                            </linearGradient>
-                                                                                                        </defs>
-                                                                                                        <mask id="mask">
-                                                                                                            <rect x="0" y="0" width="100" height="100" fill="black"></rect>
-                                                                                                            <circle cx="50" cy="50" r="46" fill="white"></circle>
-                                                                                                        </mask>
-                                                                                                        <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
-                                                                                                        {perk.isEnhanced == "Rasgo mejorado" && (
-                                                                                                            <>
-                                                                                                                <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
-                                                                                                                <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
-                                                                                                                <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
-                                                                                                            </>
-                                                                                                        )}
-                                                                                                        <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
-                                                                                                        <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
-                                                                                                    </svg>
-                                                                                                    <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                <div className="flex space-x-1 rounded-b-lg p-2 justify-center" >
+                                                                                    <div className="space-y-1 flex flex-col justify-top items-center " style={{ width: "28%" }}>
+                                                                                        <p className="font-semibold text-sm">Armazón</p>
+                                                                                        <div className="flex items-center space-x-2 w-fit">
+                                                                                            {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
+                                                                                                <div key={index} className="relative w-fit group">
+                                                                                                    <img src={`/api${perk.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={perk.name} />
+                                                                                                    <div className="absolute left-8 -top-12 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                                                                                                         <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
                                                                                                         {perk?.statDescripton?.map((stat) => (
                                                                                                             <div className="w-fit">
@@ -1736,627 +1788,528 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                             </div>
                                                                                                         ))}
                                                                                                     </div>
-                                                                                                </div>) : (
-                                                                                                    <div key={perk.perkHash} className="relative group ">
-                                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
-                                                                                                        <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                                            <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
-                                                                                                            {perk?.statDescripton?.map((stat) => (
-                                                                                                                <div className="w-fit">
-                                                                                                                    <p key={stat.name} className="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
-                                                                                                                </div>
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
+                                                                                    <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "28%" }}>
+                                                                                        <p className="font-semibold text-sm">Diseño</p>
+                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-1">
+                                                                                            {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
+                                                                                                perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
                                                                                                 )
-                                                                                        )
-                                                                                    ))}
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
+                                                                                    <div className="space-y-1 flex flex-col justify-top items-center ml-1" style={{ width: "28%" }}>
+                                                                                        <p className="font-semibold text-sm">Muertes</p>
+                                                                                        <div className="flex space-x-1 items-center">
+                                                                                            {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
+                                                                                                perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
+                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
+                                                                                                )
+                                                                                            ))}
+                                                                                            {selectedWeapon.tracker && (
+                                                                                                <div className="flex flex-col items-start space-x-2 text-[0.68rem]" style={{ fontWeight: "300" }}>
+                                                                                                    <p>{selectedWeapon.tracker}</p>
+                                                                                                    <p>{selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos" : "Guardianes"}</p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
                                                                                 </div>
-                                                                                {selectedWeapon &&
-                                                                                    <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeWeaponDetails()} >
-                                                                                        <div
-                                                                                            className={`text-white relative`}
-                                                                                            style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
-                                                                                            onClick={(e) => e.stopPropagation()}
-                                                                                        >
-                                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgb, backgroundImage: `url(${selectedWeapon.mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
-                                                                                                <div className="text-xl font-semibold flex items-center translate-y-1">
-                                                                                                    <a href={`https://www.light.gg/db/es/items/${selectedWeapon.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedWeapon.name}</a>
-                                                                                                </div>
-                                                                                                <div className="flex items-center justify-between text-sm ">
-                                                                                                    <div className="flex items-center">
-                                                                                                        <p className="opacity-[0.7]">{selectedWeapon.weaponType}</p>
-                                                                                                        <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
-                                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[14px] h-[14px]" title={selectedWeapon.dmgType.name} />
-                                                                                                        {selectedWeapon.champmod && (
-                                                                                                            <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
-                                                                                                                <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center">
-                                                                                                        <p className='lightlevel text-sm ml-1 flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                                                                                            <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedWeapon.power}
-                                                                                                        </p>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <div style={{ backgroundColor: selectedWeapon.bgColor.rgba }} >
-                                                                                                {selectedWeapon.weaponLevel.weaponLvl && <div className="text-sm flex items-center space-x-1 relative p-2 pb-1">
-                                                                                                    {selectedWeapon.craftedenchanced?.includes("deepsight") && (
-                                                                                                        <svg width="13" height="13" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
-                                                                                                            <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
-                                                                                                        </svg>
-                                                                                                    )}
-                                                                                                    {selectedWeapon.craftedenchanced?.includes("info") && (
-                                                                                                        <svg width="17" height="17" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636">
-                                                                                                            <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
-                                                                                                        </svg>
-                                                                                                    )}
-                                                                                                    <div className="bg-[#222] w-full relative">
-                                                                                                        <div className="bg-[#d25336] h-full absolute" style={{ width: `${Math.min((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100, 100)}%`, }} />
-                                                                                                        <div className="flex justify-between items-center px-1 relative z-10 text-white text-xs font-[300]">
-                                                                                                            <span>
-                                                                                                                Niv. {selectedWeapon.weaponLevel.weaponLvl}
-                                                                                                                {selectedWeapon.weaponLevel.mejora && " (" + selectedWeapon.weaponLevel.mejora + ")"}
-                                                                                                            </span>
-                                                                                                            <span>{((selectedWeapon.weaponLevel.levelprogress / selectedWeapon.weaponLevel.levelCompletition) * 100).toFixed(0)}%</span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>}
-                                                                                                <div className="flex flex-col py-1.5">
-                                                                                                    {selectedWeapon.stats.map((stat) => (
-                                                                                                        <div key={stat.statHash} className="flex items-center text-xs" style={{ width: "100%", justifyContent: "center" }} title={stat.desc || ""}>
-                                                                                                            <p style={{ width: "42%", textAlign: "right", fontWeight: "300" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
-                                                                                                            <p style={{ width: "10%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.value}</p>
-                                                                                                            {stat.statHash === 2715839340 ? (
-                                                                                                                <div style={{ width: "34%" }}>
-                                                                                                                    <RecoilStat value={stat.value} />
-                                                                                                                </div>
-                                                                                                            ) : (
-                                                                                                                <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "34%", visibility: [4284893193, 2715839340, 3871231066, 925767036, 2961396640].includes(stat.statHash) ? "hidden" : "visible" }}>
-                                                                                                                    {!([4284893193, 2715839340, 3871231066, 2961396640].includes(stat.statHash)) && (
-                                                                                                                        Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                            <div key={key} className="h-full" style={{ width: `${Math.min(section.value, 100)}%`, backgroundColor: section.color }} title={section.name || null} />
-                                                                                                                        )
-                                                                                                                        ))}
-                                                                                                                </div>
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                    ))}
-                                                                                                </div>
-                                                                                                <div className="flex space-x-1 rounded-b-lg p-2 justify-center" >
-                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center " style={{ width: "28%" }}>
-                                                                                                        <p className="font-semibold text-sm">Armazón</p>
-                                                                                                        <div className="flex items-center space-x-2 w-fit">
-                                                                                                            {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
-                                                                                                                <div key={index} className="relative w-fit group">
-                                                                                                                    <img src={`/api${perk.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={perk.name} />
-                                                                                                                    <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                                                                                                                        <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
-                                                                                                                        {perk?.statDescripton?.map((stat) => (
-                                                                                                                            <div className="w-fit">
-                                                                                                                                <p key={stat.name} className="text-xs whitespace-pre-line" style={{ color: stat.color }} dangerouslySetInnerHTML={{ __html: `&nbsp;&nbsp;${stat.name}` }} />
-                                                                                                                            </div>
-                                                                                                                        ))}
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
-                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "28%" }}>
-                                                                                                        <p className="font-semibold text-sm">Diseño</p>
-                                                                                                        <div className="flex flex-wrap space-x-1.5 w-fit mt-1">
-                                                                                                            {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
-                                                                                                                perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
-                                                                                                                )
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
-                                                                                                    <div className="space-y-1 flex flex-col justify-top items-center ml-1" style={{ width: "28%" }}>
-                                                                                                        <p className="font-semibold text-sm">Muertes</p>
-                                                                                                        <div className="flex space-x-1 items-center">
-                                                                                                            {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
-                                                                                                                perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
-                                                                                                                )
-                                                                                                            ))}
-                                                                                                            {selectedWeapon.tracker && (
-                                                                                                                <div className="flex flex-col items-start space-x-2 text-[0.68rem]" style={{ fontWeight: "300" }}>
-                                                                                                                    <p>{selectedWeapon.tracker}</p>
-                                                                                                                    <p>{selectedWeapon.perks.cosmeticPerks.tracker[0].name == "Contador de bajas" ? "Enemigos" : "Guardianes"}</p>
-                                                                                                                </div>
-                                                                                                            )}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>}
-                                                                                {showArtifact && (
-                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
-                                                                                        <div
-                                                                                            className={`text-white relative`}
-                                                                                            style={{
-                                                                                                top: `${popupPosition.top}px`,
-                                                                                                left: `${popupPosition.left - 12}px`,
-                                                                                                position: "absolute",
-                                                                                                width: "27%",
-                                                                                            }}
-                                                                                            onClick={(e) => e.stopPropagation()}
-                                                                                        >
-                                                                                            <div className="p-2 px-4 rounded-lg">
-                                                                                                <div style={{ backgroundColor: items[16].bgColor.rgb, backgroundImage: `url(${items[16].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
-                                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
-                                                                                                        <a href={`https://www.light.gg/db/es/items/${items[16].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[16].name}</a>
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center justify-between text-sm">
-                                                                                                        <p className="opacity-75">{items[16].weaponType}</p>
-                                                                                                        <p className="opacity-25">Leyenda</p>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div style={{ backgroundColor: items[16].bgColor.rgba }} className="pt-2 px-2.5 rounded-b-lg">
-                                                                                                    <p className=" text-xs font-[300]">{items[16].desc}</p>
-                                                                                                    <div className="flex space-x-2 items-center">
-                                                                                                        <div className="space-x-2 flex">
-                                                                                                            <p className="opacity-[0.90] tracking-wide">Disponibles</p>
-                                                                                                            <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
-                                                                                                        </div>
-                                                                                                        <svg viewBox="-10 -10 140 140" style={{ padding: "5px", width: "60px" }} className="relative">
-                                                                                                            <polygon
-                                                                                                                points="60,0 120,60 60,120 0,60"
-                                                                                                                fill="transparent"
-                                                                                                                stroke="rgba(0, 0, 0, 0.4)"
-                                                                                                                strokeWidth="7.5"
-                                                                                                            />
-                                                                                                            <polygon
-                                                                                                                points="60,0 120,60 60,120 0,60"
-                                                                                                                fill="none"
-                                                                                                                stroke="#00d4d4"
-                                                                                                                strokeWidth="7.5"
-                                                                                                                strokeDasharray="360"
-                                                                                                                strokeDashoffset={370 * (1 - showArtifact.powerProgress / showArtifact.powerProgressNextLvl)}
-                                                                                                            />
-                                                                                                            <polygon
-                                                                                                                points="60,28 92,60 60,92 28,60"
-                                                                                                                fill="transparent"
-                                                                                                                stroke="white"
-                                                                                                                strokeWidth="15"
-                                                                                                                strokeDasharray="191"
-                                                                                                                strokeLinecap="square"
-                                                                                                                strokeDashoffset={211 * (1 - showArtifact.pointsProgress / showArtifact.pointsProgressNextLvl)}
-                                                                                                            />
-                                                                                                        </svg>
-                                                                                                        <p style={{ color: "#00d4d4" }} className="text-xl font-extrabold">+{showArtifact.powerBonus}</p>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                                {showGhost && (
-                                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
-                                                                                        <div
-                                                                                            className={`text-white relative`}
-                                                                                            style={{
-                                                                                                top: `${popupPosition.top}px`,
-                                                                                                left: `${popupPosition.left - 12}px`,
-                                                                                                position: "absolute",
-                                                                                                width: "27%",
-                                                                                            }}
-                                                                                            onClick={(e) => e.stopPropagation()}
-                                                                                        >
-                                                                                            <div className="p-2 px-4 rounded-lg">
-                                                                                                <div style={{ backgroundColor: items[8].bgColor.rgb, backgroundImage: `url(${items[8].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
-                                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
-                                                                                                        <a href={`https://www.light.gg/db/es/items/${items[8].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[8].name}</a>
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center justify-between text-sm">
-                                                                                                        <p className="opacity-75">{items[8].weaponType}</p>
-                                                                                                        <p className="opacity-50">{items[8].rarityName}</p>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div style={{ backgroundColor: items[8].bgColor.rgba }} className="py-2 px-2.5 rounded-b-lg">
-                                                                                                    <p className=" text-xs font-[300]">{items[8].desc}</p>
-                                                                                                    <div className="flex flex-col justify-start font-[200] mt-2">
-                                                                                                        <span className="text-sm flex"><p className="font-semibold mr-1">10</p> ENERGÍA</span>
-                                                                                                        <div className="flex w-full space-x-0.5">
-                                                                                                            {Array.from({ length: items[8].armorEnergy.energyUsed }).map((_, index) => (
-                                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
-                                                                                                            ))}
-                                                                                                            {Array.from({ length: items[8].armorEnergy.energyUnused }).map((_, index) => (
-                                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div className="space-y-1 justify-center flex flex-col items-center mt-2">
-                                                                                                        <p className="text-sm font-semibold">Diseño</p>
-                                                                                                        <div className="flex space-x-2 items-center mt-1.5">
-                                                                                                            {items[8].perks.slice(0, 2).map((perk) => (
-                                                                                                                perk && perk.iconPath && (
-                                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />)
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
                                                                             </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className={`relative ${items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4 ? "masterwork item-wrapper" : ""}`}>
-                                                                        <img
-                                                                            src={`/api${items[index].icon}`}
-                                                                            width={60}
-                                                                            height={60}
-                                                                            alt={items[index].name}
-                                                                            title={items[index].name}
-                                                                            onClick={(e) => [0, 1, 2, 16, 8].includes(index) && handleWeaponClick(items[index], e, index)}
-                                                                            className={`${[0, 1, 2, 16, 8].includes(index) ? "cursor-pointer" : ""} `}
-
-                                                                        />
-                                                                        {(items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4) && (
-                                                                            <div className="masterwork-overlay" />
-                                                                        )}
-                                                                        {(items[index].craftedenchanced?.includes("info") || items[index].craftedenchanced?.includes("deepsight")) && (
-                                                                            <div className="craftedshadow" />
-                                                                        )}
-                                                                        {items[index].watermark && (
-                                                                            <img
-                                                                                src={`/api${items[index].watermark}`}
-                                                                                className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
-                                                                            />
-                                                                        )}
-                                                                        {(items[index].rarity === 6 && (items[index].masterwork == 5 || items[index].masterwork == 4)) && (
-                                                                            <div className="exotic-masterwork" />
-                                                                        )}
-                                                                        {items[index].craftedenchanced?.includes("deepsight") && (
-                                                                            <svg width="12" height="12" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
-                                                                                <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
-                                                                            </svg>
-                                                                        )}
-                                                                        {items[index].craftedenchanced?.includes("info") && (
-                                                                            <svg width="15" height="15" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
-                                                                                <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
-                                                                            </svg>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        ))}
-                                                    </div>
-                                                    <div className="flex flex-col justify-between ml-4" style={{ width: "40%" }}>
-                                                        {[3, 4, 5, 6, 7].map((index) => (
-                                                            items[index] && (
-                                                                <div key={index} className="flex items-center justify-start">
-                                                                    <div className={`relative ${items[index].masterwork == 4 || items[index].masterwork === 5 ? "masterwork item-wrapper" : ""}`}>
-                                                                        <img
-                                                                            src={`/api${items[index].icon}`}
-                                                                            width={60}
-                                                                            height={60}
-                                                                            alt={items[index].name}
-                                                                            title={items[index].name}
-                                                                            onClick={(e) => [3, 4, 5, 6, 7].includes(index) && handleArmorClick(items[index], e)}
-                                                                            className="cursor-pointer"
-                                                                        />
-                                                                        {(items[index].masterwork == 5 || items[index].masterwork == 4) && (
-                                                                            <div className="masterwork-overlay" />
-                                                                        )}
-                                                                        {(items[index].rarity === 6 && (items[index].masterwork == 5 || items[index].masterwork == 4)) && (
-                                                                            <div className="exotic-masterwork" />
-                                                                        )}
-                                                                        {items[index].watermark && (
-                                                                            <img
-                                                                                src={`/api${items[index].watermark}`}
-                                                                                className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
-                                                                            />
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="ml-4 justify-between flex flex-col">
-                                                                        <div className="flex space-x-2 mb-1">
-                                                                            {items[index].perks.modifierPerks.map((perk) => (
-                                                                                perk && perk.isVisible && perk.name !== "Mejorar armadura" && perk.perkType != "intrinsics" && (
-                                                                                    <div className="relative w-[40px] h-[40px] group">
-                                                                                        <img
-                                                                                            src={`/api${perk.iconPath}`}
-                                                                                            width={40}
-                                                                                            height={40}
-                                                                                            alt={perk.name}
-                                                                                            className="w-full h-full group"
-                                                                                        />
-                                                                                        {perk.investmentStats?.[0]?.value && (
-                                                                                            <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
-                                                                                                {perk.investmentStats[0].value}
-                                                                                            </span>
-                                                                                        )}
-                                                                                        <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                            <strong>{perk.name}</strong><br />
-                                                                                            {perk.desc?.description && (<p className={`text-xs whitespace-pre-line w-fit`} style={{ color: perk.desc?.color ?? "#FFF" }} dangerouslySetInnerHTML={{ __html: `${perk.desc?.description}` }} />)}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )
-                                                                            ))}
                                                                         </div>
-                                                                        {selectedArmor &&
-                                                                            <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
-                                                                                <div
-                                                                                    className="text-white relative"
-                                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
-                                                                                    onClick={(e) => e.stopPropagation()}
-                                                                                >
-                                                                                    <div className="py-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
-                                                                                        <div className="flex flex-col">
-                                                                                            <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase leading-7">{selectedArmor.name}</p>
-                                                                                            <div className="flex justify-between items-center text-sm">
-                                                                                                <p className="opacity-75">{selectedArmor.armorCategory}</p>
-                                                                                                <p className='lightlevel text-sm flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
-                                                                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedArmor.power}
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        </div>
+                                                                    </div>}
+                                                                {showArtifact && (
+                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
+                                                                        <div
+                                                                            className={`text-white relative`}
+                                                                            style={{
+                                                                                top: `${popupPosition.top}px`,
+                                                                                left: `${popupPosition.left - 12}px`,
+                                                                                position: "absolute",
+                                                                                width: "27%",
+                                                                            }}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <div className="p-2 px-4 rounded-lg">
+                                                                                <div style={{ backgroundColor: items[16].bgColor.rgb, backgroundImage: `url(${items[16].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                        <a href={`https://www.light.gg/db/es/items/${items[16].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[16].name}</a>
                                                                                     </div>
-                                                                                    <div className="rounded-b-lg pb-3 px-2.5 py-0.5 space-y-2" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
-                                                                                        <div className="flex flex-col pt-1">
-                                                                                            {selectedArmor.stats
-                                                                                                ?.sort((a, b) => {
-                                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
-                                                                                                    return order.indexOf(a.statHash) - order.indexOf(b.statHash);
-                                                                                                })
-                                                                                                .map((stat) => (
-                                                                                                    <div key={stat.statHash} className="flex items-center text-xs relative w-fit group" style={{ width: "100%", justifyContent: "center" }}>
-                                                                                                        <div className="absolute left-70 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                                            <p>{stat.desc}</p>
-                                                                                                        </div>
-                                                                                                        <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
-                                                                                                        <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
-                                                                                                        {stat.iconPath ? (
-                                                                                                            <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
-                                                                                                        ) : (
-                                                                                                            <div style={{ width: "3.5%" }} />
-                                                                                                        )
-                                                                                                        }
-                                                                                                        {stat.statHash === 1 ? (
-                                                                                                            <div style={{ width: "38%" }} className={`h-[15.5px] overflow-hidden flex font-[300] items-center  ${stat.secciones.base.value != 0 ? "" : "invisible"}`}>
-                                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                    <p key={key} className="h-full" style={{ color: section.color, marginRight: "4px" }}>{section.color !== "#fff" && "+"} {section.value}</p>
-                                                                                                                ))}
-                                                                                                            </div>
-                                                                                                        ) : (
-                                                                                                            <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "38%" }}>
-                                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                                    <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
-                                                                                                                ))}
-                                                                                                            </div>
-                                                                                                        )}
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                        </div>
-                                                                                        <div className="flex flex-col justify-start font-[200]">
-                                                                                            <span className="text-sm flex"><p className="font-semibold mr-1">{selectedArmor.armorEnergy.energyCapacity}</p> ENERGÍA</span>
-                                                                                            <div className="flex w-full space-x-0.5" >
-                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUsed }).map((_, index) => (
-                                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
-                                                                                                ))}
-                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUnused }).map((_, index) => (
-                                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
-                                                                                                ))}
-                                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyCapacityUnused }).map((_, index) => (
-                                                                                                    <div key={index} style={{ width: "18%", height: "6px", backgroundColor: "#888", marginTop: "2px", marginBottom: "2px" }} />
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex space-x-4 justify-center">
-                                                                                            {selectedArmor.armorIntrinsic.length > 0 && (
-                                                                                                <>
-                                                                                                    <div className="space-y-1 flex flex-col justify-center items-center" style={{ width: "27%" }}>
-                                                                                                        <p className="text-sm font-semibold">Ventajas</p>
-                                                                                                        <div className="flex flex space-x-2">
-                                                                                                            {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
-                                                                                                                <div key={index} className="relative w-fit group">
-                                                                                                                    <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
-                                                                                                                    <div className="absolute left-8 -top-14 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                                                                                                                        <strong>{intrinsic.name}</strong><br />{intrinsic.desc}
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            ))}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div class="border-l border-0.5 border-white/25 mr-4.5" style={{ height: "58px" }} />
-                                                                                                </>
-                                                                                            )}
-                                                                                            <div className="space-y-1 flex flex-col justify-center items-center  font-[200]" style={{ width: "27%" }}>
-                                                                                                <p className="text-sm font-semibold">Diseño</p>
-                                                                                                <div className="space-x-2 flex flex ">
-                                                                                                    {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
-                                                                                                        perk.name && perk?.iconPath && (
-                                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
-                                                                                                        )
-                                                                                                    ))}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
+                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                        <p className="opacity-75">{items[16].weaponType}</p>
+                                                                                        <p className="opacity-25">Leyenda</p>
                                                                                     </div>
                                                                                 </div>
-                                                                            </div>}
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div className="justify-center flex flex-col items-center">
-                                                    <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
-                                                    <div className="flex space-x-2">
-                                                        {totalStats && totalStats.map((stat) => (
-                                                            stat.iconPath && (
-                                                                <p key={stat.statHash} className="flex items-center">
-                                                                    <img src={`/api${stat.iconPath}`} className="mr-0.5" width={23} height={23} alt={stat.name} title={stat.name} />
-                                                                    {stat.value}
-                                                                </p>
-                                                            )
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                    {activeTab === "Cosmeticos" && (
-                                        <motion.div
-                                            key="Cosmeticos"
-                                            initial={{ x: "100%", opacity: 0 }}
-                                            animate={{ x: 0, opacity: 1 }}
-                                            exit={{ x: "100%", opacity: 0 }}
-                                            transition={{ duration: 0.25 }}
-                                            className="w-full justify-center flex items-center"
-                                            style={{ height: "100%" }}
-                                        >
-                                            <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
-                                                <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center w-full py-2 h-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2 ml-2">COLIBRÍ / NAVE</legend>
-                                                    <div className="flex flex-wrap justify-center mx-6 space-x-6">
-                                                        {[9, 10].map((index) => (
-                                                            <div key={index} className="flex mb-4 space-x-4 mr-0">
-                                                                <div className={`relative`}>
-                                                                    <a href={`https://www.light.gg/db/es/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
-                                                                        <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
-                                                                    </a>
-                                                                    {items[index].watermark && (
-                                                                        <img
-                                                                            src={`/api${items[index].watermark}`}
-                                                                            className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none"
-                                                                        />
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex justify-center items-center space-x-1">
-                                                                    {items[index].perks?.map((perk) => (
-                                                                        perk.iconPath && (
-                                                                            <div className="relative">
-                                                                                {perk.perkType?.includes("vehicles.mod") ?
-                                                                                    (<div key={perk.perkHash} title={perk.name}>
-                                                                                        <svg viewBox="0 0 100 100" width="40" height="40" >
-                                                                                            <defs>
-                                                                                                <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
-                                                                                                    <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
-                                                                                                    <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
-                                                                                                </linearGradient>
-                                                                                            </defs>
-                                                                                            <mask id="mask">
-                                                                                                <rect x="0" y="0" width="100" height="100" fill="black"></rect>
-                                                                                                <circle cx="50" cy="50" r="46" fill="white"></circle>
-                                                                                            </mask>
-                                                                                            <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
-                                                                                            {perk.isEnhanced == "Rasgo mejorado" && (
-                                                                                                <>
-                                                                                                    <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
-                                                                                                    <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
-                                                                                                    <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
-                                                                                                </>
-                                                                                            )}
-                                                                                            <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
-                                                                                            <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                                <div style={{ backgroundColor: items[16].bgColor.rgba }} className="pt-2 px-2.5 rounded-b-lg">
+                                                                                    <p className=" text-xs font-[300]">{items[16].desc}</p>
+                                                                                    <div className="flex space-x-2 items-center">
+                                                                                        <div className="space-x-2 flex">
+                                                                                            <p className="opacity-[0.90] tracking-wide">Disponibles</p>
+                                                                                            <span className="font-bold">{showArtifact.points}/{showArtifact.pointsCap}</span>
+                                                                                        </div>
+                                                                                        <svg viewBox="-10 -10 140 140" style={{ padding: "5px", width: "60px" }} className="relative">
+                                                                                            <polygon
+                                                                                                points="60,0 120,60 60,120 0,60"
+                                                                                                fill="transparent"
+                                                                                                stroke="rgba(0, 0, 0, 0.4)"
+                                                                                                strokeWidth="7.5"
+                                                                                            />
+                                                                                            <polygon
+                                                                                                points="60,0 120,60 60,120 0,60"
+                                                                                                fill="none"
+                                                                                                stroke="#00d4d4"
+                                                                                                strokeWidth="7.5"
+                                                                                                strokeDasharray="360"
+                                                                                                strokeDashoffset={370 * (1 - showArtifact.powerProgress / showArtifact.powerProgressNextLvl)}
+                                                                                            />
+                                                                                            <polygon
+                                                                                                points="60,28 92,60 60,92 28,60"
+                                                                                                fill="transparent"
+                                                                                                stroke="white"
+                                                                                                strokeWidth="15"
+                                                                                                strokeDasharray="191"
+                                                                                                strokeLinecap="square"
+                                                                                                strokeDashoffset={211 * (1 - showArtifact.pointsProgress / showArtifact.pointsProgressNextLvl)}
+                                                                                            />
                                                                                         </svg>
-                                                                                    </div>) : (
-                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
-                                                                                    )}
-                                                                                {perk.watermark && (
-                                                                                    <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[40px] h-[40px] z-50 pointer-events-none" />
-                                                                                )}
+                                                                                        <p style={{ color: "#00d4d4" }} className="text-xl font-extrabold">+{showArtifact.powerBonus}</p>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                        )
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit text-start items-center justify-center w-full py-2 h-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
-                                                    <div className="justify-center items-center flex w-full">
-                                                        {seal && (
-                                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5 cursor-pointer relative group" onClick={() => window.open(`https://bray.tech/triumphs/seal/${seal.sealHash}`, '_blank')}>
-                                                                <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
-                                                                <div
-                                                                    className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px]"
-                                                                    style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
-                                                                >
-                                                                    <p className="tracking-[0.2em] text-xs uppercase titulo">{seal.name}</p>
-                                                                    {seal.timesGilded && seal.timesGilded > 0 && (
-                                                                        <div className="flex items-center ml-1">
-                                                                            <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
-                                                                            <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{seal.timesGilded}</p>
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="absolute left-42 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                    <p className="w-fit whitespace-pre-line text-xs">{seal.desc?.description ?? seal.desc ?? ""}</p>
-                                                                </div>
+                                                                    </div>
+                                                                )}
+                                                                {showGhost && (
+                                                                    <div className="fixed inset-0 flex items-center justify-center z-50 w-full" onClick={() => closeWeaponDetails()}>
+                                                                        <div
+                                                                            className={`text-white relative`}
+                                                                            style={{
+                                                                                top: `${popupPosition.top}px`,
+                                                                                left: `${popupPosition.left - 12}px`,
+                                                                                position: "absolute",
+                                                                                width: "27%",
+                                                                            }}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            <div className="p-2 px-4 rounded-lg">
+                                                                                <div style={{ backgroundColor: items[8].bgColor.rgb, backgroundImage: `url(${items[8].mwHeader})`, backgroundPositionX: "top", backgroundSize: "cover", backgroundRepeat: "no-repeat" }} className="py-0.5 pb-1 px-2.5 rounded-t-lg">
+                                                                                    <div className="text-xl font-semibold flex items-center translate-y-1">
+                                                                                        <a href={`https://www.light.gg/db/es/items/${items[8].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{items[8].name}</a>
+                                                                                    </div>
+                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                        <p className="opacity-75">{items[8].weaponType}</p>
+                                                                                        <p className="opacity-50">{items[8].rarityName}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div style={{ backgroundColor: items[8].bgColor.rgba }} className="py-2 px-2.5 rounded-b-lg">
+                                                                                    <p className=" text-xs font-[300]">{items[8].desc}</p>
+                                                                                    <div className="flex flex-col justify-start font-[200] mt-2">
+                                                                                        <span className="text-sm flex"><p className="font-semibold mr-1">10</p> ENERGÍA</span>
+                                                                                        <div className="flex w-full space-x-0.5">
+                                                                                            {Array.from({ length: items[8].armorEnergy.energyUsed }).map((_, index) => (
+                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
+                                                                                            ))}
+                                                                                            {Array.from({ length: items[8].armorEnergy.energyUnused }).map((_, index) => (
+                                                                                                <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="space-y-1 justify-center flex flex-col items-center mt-2">
+                                                                                        <p className="text-sm font-semibold">Diseño</p>
+                                                                                        <div className="flex space-x-2 items-center mt-1.5">
+                                                                                            {items[8].perks.slice(0, 2).map((perk) => (
+                                                                                                perk && perk.iconPath && (
+                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />)
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
-                                                </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-full w-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
-                                                    <div className="flex space-x-8 justify-center mx-6">
-                                                        {items[15].perks?.map((perk) => (
-                                                            <div className="flex mb-4 ">
-                                                                {perk.iconPath && (
-                                                                    <div className="relative">
-                                                                        <a href={`https://www.light.gg/db/es/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
-                                                                            <div className="relative group">
-                                                                                <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} />
-                                                                                <div className="absolute left-12 top-10 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                    <strong>{perk.name}</strong><br />
-                                                                                    <p className="w-fit whitespace-pre-line text-xs">{perk.desc?.description ?? perk.desc ?? ""}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </a>
-                                                                        {perk.watermark && (
-                                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
+                                                    <div className={`relative ${items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4 ? "masterwork item-wrapper" : ""}`}>
+                                                        <img
+                                                            src={`/api${items[index].icon}`}
+                                                            width={60}
+                                                            height={60}
+                                                            alt={items[index].name}
+                                                            title={items[index].name}
+                                                            onClick={(e) => [0, 1, 2, 16, 8].includes(index) && handleWeaponClick(items[index], e, index)}
+                                                            className={`${[0, 1, 2, 16, 8].includes(index) ? "cursor-pointer" : ""} `}
+
+                                                        />
+                                                        {(items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4) && (
+                                                            <div className="masterwork-overlay" />
+                                                        )}
+                                                        {(items[index].craftedenchanced?.includes("info") || items[index].craftedenchanced?.includes("deepsight")) && (
+                                                            <div className="craftedshadow" />
+                                                        )}
+                                                        {items[index].watermark && (
+                                                            <img
+                                                                src={`/api${items[index].watermark}`}
+                                                                className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
+                                                            />
+                                                        )}
+                                                        {(items[index].rarity === 6 && (items[index].masterwork == 5 || items[index].masterwork == 4)) && (
+                                                            <div className="exotic-masterwork" />
+                                                        )}
+                                                        {items[index].craftedenchanced?.includes("deepsight") && (
+                                                            <svg width="12" height="12" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
+                                                                <path d="M0 17.616h6.517c5.314 0 5.486 5.073 5.486 7.192l-.003 3.288h2.53v3.904H0zm31.997 0h-6.517c-5.314 0-5.486 5.073-5.486 7.192l.003 3.288h-2.53v3.904h14.53zM0.003 14.384h6.517c5.314 0 5.486-5.073 5.486-7.192L12.003 3.904h2.53V0H0zm31.997 0h-6.517c-5.314 0-5.486-5.073-5.486-7.192l.003-3.288h-2.53V0h14.53z" />
+                                                            </svg>
+                                                        )}
+                                                        {items[index].craftedenchanced?.includes("info") && (
+                                                            <svg width="15" height="15" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" fill="#d23636" className="absolute bottom-0.5 left-0.5 z-40 pointer-events-none">
+                                                                <path d="m0 17.25h7l0 2h4c1 0 3 1 3.75 2v10.75zm32 0h-7l0 2h-4c-1 0-3 1-3.75 2v10.75zm-32-2.5h7l0-2h4c1 0 3-1 3.75-2v-10.75zm32 0h-7l0-2h-4c-1 0-3-1-3.75-2v-10.75z" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col justify-between ml-4" style={{ width: "40%" }}>
+                                        {[3, 4, 5, 6, 7].map((index) => (
+                                            items[index] && (
+                                                <div key={index} className="flex items-center justify-start">
+                                                    <div className={`relative ${items[index].masterwork == 4 || items[index].masterwork === 5 ? "masterwork item-wrapper" : ""}`}>
+                                                        <img
+                                                            src={`/api${items[index].icon}`}
+                                                            width={60}
+                                                            height={60}
+                                                            alt={items[index].name}
+                                                            title={items[index].name}
+                                                            onClick={(e) => [3, 4, 5, 6, 7].includes(index) && handleArmorClick(items[index], e)}
+                                                            className="cursor-pointer"
+                                                        />
+                                                        {(items[index].masterwork == 5 || items[index].masterwork == 4) && (
+                                                            <div className="masterwork-overlay" />
+                                                        )}
+                                                        {(items[index].rarity === 6 && (items[index].masterwork == 5 || items[index].masterwork == 4)) && (
+                                                            <div className="exotic-masterwork" />
+                                                        )}
+                                                        {items[index].watermark && (
+                                                            <img
+                                                                src={`/api${items[index].watermark}`}
+                                                                className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <div className="ml-4 justify-between flex flex-col">
+                                                        <div className="flex space-x-2 mb-1">
+                                                            {items[index].perks.modifierPerks.map((perk) => (
+                                                                perk && perk.isVisible && perk.name !== "Mejorar armadura" && perk.perkType != "intrinsics" && (
+                                                                    <div className="relative w-[40px] h-[40px] group">
+                                                                        <img
+                                                                            src={`/api${perk.iconPath}`}
+                                                                            width={40}
+                                                                            height={40}
+                                                                            alt={perk.name}
+                                                                            className="w-full h-full group"
+                                                                        />
+                                                                        {perk.investmentStats?.[0]?.value && (
+                                                                            <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
+                                                                                {perk.investmentStats[0].value}
+                                                                            </span>
                                                                         )}
+                                                                        <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                            <strong>{perk.name}</strong><br />
+                                                                            {perk.desc?.description && (<p className={`text-xs whitespace-pre-line w-fit`} style={{ color: perk.desc?.color ?? "#FFF" }} dangerouslySetInnerHTML={{ __html: `${perk.desc?.description}` }} />)}
+                                                                        </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </fieldset>
-                                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit text-start items-center justify-center py-4.5 h-full w-full">
-                                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
-                                                    <div className="flex space-x-10 justify-evenly mx-4 pb-3">
-                                                        {emblems.map((emblem) => (
-                                                            <div className="flex flex-col mb-5 justify-center items-center">
-                                                                <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
-                                                                {emblem.iconPath && (
-                                                                    <div className={`${emblem.currentClass === true ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
-                                                                        <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
-                                                                            <div className="relative group">
-                                                                                <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} />
-                                                                                <div className="absolute left-13 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                                                                    <strong>{emblem.name}</strong><br />
-                                                                                    <p className="w-fit whitespace-pre-line text-xs">{emblem.desc?.description ?? emblem.desc ?? ""}</p>
+                                                                )
+                                                            ))}
+                                                        </div>
+                                                        {selectedArmor &&
+                                                            <div className="fixed inset-0 flex items-center justify-center w-full z-50" onClick={() => closeArmorDetails()} >
+                                                                <div
+                                                                    className="text-white relative"
+                                                                    style={{ top: `${popupPosition.top}px`, left: `${popupPosition.left}px`, position: "absolute", width: "27%" }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <div className="py-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
+                                                                        <div className="flex flex-col">
+                                                                            <p className="text-2xl font-semibold place-self-start translate-y-1 uppercase leading-7">{selectedArmor.name}</p>
+                                                                            <div className="flex justify-between items-center text-sm">
+                                                                                <p className="opacity-75">{selectedArmor.armorCategory}</p>
+                                                                                <p className='lightlevel text-sm flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                                                                                    <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.1rem', position: 'relative', top: '-0.1rem' }} />{selectedArmor.power}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="rounded-b-lg pb-3 px-2.5 py-0.5 space-y-2" style={{ backgroundColor: selectedArmor.bgColor.rgba }}>
+                                                                        <div className="flex flex-col pt-1">
+                                                                            {selectedArmor.stats
+                                                                                ?.sort((a, b) => {
+                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
+                                                                                    return order.indexOf(a.statHash) - order.indexOf(b.statHash);
+                                                                                })
+                                                                                .map((stat) => (
+                                                                                    <div key={stat.statHash} className="flex items-center text-xs relative w-fit group" style={{ width: "100%", justifyContent: "center" }}>
+                                                                                        <div className="absolute left-70 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                                            <p>{stat.desc}</p>
+                                                                                        </div>
+                                                                                        <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                        <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
+                                                                                        {stat.iconPath ? (
+                                                                                            <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
+                                                                                        ) : (
+                                                                                            <div style={{ width: "3.5%" }} />
+                                                                                        )
+                                                                                        }
+                                                                                        {stat.statHash === 1 ? (
+                                                                                            <div style={{ width: "38%" }} className={`h-[15.5px] overflow-hidden flex font-[300] items-center  ${stat.secciones.base.value != 0 ? "" : "invisible"}`}>
+                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                    <p key={key} className="h-full" style={{ color: section.color, marginRight: "4px" }}>{section.color !== "#fff" && "+"} {section.value}</p>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "38%" }}>
+                                                                                                {Object.entries(stat.secciones || {}).map(([key, section]) => (
+                                                                                                    <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ))}
+                                                                        </div>
+                                                                        <div className="flex flex-col justify-start font-[200]">
+                                                                            <span className="text-sm flex"><p className="font-semibold mr-1">{selectedArmor.armorEnergy.energyCapacity}</p> ENERGÍA</span>
+                                                                            <div className="flex w-full space-x-0.5" >
+                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUsed }).map((_, index) => (
+                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "white" }} />
+                                                                                ))}
+                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyUnused }).map((_, index) => (
+                                                                                    <div key={index} style={{ width: "18%", height: "10px", backgroundColor: "transparent", border: "2px solid white" }} />
+                                                                                ))}
+                                                                                {Array.from({ length: selectedArmor.armorEnergy.energyCapacityUnused }).map((_, index) => (
+                                                                                    <div key={index} style={{ width: "18%", height: "6px", backgroundColor: "#888", marginTop: "2px", marginBottom: "2px" }} />
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex space-x-4 justify-center">
+                                                                            {selectedArmor.armorIntrinsic.length > 0 && (
+                                                                                <>
+                                                                                    <div className="space-y-1 flex flex-col justify-center items-center" style={{ width: "27%" }}>
+                                                                                        <p className="text-sm font-semibold">Ventajas</p>
+                                                                                        <div className="flex flex space-x-2">
+                                                                                            {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
+                                                                                                <div key={index} className="relative w-fit group">
+                                                                                                    <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
+                                                                                                    <div className="absolute left-8 -top-14 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                                        <strong>{intrinsic.name}</strong><br />{intrinsic.desc}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="border-l border-0.5 border-white/25 mr-4.5" style={{ height: "58px" }} />
+                                                                                </>
+                                                                            )}
+                                                                            <div className="space-y-1 flex flex-col justify-center items-center  font-[200]" style={{ width: "27%" }}>
+                                                                                <p className="text-sm font-semibold">Diseño</p>
+                                                                                <div className="space-x-2 flex flex ">
+                                                                                    {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
+                                                                                        perk.name && perk?.iconPath && (
+                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
+                                                                                        )
+                                                                                    ))}
                                                                                 </div>
                                                                             </div>
-                                                                        </a>
+                                                                        </div>
                                                                     </div>
+                                                                </div>
+                                                            </div>}
+                                                    </div>
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="justify-center flex flex-col items-center">
+                                    <p className="font-semibold text-lg">ESTADÍSTICAS TOTALES</p>
+                                    <div className="flex space-x-2">
+                                        {totalStats && totalStats.map((stat) => (
+                                            stat.iconPath && (
+                                                <p key={stat.statHash} className="flex items-center">
+                                                    <img src={`/api${stat.iconPath}`} className="mr-0.5" width={23} height={23} alt={stat.name} title={stat.name} />
+                                                    {stat.value}
+                                                </p>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                    {activeTab === "Cosmeticos" && !loading && (
+                        <motion.div
+                            key="Cosmeticos"
+                            initial={{ x: "100%", opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: "100%", opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="w-full justify-center flex items-center"
+                            style={{ height: "100%" }}
+                        >
+                            <div className=" items-center justify-self-center w-2/3 grid grid-cols-2 gap-10">
+                                <fieldset className="flex flex-col border-2 rounded-lg w-fit z-0 text-start items-center justify-center w-full py-2 h-full">
+                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2 ml-2">COLIBRÍ / NAVE</legend>
+                                    <div className="flex flex-wrap justify-center mx-6 space-x-6">
+                                        {[9, 10].map((index) => (
+                                            <div key={index} className="flex mb-4 space-x-4 mr-0">
+                                                <div className={`relative`}>
+                                                    <a href={`https://www.light.gg/db/es/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                        <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
+                                                    </a>
+                                                    {items[index].watermark && (
+                                                        <img
+                                                            src={`/api${items[index].watermark}`}
+                                                            className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none"
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="flex justify-center items-center space-x-1">
+                                                    {items[index].perks?.map((perk) => (
+                                                        perk.iconPath && (
+                                                            <div className="relative">
+                                                                {perk.perkType?.includes("vehicles.mod") ?
+                                                                    (<div key={perk.perkHash} title={perk.name}>
+                                                                        <svg viewBox="0 0 100 100" width="40" height="40" >
+                                                                            <defs>
+                                                                                <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
+                                                                                    <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
+                                                                                    <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                </linearGradient>
+                                                                            </defs>
+                                                                            <mask id="mask">
+                                                                                <rect x="0" y="0" width="100" height="100" fill="black"></rect>
+                                                                                <circle cx="50" cy="50" r="46" fill="white"></circle>
+                                                                            </mask>
+                                                                            <circle cx="50" cy="50" r="48" style={{ fill: "#4887ba" }}></circle>
+                                                                            {perk.isEnhanced == "Rasgo mejorado" && (
+                                                                                <>
+                                                                                    <rect x="0" y="0" width="100" height="100" fill="url(#mw)" mask="url(#mask)"></rect>
+                                                                                    <rect x="5" y="0" width="6" height="100" fill="#eade8b" mask="url(#mask)"></rect>
+                                                                                    <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
+                                                                                </>
+                                                                            )}
+                                                                            <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                            <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                        </svg>
+                                                                    </div>) : (
+                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                    )}
+                                                                {perk.watermark && (
+                                                                    <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[40px] h-[40px] z-50 pointer-events-none" />
                                                                 )}
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                </fieldset>
+                                                        )
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit text-start items-center justify-center w-full py-2 h-full">
+                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">SELLO / TÍTULO</legend>
+                                    <div className="justify-center items-center flex w-full">
+                                        {seal && (
+                                            <div className="flex flex-col justify-center items-center mb-4 w-4/5 cursor-pointer relative group" onClick={() => window.open(`https://bray.tech/triumphs/seal/${seal.sealHash}`, '_blank')}>
+                                                <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
+                                                <div
+                                                    className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px]"
+                                                    style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
+                                                >
+                                                    <p className="tracking-[0.2em] text-xs uppercase titulo">{seal.name}</p>
+                                                    {seal.timesGilded && seal.timesGilded > 0 && (
+                                                        <div className="flex items-center ml-1">
+                                                            <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
+                                                            <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{seal.timesGilded}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="absolute left-42 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                    <p className="w-fit whitespace-pre-line text-xs">{seal.desc?.description ?? seal.desc ?? ""}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </fieldset>
+                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-full w-full">
+                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
+                                    <div className="flex space-x-8 justify-center mx-6">
+                                        {items[15].perks?.map((perk) => (
+                                            <div className="flex mb-4 ">
+                                                {perk.iconPath && (
+                                                    <div className="relative">
+                                                        <a href={`https://www.light.gg/db/es/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
+                                                            <div className="relative group">
+                                                                <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} />
+                                                                <div className="absolute left-12 top-10 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                    <strong>{perk.name}</strong><br />
+                                                                    <p className="w-fit whitespace-pre-line text-xs">{perk.desc?.description ?? perk.desc ?? ""}</p>
+                                                                </div>
+                                                            </div>
+                                                        </a>
+                                                        {perk.watermark && (
+                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit text-start items-center justify-center py-4.5 h-full w-full">
+                                    <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
+                                    <div className="flex space-x-10 justify-evenly mx-4 pb-3">
+                                        {emblems.map((emblem) => (
+                                            <div className="flex flex-col mb-5 justify-center items-center">
+                                                <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
+                                                {emblem.iconPath && (
+                                                    <div className={`${emblem.currentClass === true ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
+                                                        <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
+                                                            <div className="relative group">
+                                                                <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} />
+                                                                <div className="absolute left-13 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                                                    <strong>{emblem.name}</strong><br />
+                                                                    <p className="w-fit whitespace-pre-line text-xs">{emblem.desc?.description ?? emblem.desc ?? ""}</p>
+                                                                </div>
+                                                            </div>
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </fieldset>
                             </div>
-                        </div>
-                        <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowPopup(false); }}>✕</button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>) : (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <Spinner medium={true}/>
+                        <p className="text-white text-center -translate-y-64">Consiguiendo nuevos datos de la API...</p>
                     </div>
                 )}
-            </div >
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+                <Spinner medium={true}/>
+                <p className="text-white text-center -translate-y-68">Cargando...</p>
+            </div>
         )
-    );
+    )
 }

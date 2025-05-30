@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import arrowLeft from '../../assets/arrow-left-solid.svg';
 import copy from '../../assets/copiar-archivo.png';
@@ -11,10 +11,10 @@ import Spinner from '../Spinner';
 import '../Tabla.css';
 import ActivityHistory from './ActivityHistory';
 import CurrentActivity from './CurrentActivity';
-import CurrentLodaout from './CurrentLoadout';
 import FavouriteWeapons from './FavouriteWeapons';
 import ReportLinks from './ReportLinks';
 import ReputationStatus from './ReputationStatus';
+import SimpleLoadout from './SimpleLodaut';
 import TriumphScore from './TriumphScore';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -167,7 +167,7 @@ function MemberDetail() {
                             </div>
                         </div>
                     )}
-                    <CurrentLodaout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
+                    <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
                 </div>
                 <div className='w-3/4 text-start'>
                     <div>
