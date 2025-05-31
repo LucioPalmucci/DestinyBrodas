@@ -74,7 +74,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
-                            if (perkResponse.data.Response.itemTypeDisplayName == "Súper") {
+                            if (perkResponse.data.Response.itemTypeDisplayName.includes("Súper")) {
                                 setSuperAbility({
                                     name: perkResponse.data.Response.displayProperties.name,
                                     iconPath: perkResponse.data.Response.displayProperties.icon,
@@ -177,8 +177,8 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                         </div>
                                     ) : (
                                         <div key={index} className="flex items-center space-x-2">
-                                            <img src={`/api${superAbility.iconPath}`} width={50} height={50} alt={superAbility.name} />
-                                            <p className="font-semibold">{superAbility.name}</p>
+                                            <img src={`/api${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
+                                            <p className="font-semibold">{superAbility?.name}</p>
                                         </div>
                                     )
                                 )

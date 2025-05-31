@@ -10,6 +10,7 @@ import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
 import ActivityHistory from './ActivityHistory';
+import ClanTeammates from './ClanTeamates';
 import CurrentActivity from './CurrentActivity';
 import FavouriteWeapons from './FavouriteWeapons';
 import ReportLinks from './ReportLinks';
@@ -175,6 +176,7 @@ function MemberDetail() {
                             <CurrentActivity type={membershipType} id={membershipId} />
                             <ReputationStatus userId={membershipId} membershipType={membershipType} />
                         </div>
+                        <ClanTeammates userId={membershipId} membershipType={membershipType} />
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                         <ActivityHistory userId={membershipId} membershipType={membershipType} />
                         <TriumphScore userId={membershipId} membershipType={membershipType} />

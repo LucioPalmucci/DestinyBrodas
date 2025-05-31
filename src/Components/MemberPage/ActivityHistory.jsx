@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import circleEmpty from "../../assets/circle-empty.svg";
 import circleSolid from "../../assets/circle-solid.svg";
 import Completed from "../../assets/Completed.png";
@@ -40,6 +40,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
+
+                console.log("Activity History Response: ", response.data.Response.activities);
 
                 const details = await Promise.all(response.data.Response.activities.map(async (activity) => {
                     const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");

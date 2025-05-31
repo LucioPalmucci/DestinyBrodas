@@ -308,10 +308,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         ghostEnergy = getGhostEnergy(item.state, perks);
-                        console.log("Energia de espectro " + ghostEnergy);
                     }
-
-                    if (response.data.Response.equipment.data.items.indexOf(item) == 8) console.log(itemResponse.data.Response, itemD.data.Response);
 
                     return {
                         name: itemResponse.data.Response.displayProperties.name,
@@ -350,7 +347,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 setPassLevel(responseChar.data.Response.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
                 setTriumphRecord(responseChar.data.Response.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
-                console.log(itemDetails)
                 setTotalStats(totalStats);
 
             } catch (error) {
@@ -631,7 +627,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
         const group = item.stats.statGroupHash;
         const name = item.displayProperties.name;
-        //if (item.itemTypeDisplayName == "Escopeta") console.log("stats escopeta base", stats)
         const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
             headers: {
                 'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
@@ -1375,12 +1370,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getGhostEnergy(isMw, perks) {
-        console.log("isMw ", isMw, perks);
         let energyUsed = 0;
         if (isMw == 5) { //Si es una obra maestra
             perks.forEach(perk => {
                 if (perk.investmentStats?.[0]?.value && perk.investmentStats?.[0]?.statTypeHash == 514071887) {
-                    console.log("perk.investmentStats[0].value ", perk.investmentStats[0].value);
                     energyUsed += perk.investmentStats[0].value;
                 }
             })
