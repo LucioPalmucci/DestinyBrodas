@@ -123,10 +123,10 @@ export default function CurrentActivity({ type, id }) {
         };
 
         fetchActivity();
-        /*const interval = setInterval(() => {
+        const interval = setInterval(() => {
             fetchActivity();
-        }, 10000);
-        return () => clearInterval(interval);*/
+        }, 120000);
+        return () => clearInterval(interval);
 
     }, [partyMembers.length]);
 
@@ -207,7 +207,6 @@ export default function CurrentActivity({ type, id }) {
                                 ))}
                             </ul>
                         </div>
-
                     </div>
                     {activity.logo && !activity.logo.includes("missing") ?
                         <div className="opacity-50">
@@ -286,14 +285,14 @@ const getPartyEmblem = async (id, type) => {
 
         let clase;
         switch (mostRecentCharacter.classType) {
-            case 1:
-                clase = "Cazador";
+            case 0: // Titán
+                clase = mostRecentCharacter.genderType === 0 ? "Titán" : "Titán";
                 break;
-            case 0:
-                clase = "Titán";
+            case 1: // Cazador
+                clase = mostRecentCharacter.genderType === 0 ? "Cazador" : "Cazadora";
                 break;
-            case 2:
-                clase = "Hechicero";
+            case 2: // Hechicero
+                clase = mostRecentCharacter.genderType === 0 ? "Hechicero" : "Hechicera";
                 break;
             default:
                 clase = "Desconocido";

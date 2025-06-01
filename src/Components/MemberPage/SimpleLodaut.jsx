@@ -74,6 +74,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                     'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                 },
                             });
+                            //console.log("A",perkResponse.data.Response.itemTypeDisplayName);
                             if (perkResponse.data.Response.itemTypeDisplayName.includes("Súper")) {
                                 setSuperAbility({
                                     name: perkResponse.data.Response.displayProperties.name,

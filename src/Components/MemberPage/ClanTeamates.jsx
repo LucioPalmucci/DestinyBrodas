@@ -1,28 +1,11 @@
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
-import circleEmpty from "../../assets/circle-empty.svg";
-import circleSolid from "../../assets/circle-solid.svg";
-import Completed from "../../assets/completed.png";
-import medal from "../../assets/medal-solid.svg";
-import NotCompleted from "../../assets/notCompleted.png";
-import skull from "../../assets/skull-solid.svg";
+import { useEffect, useState } from "react";
+import { fetchActivityDetails } from "../RecentActivity";
 
 export default function ClanTeammates({ userId, membershipType }) {
     const [activityClan, setActivity] = useState(null);
     const [jClan, setJugadoresClan] = useState([]);
-    const [expandedIndex, setExpandedIndex] = useState(null);
-    const [isOpen, setIsOpen] = useState(null);
-    const [hasPoints, setHasPoints] = useState(false);
-    const [hasMedals, setHasMedals] = useState(false);
-    const [team0, setTeam0] = useState([]);
-    const [team1, setTeam1] = useState([]);
-    const [userInTeam0, setUserInTeam0] = useState(false);
-    const [userInTeam1, setUserInTeam1] = useState(false);
-    const [userCompleted, setUserCompleted] = useState(false);
-    const [winnerPoints, setWinnerPoints] = useState(0);
-    const [loserPoints, setLoserPoints] = useState(0);
-    const [symbol, setSymbolComp] = useState(Completed);
-    const containerRef = useRef(null);
+    const [numColumns, setColumns] = useState(3);
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
@@ -33,9 +16,6 @@ export default function ClanTeammates({ userId, membershipType }) {
             });
 
             const characterIds = userData.data.Response.characters.data;
-            const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
-                return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
-            });
             let clanMemmbersIDs = [];
 
             const clan = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
@@ -49,35 +29,45 @@ export default function ClanTeammates({ userId, membershipType }) {
                 clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
             })
 
-            const activity = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${mostRecentCharacter.characterId}/Stats/Activities/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            let activity = [];
+            for (const character of Object.values(characterIds)) {
+                let activityChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${character.characterId}/Stats/Activities/?lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                activity = activity.concat(activityChar.data.Response.activities || []);
+            }
 
+            activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
+            console.log("Actividades recientes: ", activity);
             let foundClanMate = false, jugadoresClan = [], addedPlayers = [], matchingActivity;
 
-            for (const act of activity.data.Response.activities) {
+            for (const act of activity) {
                 const carnageReportResponse = await axios.get(`/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${act.activityDetails.instanceId}/?lc=es`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
 
-                carnageReportResponse.data.Response.entries.forEach(entry => {
+                for (const entry of carnageReportResponse.data.Response.entries) {
                     if (clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId) && !addedPlayers.includes(entry.player.destinyUserInfo.membershipId)) {
                         foundClanMate = true;
-                        console.log("Compañero de clan encontrado ", entry.player.destinyUserInfo.membershipId);
+                        console.log("Compañero de clan encontrado ", entry);
                         matchingActivity = act; // Guardar la actividad que contiene al compañero de clan
+                        const partyEmblem = await getPartyEmblem(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, entry);
+                        console.log("a: ", partyEmblem);
                         jugadoresClan.push({
                             name: entry.player.destinyUserInfo.displayName,
+                            uniqueName: entry.player.destinyUserInfo.uniqueName,
                             icon: entry.player.destinyUserInfo.iconPath,
                             membershipId: entry.player.destinyUserInfo.membershipId,
                             membershipType: entry.player.destinyUserInfo.membershipType,
+                            class: partyEmblem,
                         });
                         addedPlayers.push(entry.player.destinyUserInfo.membershipId);
                     }
-                });
+                }
                 if (foundClanMate) break; // Si encuentra un compañero de clan, salw del bucle
             }
 
@@ -111,41 +101,21 @@ export default function ClanTeammates({ userId, membershipType }) {
                     date: new Date(matchingActivity.period).toLocaleString(),
                     duration: formatDuration(matchingActivity.values.activityDurationSeconds.basic.value),
                     icon: matchingMetric.displayProperties.icon,
+                    bgImg: activityName.data.Response?.pgcrImage || null,
                     ...carnageReport,
                 });
                 setJugadoresClan(jugadoresClan);
 
-                const allPeople = (matchingActivity.people || []);
-                setHasPoints(allPeople.some(person => person.points > 0));
-                setHasMedals(allPeople.some(person => person.medals > 0));
-                setTeam0(allPeople.filter(person => Number(person.standing) === 0));
-                setUserCompleted(allPeople.some(person => person.membershipId === userId && person.completed));
-                setTeam1(allPeople.filter(person => Number(person.standing) === 1));
-                setUserInTeam0(allPeople.some(person => Number(person.standing) === 0 && person.membershipId === userId));
-                setUserInTeam1(allPeople.some(person => Number(person.standing) === 1 && person.membershipId === userId));
-
-                if (userInTeam1 || userCompleted) {
-                    setSymbolComp(NotCompleted);
-                } else {
-                    setSymbolComp(Completed);
+                if (jugadoresClan.length > 3) {
+                    setColumns(2)
+                } else if (jugadoresClan.length > 6) {
+                    setColumns(3)
                 }
-
-                let winnerPoints, loserPoints;
-                if (matchingActivity.teams && matchingActivity.teams.length > 0) {
-                    winnerPoints = matchingActivity.teams[0].standing.basic.value == 0 ? matchingActivity.teams[0].score.basic.value : matchingActivity.teams[1]?.score.basic.value;
-                    loserPoints = matchingActivity.teams[0].standing.basic.value == 1 ? matchingActivity.teams[0].score.basic.value : matchingActivity.teams[1]?.score.basic.value;
-                }
-                setWinnerPoints(winnerPoints);
-                setLoserPoints(loserPoints);
+                else setColumns(1);
             }
         }
         fectchClanTeammates();
     }, []);
-
-
-    const toggleExpand = () => {
-        setExpandedIndex(prev => !prev);
-    };
 
     const fetchCarnageReport = async (instanceId) => {
         try {
@@ -195,163 +165,83 @@ export default function ClanTeammates({ userId, membershipType }) {
         }
     }
 
+    const getPartyEmblem = async (id, type, mostRecentCharacter) => {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters,CharacterEquipment&lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            const characters = response.data.Response.characters.data;
+            const equipment = response.data.Response.characterEquipment.data;
+            const charPlayed = characters[mostRecentCharacter.characterId];
+            let clase;
+            console.log("Most recent character: ", charPlayed);
+            switch (charPlayed.classType) {
+                case 0: // Titán
+                    clase = charPlayed.genderType === 0 ? "Titán" : "Titán";
+                    break;
+                case 1: // Cazador
+                    clase = charPlayed.genderType === 0 ? "Cazador" : "Cazadora";
+                    break;
+                case 2: // Hechicero
+                    clase = charPlayed.genderType === 0 ? "Hechicero" : "Hechicera";
+                    break;
+                default:
+                    clase = "Desconocido";
+            }
+
+            const equippedSubclass = equipment[charPlayed.characterId].items.find(item => item.bucketHash === 3284755031);
+            let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
+
+            if (subclass.includes("arc")) {
+                subclass = "arco";
+            } else if (subclass.includes("void")) {
+                subclass = "vacío";
+            } else if (subclass.includes("thermal")) {
+                subclass = "solar";
+            } else if (subclass.includes("stasis")) {
+                subclass = "estasis";
+            } else if (subclass.includes("strand")) {
+                subclass = "cuerda";
+            } else if (subclass.includes("prism")) {
+                subclass = "prismatico";
+            } else {
+                subclass = "Desconocido";
+            }
+
+            return { clase: clase, light: charPlayed.light, subclass: subclass };
+
+        } catch (error) {
+            console.error('Error fetching equipped emblem:', error);
+            return null;
+        }
+    };
+
     return (
-        <div className="w-2/3 bg-neutral-300 p-4 rounded-lg">
-            <p className='text-2xl font-bold'>Actividad mas reciente con compañeros del clan:</p>
-            <button onClick={() => toggleExpand()} className='cursor-pointer w-full'>
-                {activityClan && (
-                    <div>
-                        <div className="flex items-center space-x-4">
-                            <img className="w-10" src={`/api${activityClan.icon}`} alt={activityClan.mode} />
-                            <p className='text-xl font-bold'>{activityClan.activityName}, {activityClan.mode}</p>
-                            <img src={symbol} className='w-6 h-6' />
-                        </div>
-                        <div className="flex flex-col text-lg">
-                            <p>Fecha: {activityClan.date}</p>
-                            <p>Duración: {activityClan.duration}</p>
-                        </div>
-                    </div>
-                )}
+        activityClan && (
+            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover w-fit" style={{ backgroundImage: `url(/api${activityClan.bgImg})` }}>
+                <div className="bg-black/25 p-2 rounded-lg w-fit">
+                    <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
+                        Actividades con el clan
+                    </p>
+                    <p className="italic text-xs leading-tight">Últimos 7 días</p>
+                </div>
                 {jClan.length > 0 && (
-                    <div className="justify-start flex flex-col">
-                        <p className='text-xl font-bold'>Compañeros del clan:</p>
-                        <div className="grid grid-cols-3 grid-rows-2 gap-1">
+                    <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
+                        <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-2`}>
                             {jClan.map((jugador, index) => (
-                                <a key={index} className="flex items-center space-x-2" href={`/DestinyBrodas/member/${jugador.membershipType}/${jugador.membershipId}`} target='_blank' rel='noreferrer noopener'>
-                                    <img className="w-10 mb-1" src={`/api${jugador.icon}`} alt={jugador.name} />
-                                    <span className="font-Inter">{jugador.name}</span>
+                                <a key={index} className="flex items-center space-x-1" href={`/DestinyBrodas/member/${jugador.membershipType}/${jugador.membershipId}`} target='_blank' rel='noreferrer noopener'>
+                                    <img width={40} height={40} alt="Emblem" src={`/api${jugador.icon}`} />
+                                    <div className="flex flex-col">
+                                        <span title={jugador.uniqueName}>{jugador.name}</span>
+                                        <span>{jugador.class.clase} <i className={`icon-${jugador.class.subclass}`} style={{ fontStyle: "normal" }} /> - {jugador.class.light}</span>
+                                    </div>
                                 </a>
                             ))}
-                        </div>
+                        </ul>
                     </div>
                 )}
-            </button>
-            {!activityClan && <p>No se encontraron actividades recientes con compañeros del clan.</p>}
-            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex ? 'max-h-screen' : 'max-h-0'}`}>
-                {expandedIndex && (
-                    <div className='mt-2 p-6 bg-white'>
-                        {activityClan.teams.length > 0 ? (
-                            <div className='justify-between space-y-4 w-full'>
-                                <div>
-                                    <h3 className='text-lg font-bold flex items-center justify-between'>
-                                        Equipo 1
-                                        <span className='flex items-center'>
-                                            {winnerPoints}
-                                            <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
-                                        </span>
-                                    </h3>
-                                    <table className='bg-white tablapartida'>
-                                        <thead>
-                                            <tr>
-                                                <th className='py-2'>Nombre</th>
-                                                {hasPoints && <th className='py-2'>Puntos</th>}
-                                                <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                                <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                                <th className='py-2'>KD</th>
-                                                {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {team0.map((person, idx) => (
-                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
-                                                    <td className='py-2 text-xs w-fit'>
-                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start '>
-                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                            <div className='flex flex-col justify-start ml-1'>
-                                                                <p>{person.name}</p>
-                                                                <p>{person.class} - {person.power}</p>
-                                                            </div>
-                                                        </button>
-                                                    </td>
-                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                    <td className='py-2'>{person.kills}</td>
-                                                    <td className='py-2'>{person.deaths}</td>
-                                                    <td className='py-2'>{person.kd}</td>
-                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div>
-                                    <h3 className='text-lg font-bold flex items-center justify-between'>
-                                        Equipo 2
-                                        <span className='flex items-center'>
-                                            {loserPoints}
-                                            <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
-                                        </span>
-                                    </h3>
-                                    <table className='bg-white tablapartida'>
-                                        <thead>
-                                            <tr>
-                                                <th className='py-2'>Nombre</th>
-                                                {hasPoints && <th className='py-2'>Puntos</th>}
-                                                <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                                <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                                <th className='py-2'>KD</th>
-                                                {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {team1.map((person, idx) => (
-                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
-                                                    <td className='py-2 text-xs w-fit'>
-                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
-                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                            <div className='flex flex-col justify-center ml-1'>
-                                                                <p>{person.name}</p>
-                                                                <p>{person.class} - {person.power}</p>
-                                                            </div>
-                                                        </button>
-                                                    </td>
-                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                    <td className='py-2'>{person.kills}</td>
-                                                    <td className='py-2'>{person.deaths}</td>
-                                                    <td className='py-2'>{person.kd}</td>
-                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        ) : (
-                            <table className='min-w-full bg-white tablapartida'>
-                                <thead>
-                                    <tr>
-                                        <th className='py-2'>Nombre</th>
-                                        {hasPoints && <th className='py-2'>Puntos</th>}
-                                        <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                        <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                        <th className='py-2'>KD</th>
-                                        {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {activityClan.people.map((person, idx) => (
-                                        <tr key={idx} className={`text-start text-sm ${person.membershipId == userId ? "font-bold" : ""}`}>
-                                            <td className='py-2 text-xs w-fit ' onClick={() => setIsOpen(person)}>
-                                                <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
-                                                    <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                    <div className='flex flex-col justify-center ml-1'>
-                                                        <p>{person.name}</p>
-                                                        <p>{person.class} - {person.power}</p>
-                                                    </div>
-                                                </button>
-                                            </td>
-                                            {hasPoints && <td>{person.points}</td>}
-                                            <td>{person.kills}</td>
-                                            <td>{person.deaths}</td>
-                                            <td>{person.kd}</td>
-                                            {hasMedals && <td>{person.medals}</td>}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
+            </div>)
     );
 }
