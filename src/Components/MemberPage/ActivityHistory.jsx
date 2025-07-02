@@ -41,7 +41,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     },
                 });
 
-                console.log("Activity History Response: ", response.data.Response.activities);
+                //console.log("Activity History Response: ", response.data.Response.activities);
 
                 const details = await Promise.all(response.data.Response.activities.map(async (activity) => {
                     const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");

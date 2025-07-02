@@ -1,11 +1,12 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { fetchActivityDetails } from "../RecentActivity";
+import PopUpClanTeammates from "./PopUpClanTeammates";
+
 
 export default function ClanTeammates({ userId, membershipType }) {
-    const [activityClan, setActivity] = useState(null);
-    const [jClan, setJugadoresClan] = useState([]);
-    const [numColumns, setColumns] = useState(3);
+    const [playersClan, setJugadoresClan] = useState([]);
+    const [jugadorSelected, setJugadorSelected] = useState(null);
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
@@ -24,10 +25,10 @@ export default function ClanTeammates({ userId, membershipType }) {
                 },
             });
 
-            clan.data.Response.results.forEach(member => { // Recolectar los IDs de los miembros del clan
+            clan.data.Response.results.forEach(member => {
                 if (member.destinyUserInfo.membershipId === userId) return;
                 clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
-            })
+            });
 
             let activity = [];
             for (const character of Object.values(characterIds)) {
@@ -40,10 +41,10 @@ export default function ClanTeammates({ userId, membershipType }) {
             }
 
             activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
-            console.log("Actividades recientes: ", activity);
-            let foundClanMate = false, jugadoresClan = [], addedPlayers = [], matchingActivity;
+            let jugadoresClan = [], peopleLimit = 8;
 
             for (const act of activity) {
+                if (jugadoresClan.length >= peopleLimit) break;
                 const carnageReportResponse = await axios.get(`/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${act.activityDetails.instanceId}/?lc=es`, {
                     headers: {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
@@ -51,71 +52,60 @@ export default function ClanTeammates({ userId, membershipType }) {
                 });
 
                 for (const entry of carnageReportResponse.data.Response.entries) {
-                    if (clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId) && !addedPlayers.includes(entry.player.destinyUserInfo.membershipId)) {
-                        foundClanMate = true;
-                        console.log("Compañero de clan encontrado ", entry);
-                        matchingActivity = act; // Guardar la actividad que contiene al compañero de clan
+                    if (
+                        clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId)
+                    ) {
+                        // Obtener detalles de la actividad para este jugador
+                        const activityName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityDefinition/${act.activityDetails.directorActivityHash}/?lc=es`, {
+                            headers: {
+                                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                            },
+                        });
+                        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
+                            headers: {
+                                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                            },
+                        });
+                        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
+                        const metricsData = await axios.get(`/api${manifestUrl}`);
+                        const matchingMetric = Object.values(metricsData.data).find(metric =>
+                            metric.modeType == act.activityDetails.mode
+                        );
                         const partyEmblem = await getPartyEmblem(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, entry);
-                        console.log("a: ", partyEmblem);
                         jugadoresClan.push({
                             name: entry.player.destinyUserInfo.displayName,
-                            uniqueName: entry.player.destinyUserInfo.uniqueName,
+                            uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                             icon: entry.player.destinyUserInfo.iconPath,
+                            emblemHash: entry.player.emblemHash,
                             membershipId: entry.player.destinyUserInfo.membershipId,
                             membershipType: entry.player.destinyUserInfo.membershipType,
                             class: partyEmblem,
+                            light: entry.player.lightLevel,
+                            mode: matchingMetric ? matchingMetric.displayProperties.name : '',
+                            activityName: activityName.data.Response.displayProperties.name,
+                            date: new Date(act.period).toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }),
+                            duration: formatDuration(act.values.activityDurationSeconds.basic.value),
+                            iconActivity: matchingMetric ? matchingMetric.displayProperties.icon : '',
+                            pgcrImg: activityName.data.Response.pgcrImage,
                         });
-                        addedPlayers.push(entry.player.destinyUserInfo.membershipId);
                     }
+                    if (jugadoresClan.length >= peopleLimit) break;
                 }
-                if (foundClanMate) break; // Si encuentra un compañero de clan, salw del bucle
             }
-
-            if (!foundClanMate) {
-                console.log("No se encontraron compañeros de clan en las actividades recientes.");
-            } else {
-                const carnageReport = await fetchCarnageReport(matchingActivity.activityDetails.instanceId);
-                const activityName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityDefinition/${matchingActivity.activityDetails.directorActivityHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
-                const metricsData = await axios.get(`/api${manifestUrl}`);
-
-                console.log("Actividad encontrada: ", matchingActivity);
-                // Buscar la métrica que coincida con el numero del modo
-                const matchingMetric = Object.values(metricsData.data).find(metric =>
-                    metric.modeType == matchingActivity.activityDetails.mode
-                );
-
-                setActivity({
-                    mode: matchingMetric.displayProperties.name,
-                    activityName: activityName.data.Response.displayProperties.name,
-                    date: new Date(matchingActivity.period).toLocaleString(),
-                    duration: formatDuration(matchingActivity.values.activityDurationSeconds.basic.value),
-                    icon: matchingMetric.displayProperties.icon,
-                    bgImg: activityName.data.Response?.pgcrImage || null,
-                    ...carnageReport,
-                });
-                setJugadoresClan(jugadoresClan);
-
-                if (jugadoresClan.length > 3) {
-                    setColumns(2)
-                } else if (jugadoresClan.length > 6) {
-                    setColumns(3)
-                }
-                else setColumns(1);
-            }
-        }
+            // Asignar número global del 1 al 8
+            jugadoresClan.forEach((jugador, idx) => {
+                jugador.numero = idx + 1;
+            });
+            setJugadoresClan(jugadoresClan);
+        };
         fectchClanTeammates();
-    }, []);
+    }, [userId, membershipType]);
 
     const fetchCarnageReport = async (instanceId) => {
         try {
@@ -130,7 +120,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                 deaths: entry.values.deaths.basic.value,
                 medals: entry.extended?.values?.allMedalsEarned?.basic?.value || 0,
                 points: entry.values.score.basic.value,
-                name: entry.player.destinyUserInfo.displayName,
+                name: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                 emblem: entry.player.destinyUserInfo.iconPath,
                 class: entry.player.characterClass,
                 power: entry.player.lightLevel,
@@ -176,7 +166,7 @@ export default function ClanTeammates({ userId, membershipType }) {
             const equipment = response.data.Response.characterEquipment.data;
             const charPlayed = characters[mostRecentCharacter.characterId];
             let clase;
-            console.log("Most recent character: ", charPlayed);
+            //console.log("Most recent character: ", charPlayed);
             switch (charPlayed.classType) {
                 case 0: // Titán
                     clase = charPlayed.genderType === 0 ? "Titán" : "Titán";
@@ -219,29 +209,39 @@ export default function ClanTeammates({ userId, membershipType }) {
     };
 
     return (
-        activityClan && (
-            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover w-fit" style={{ backgroundImage: `url(/api${activityClan.bgImg})` }}>
+        playersClan && playersClan.length > 0 && (
+            <div className="font-Inter text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover w-fit bg-neutral-900" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
-                        Actividades con el clan
+                        Actividades con miembros del clan
                     </p>
                     <p className="italic text-xs leading-tight">Últimos 7 días</p>
                 </div>
-                {jClan.length > 0 && (
-                    <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
-                        <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-2`}>
-                            {jClan.map((jugador, index) => (
-                                <a key={index} className="flex items-center space-x-1" href={`/DestinyBrodas/member/${jugador.membershipType}/${jugador.membershipId}`} target='_blank' rel='noreferrer noopener'>
-                                    <img width={40} height={40} alt="Emblem" src={`/api${jugador.icon}`} />
-                                    <div className="flex flex-col">
-                                        <span title={jugador.uniqueName}>{jugador.name}</span>
-                                        <span>{jugador.class.clase} <i className={`icon-${jugador.class.subclass}`} style={{ fontStyle: "normal" }} /> - {jugador.class.light}</span>
-                                    </div>
-                                </a>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-            </div>)
+                <div className={`gap-3 grid grid-cols-2 w-fit mt-4`}>
+                    {playersClan.map((jugador, idx) => (
+                        <div key={idx} className="relative w-full">
+                            <a key={idx} className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full" onClick={() => setJugadorSelected(idx)}>
+                                <p className="text-lg font-semibold min-w-[2ch] text-center">{jugador.numero}.</p>
+                                <img width={40} height={40} alt="Emblem" src={`/api${jugador.icon}`} />
+                                <div className="flex flex-col">
+                                    <h1>
+                                        {jugador.uniqueName.slice(0, -5)}
+                                        <span style={{ color: '#479ce4' }}>
+                                            {jugador.uniqueName.slice(-5)}
+                                        </span>
+                                    </h1>
+                                    <span className="text-xs italic">{jugador.date}</span>
+                                </div>
+                            </a>
+                            {jugadorSelected === idx && (
+                                <div className="absolute left-full top-0 z-50 ml-2">
+                                    <PopUpClanTeammates jugador={jugador} />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )
     );
 }
