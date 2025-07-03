@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
-import caretLeft from "../../assets/caret-left-solid.svg";
-import caretRight from "../../assets/caret-right-solid.svg";
-import "../../index.css";
-import Commendations from "./Commendations";
-import FavouriteActivity from "./FavouriteActivity";
+import caretLeft from "../../../assets/caret-left-solid.svg";
+import caretRight from "../../../assets/caret-right-solid.svg";
+import "../../../index.css";
+import Commendations from "../Commendations/Commendations";
+import FavouriteActivity from "../FavActivity/FavouriteActivity";
 
 export default function ReputationStatus({ membershipType, userId }) {
     const [rango, setRango] = useState(null);

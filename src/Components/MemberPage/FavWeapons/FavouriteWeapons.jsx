@@ -1,8 +1,8 @@
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import crownIcon from "../../assets/crown-solid.svg";
-import Spinner from "../Spinner";
+import { useEffect, useState } from "react";
+import crownIcon from "../../../assets/crown-solid.svg";
+import Spinner from "../../Spinner";
 
 const API_KEY = "f83a251bf2274914ab739f4781b5e710";
 

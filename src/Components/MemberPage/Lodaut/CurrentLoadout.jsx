@@ -1,20 +1,20 @@
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import emptyMod from "../../assets/emptyMod.png";
-import masterworkBlue from "../../assets/masterworkBlueHeader.png";
-import masterworkHeader from "../../assets/masterworkHeader.png";
-import bgArc from "../../assets/subClassBg/subclass-arc.png";
-import bgKinetic from "../../assets/subClassBg/subclass-kinetic.png";
-import bgSolar from "../../assets/subClassBg/subclass-solar.png";
-import bgStasis from "../../assets/subClassBg/subclass-stasis.png";
-import bgStrand from "../../assets/subClassBg/subclass-strand.png";
-import bgVoid from "../../assets/subClassBg/subclass-void.png";
-import "../../index.css";
-import Spinner from "../Spinner";
+import emptyMod from "../../../assets/emptyMod.png";
+import masterworkBlue from "../../../assets/masterworkBlueHeader.png";
+import masterworkHeader from "../../../assets/masterworkHeader.png";
+import bgArc from "../../../assets/subClassBg/subclass-arc.png";
+import bgKinetic from "../../../assets/subClassBg/subclass-kinetic.png";
+import bgSolar from "../../../assets/subClassBg/subclass-solar.png";
+import bgStasis from "../../../assets/subClassBg/subclass-stasis.png";
+import bgStrand from "../../../assets/subClassBg/subclass-strand.png";
+import bgVoid from "../../../assets/subClassBg/subclass-void.png";
+import "../../../index.css";
+import Spinner from "../../Spinner";
+import frasesES from "../frases/frasesArtefactoES";
 import CaruselArtefacto from "./CaruselArtefacto";
 import RecoilStat from "./RecoliStat";
-import frasesES from "./frases/frasesES";
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);

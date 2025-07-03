@@ -1,7 +1,7 @@
 
-import destinyLogo from '../../assets/destinyLogo.png';
-import dungeonLogo from '../../assets/dungeonLogo.png';
-import raidReportIcon from '../../assets/raidreport.png';
+import destinyLogo from '../../../assets/destinyLogo.png';
+import dungeonLogo from '../../../assets/dungeonLogo.png';
+import raidReportIcon from '../../../assets/raidreport.png';
 export default function ReportLinks({ type, id, nombre }) {
     return (
         <div className='flex pl-0 p-4 w-fit text-2xl font-Inter rounded items-center py-1 -translate-x-2.5'>

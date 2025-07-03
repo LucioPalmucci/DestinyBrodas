@@ -1,7 +1,6 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import "../../Index.css"; // Importar estilos globales
-import { fetchActivityDetails } from "../RecentActivity";
+import "../../../Index.css"; // Importar estilos globales
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
 
@@ -73,7 +72,6 @@ export default function ClanTeammates({ userId, membershipType }) {
                         const matchingMetric = Object.values(metricsData.data).find(metric =>
                             metric.modeType == act.activityDetails.mode
                         );
-                        const partyEmblem = await getPartyEmblem(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, entry);
                         jugadoresClan.push({
                             name: entry.player.destinyUserInfo.displayName,
                             uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
@@ -81,7 +79,6 @@ export default function ClanTeammates({ userId, membershipType }) {
                             emblemHash: entry.player.emblemHash,
                             membershipId: entry.player.destinyUserInfo.membershipId,
                             membershipType: entry.player.destinyUserInfo.membershipType,
-                            class: partyEmblem,
                             light: entry.player.lightLevel,
                             honor: await fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
                             emblemaBig: await fetchEmblema(entry.player.emblemHash),
@@ -169,40 +166,6 @@ export default function ClanTeammates({ userId, membershipType }) {
         }
     }
 
-    const fetchCarnageReport = async (instanceId) => {
-        try {
-            const carnageReportResponse = await axios.get(`/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${instanceId}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
-                kills: entry.values.kills.basic.value,
-                kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
-                deaths: entry.values.deaths.basic.value,
-                medals: entry.extended?.values?.allMedalsEarned?.basic?.value || 0,
-                points: entry.values.score.basic.value,
-                name: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                emblem: entry.player.destinyUserInfo.iconPath,
-                class: entry.player.characterClass,
-                power: entry.player.lightLevel,
-                membershipId: entry.player.destinyUserInfo.membershipId,
-                standing: entry.standing,
-                completed: entry.values.completed.basic.value,
-                values: entry.extended?.values,
-                weapons: entry.extended?.weapons,
-                timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
-                assists: entry.values.assists.basic.value,
-            })));
-            const teams = carnageReportResponse.data.Response.teams;
-
-            return { people, teams };
-        } catch (error) {
-            //console.error('Error fetching carnage report:', error);
-            return { people, teams: [] }; // Valores por defecto en caso de error
-        }
-    };
-
     useEffect(() => {
         if (jugadorSelected === null) return;
         function handleClickOutside(event) {
@@ -229,58 +192,6 @@ export default function ClanTeammates({ userId, membershipType }) {
             return `${m} ${minutos} ${s} ${segundos}`;
         }
     }
-
-    const getPartyEmblem = async (id, type, mostRecentCharacter) => {
-        try {
-            const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters,CharacterEquipment&lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const characters = response.data.Response.characters.data;
-            const equipment = response.data.Response.characterEquipment.data;
-            const charPlayed = characters[mostRecentCharacter.characterId];
-            let clase;
-            switch (charPlayed.classType) {
-                case 0: // Titán
-                    clase = charPlayed.genderType === 0 ? "Titán" : "Titán";
-                    break;
-                case 1: // Cazador
-                    clase = charPlayed.genderType === 0 ? "Cazador" : "Cazadora";
-                    break;
-                case 2: // Hechicero
-                    clase = charPlayed.genderType === 0 ? "Hechicero" : "Hechicera";
-                    break;
-                default:
-                    clase = "Desconocido";
-            }
-
-            const equippedSubclass = equipment[charPlayed.characterId].items.find(item => item.bucketHash === 3284755031);
-            let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
-
-            if (subclass.includes("arc")) {
-                subclass = "arco";
-            } else if (subclass.includes("void")) {
-                subclass = "vacío";
-            } else if (subclass.includes("thermal")) {
-                subclass = "solar";
-            } else if (subclass.includes("stasis")) {
-                subclass = "estasis";
-            } else if (subclass.includes("strand")) {
-                subclass = "cuerda";
-            } else if (subclass.includes("prism")) {
-                subclass = "prismatico";
-            } else {
-                subclass = "Desconocido";
-            }
-
-            return { clase: clase, light: charPlayed.light, subclass: subclass };
-
-        } catch (error) {
-            console.error('Error fetching equipped emblem:', error);
-            return null;
-        }
-    };
 
     return (
         playersClan && playersClan.length > 0 && (

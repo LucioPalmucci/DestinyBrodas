@@ -1,8 +1,8 @@
-import bungieLogo from '../../assets/bungieLogo.png';
-import destinyLogo from '../../assets/destinyLogo.png';
-import dungeonLogo from '../../assets/dungeonLogo.png';
-import elogio from "../../assets/elogio.png";
-import raidReportIcon from '../../assets/raidreport.png';
+import bungieLogo from '../../../assets/bungieLogo.png';
+import destinyLogo from '../../../assets/destinyLogo.png';
+import dungeonLogo from '../../../assets/dungeonLogo.png';
+import elogio from "../../../assets/elogio.png";
+import raidReportIcon from '../../../assets/raidreport.png';
 
 export default function PopUpClanTeammates({ jugador }) {
     return (

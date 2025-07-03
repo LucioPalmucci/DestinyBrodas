@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { fetchActivityDetails } from "../RecentActivity";
+import { fetchActivityDetails } from "../../RecentActivity";
 
 export default function FavouriteActivity({ membershipType, userId }) {
     const [mostPlayedActivity, setMostPlayedMode] = useState(null);

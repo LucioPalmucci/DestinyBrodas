@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
-import info from "../../assets/circle-info-solid.svg";
-import gun from "../../assets/gun-solid.svg";
-import skull from "../../assets/skull-solid.svg";
-import suitcase from "../../assets/suitcase-medical-solid.svg";
-import "../Tab.css";
+import { useEffect, useState } from "react";
+import info from "../../../assets/circle-info-solid.svg";
+import gun from "../../../assets/gun-solid.svg";
+import skull from "../../../assets/skull-solid.svg";
+import suitcase from "../../../assets/suitcase-medical-solid.svg";
+import "../../Tab.css";
 
 const PopUp = ({ isOpen, setIsOpen, weaponDetails }) => {
     const [activeTab, setActiveTab] = useState("details");

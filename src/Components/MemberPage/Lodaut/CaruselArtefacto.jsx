@@ -2,8 +2,8 @@ import { useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
-import "../../index.css";
-import frasesArtefactoES from "./frases/frasesArtefactoES";
+import "../../../index.css";
+import frasesArtefactoES from "../frases/frasesArtefactoES";
 import ToolTipArtefacto from "./ToolTipArtefacto";
 
 function CaruselArtefacto({ elements }) {

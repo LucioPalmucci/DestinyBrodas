@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import inventory from "../../assets/inventory.png";
+import inventory from "../../../assets/inventory.png";
 import CurrentLoadout from "./CurrentLoadout";
 
 export default function SimpleLoadout({ membershipType, userId, name, seasonHash, rank, light }) {

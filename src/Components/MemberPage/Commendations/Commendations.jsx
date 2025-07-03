@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import elogio from "../../assets/elogio.png";
+import elogio from "../../../assets/elogio.png";
 
 export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);

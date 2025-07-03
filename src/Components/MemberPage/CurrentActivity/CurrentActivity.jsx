@@ -1,8 +1,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import circleSolid from "../../assets/circle-solid.svg";
-import orbit from "../../assets/orbit.png";
-import { fetchActivityDetails } from "../RecentActivity";
+import circleSolid from "../../../assets/circle-solid.svg";
+import orbit from "../../../assets/orbit.png";
+import { fetchActivityDetails } from "../../RecentActivity";
 
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);

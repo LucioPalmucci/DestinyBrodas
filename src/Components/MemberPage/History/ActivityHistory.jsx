@@ -1,15 +1,15 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import circleEmpty from "../../assets/circle-empty.svg";
-import circleSolid from "../../assets/circle-solid.svg";
-import Completed from "../../assets/Completed.png";
-import medal from "../../assets/medal-solid.svg";
-import NotCompleted from "../../assets/notCompleted.png";
-import skull from "../../assets/skull-solid.svg";
-import "../../index.css";
-import { fetchActivityDetails } from '../RecentActivity';
-import Spinner from '../Spinner';
-import '../Tab.css';
+import circleEmpty from "../../../assets/circle-empty.svg";
+import circleSolid from "../../../assets/circle-solid.svg";
+import Completed from "../../../assets/Completed.png";
+import medal from "../../../assets/medal-solid.svg";
+import NotCompleted from "../../../assets/notCompleted.png";
+import skull from "../../../assets/skull-solid.svg";
+import "../../../index.css";
+import { fetchActivityDetails } from '../../RecentActivity';
+import Spinner from '../../Spinner';
+import '../../Tab.css';
 import PopUp from './PopUp';
 
 
