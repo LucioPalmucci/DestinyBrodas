@@ -1,5 +1,6 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import "../../Index.css"; // Importar estilos globales
 import { fetchActivityDetails } from "../RecentActivity";
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
@@ -7,6 +8,7 @@ import PopUpClanTeammates from "./PopUpClanTeammates";
 export default function ClanTeammates({ userId, membershipType }) {
     const [playersClan, setJugadoresClan] = useState([]);
     const [jugadorSelected, setJugadorSelected] = useState(null);
+    const popupRef = useRef(null);
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
@@ -81,6 +83,9 @@ export default function ClanTeammates({ userId, membershipType }) {
                             membershipType: entry.player.destinyUserInfo.membershipType,
                             class: partyEmblem,
                             light: entry.player.lightLevel,
+                            honor: await fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                            emblemaBig: await fetchEmblema(entry.player.emblemHash),
+                            guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
                             mode: matchingMetric ? matchingMetric.displayProperties.name : '',
                             activityName: activityName.data.Response.displayProperties.name,
                             date: new Date(act.period).toLocaleDateString('es-ES', {
@@ -106,6 +111,63 @@ export default function ClanTeammates({ userId, membershipType }) {
         };
         fectchClanTeammates();
     }, [userId, membershipType]);
+
+    const fetchCommendations = async (id, type) => {
+        try {
+            const commendation = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=1400`, {
+                headers: {
+                    "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
+                }
+            });
+            const dataHonor = commendation.data.Response.profileCommendations.data;
+            return ({
+                totalScore: dataHonor.totalScore.toLocaleString('en-US'),
+                recibidas: dataHonor.scoreDetailValues[1],
+                enviadas: dataHonor.scoreDetailValues[0],
+                verdes: dataHonor.commendationNodePercentagesByHash[154475713],
+                rosas: dataHonor.commendationNodePercentagesByHash[1341823550],
+                azules: dataHonor.commendationNodePercentagesByHash[1390663518],
+                naranjas: dataHonor.commendationNodePercentagesByHash[4180748446],
+                verdesPuntos: dataHonor.commendationNodeScoresByHash[154475713],
+                rosasPuntos: dataHonor.commendationNodeScoresByHash[1341823550],
+                azulesPuntos: dataHonor.commendationNodeScoresByHash[1390663518],
+                naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
+            })
+        } catch (error) {
+            console.error('Error al cargar gonor del jugador:', error);
+        }
+    }
+
+    const fetchEmblema = async (emblem) => {
+        const emblemaResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblem}/?lc=es`, {
+            headers: {
+                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+            },
+        });
+        return emblemaResponse.data.Response.secondaryIcon;
+    }
+
+    const fetchGuardianRank = async (id, type) => {
+        try {
+            const responseProfile = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=100`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            const RankNum = responseProfile.data.Response.profile.data.currentGuardianRank;
+            const guardianRankResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${RankNum}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            return ({
+                title: guardianRankResponse.data.Response.displayProperties.name,
+                num: RankNum,
+            });
+        } catch (error) {
+            console.error('Error al cargar datos del popup del jugador:', error);
+        }
+    }
 
     const fetchCarnageReport = async (instanceId) => {
         try {
@@ -141,6 +203,19 @@ export default function ClanTeammates({ userId, membershipType }) {
         }
     };
 
+    useEffect(() => {
+        if (jugadorSelected === null) return;
+        function handleClickOutside(event) {
+            if (popupRef.current && !popupRef.current.contains(event.target)) {
+                setJugadorSelected(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [jugadorSelected]);
+
     const formatDuration = (seconds) => {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -166,7 +241,6 @@ export default function ClanTeammates({ userId, membershipType }) {
             const equipment = response.data.Response.characterEquipment.data;
             const charPlayed = characters[mostRecentCharacter.characterId];
             let clase;
-            //console.log("Most recent character: ", charPlayed);
             switch (charPlayed.classType) {
                 case 0: // Titán
                     clase = charPlayed.genderType === 0 ? "Titán" : "Titán";
@@ -210,7 +284,7 @@ export default function ClanTeammates({ userId, membershipType }) {
 
     return (
         playersClan && playersClan.length > 0 && (
-            <div className="font-Inter text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover w-fit bg-neutral-900" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
+            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover w-fit bg-neutral-900" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
                         Actividades con miembros del clan
@@ -220,7 +294,11 @@ export default function ClanTeammates({ userId, membershipType }) {
                 <div className={`gap-3 grid grid-cols-2 w-fit mt-4`}>
                     {playersClan.map((jugador, idx) => (
                         <div key={idx} className="relative w-full">
-                            <a key={idx} className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full" onClick={() => setJugadorSelected(idx)}>
+                            <a
+                                key={idx}
+                                className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 shadow-inner hover:scale-105 hover:shadow-lg hover:bg-black/40 clan-member-idle clan-member-shimmer"
+                                onClick={() => setJugadorSelected(idx)}
+                            >
                                 <p className="text-lg font-semibold min-w-[2ch] text-center">{jugador.numero}.</p>
                                 <img width={40} height={40} alt="Emblem" src={`/api${jugador.icon}`} />
                                 <div className="flex flex-col">
@@ -234,7 +312,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                                 </div>
                             </a>
                             {jugadorSelected === idx && (
-                                <div className="absolute left-full top-0 z-50 ml-2">
+                                <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
                                     <PopUpClanTeammates jugador={jugador} />
                                 </div>
                             )}
