@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { fetchCharacterIds } from '../RecentActivity';
 import Spinner from '../Spinner';
 import '../Tabla.css';
 import MemberCard from './MemberCard';
@@ -114,7 +113,7 @@ export default function ClanLista() {
             return newOrder;
         });
     }
-    
+
     const toggleRoleSortOrder = () => {
         setIsRoleAscending(prevState => {
             const newOrder = !prevState;
@@ -123,7 +122,7 @@ export default function ClanLista() {
             return newOrder;
         });
     };
-    
+
     const togglePowerSortOrder = () => {
         setIsPowerAscending(prevState => {
             const newOrder = !prevState;
@@ -132,7 +131,7 @@ export default function ClanLista() {
             return newOrder;
         });
     };
-    
+
     const toggleNameSortOrder = () => {
         setIsNameAscending(prevState => {
             const newOrder = !prevState;
@@ -141,7 +140,7 @@ export default function ClanLista() {
             return newOrder;
         });
     };
-    
+
     const toggleJoinDateSortOrder = () => {
         setIsJoinDateAscending(prevState => {
             const newOrder = !prevState;
@@ -211,8 +210,18 @@ export default function ClanLista() {
     async function lightLevel(members) {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
-                const characterData = await fetchCharacterIds(member, "total", 1);
-                return { ...member, PowerLevel: characterData };
+                const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+                
+                const characterIds = response.data.Response.characters.data;
+                const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
+                    return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
+                });
+
+                return { ...member, PowerLevel: response.data.Response.characters.data[mostRecentCharacter.characterId].light };
             } catch (error) {
                 console.error('Error fetching light level:', error);
                 return { ...member, PowerLevel: 0 };

@@ -7,7 +7,6 @@ import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
 import "../../../index.css";
-import { fetchActivityDetails } from '../../RecentActivity';
 import Spinner from '../../Spinner';
 import '../../Tab.css';
 import PopUp from './PopUp';
@@ -165,6 +164,24 @@ const ActivityHistory = ({ userId, membershipType }) => {
             setWeaponDetails(weaponD);
         }
     }
+    const fetchActivityDetails = async (activityHash, type, Subclase) => {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            if (response.data.Response == null) return null;
+            else if (Subclase === "general") return response.data.Response;
+            else return response.data.Response.displayProperties.name;
+
+        } catch (error) {
+            console.error(`Error fetching activity details for hash ${activityHash}:`, error);
+            return null;
+        }
+    };
+
     return (
         <div className='w-2/3'>
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>

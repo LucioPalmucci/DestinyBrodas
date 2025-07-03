@@ -1,6 +1,5 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { fetchActivityDetails } from "../../RecentActivity";
 
 export default function FavouriteActivity({ membershipType, userId }) {
     const [mostPlayedActivity, setMostPlayedMode] = useState(null);
@@ -78,7 +77,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     characterCompletions[characterId].character = await characterClass(characterId, membershipType, userId);
                     characterCompletions[characterId].classImg = charImg(characterCompletions[characterId].character, membershipType, userId);
                 }
-                
+
 
                 if (mostPlayedMode) {
                     setMostPlayedMode({
@@ -101,6 +100,24 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
         fetchGeneralStats();
     }, [membershipType, userId]);
+
+    const fetchActivityDetails = async (activityHash, type, Subclase) => {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            if (response.data.Response == null) return null;
+            else if (Subclase === "general") return response.data.Response;
+            else return response.data.Response.displayProperties.name;
+
+        } catch (error) {
+            console.error(`Error fetching activity details for hash ${activityHash}:`, error);
+            return null;
+        }
+    };
 
 
     async function activityHashes(mode, pvp) {
@@ -195,7 +212,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     return (
         <div className="w-fit font-Inter">
             {mostPlayedActivity && charCompl ? (
-                <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})`}}>
+                <div className="text-white p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})` }}>
                     <div className="space-y-2 flex flex-col">
                         <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
                             Actividad más jugada

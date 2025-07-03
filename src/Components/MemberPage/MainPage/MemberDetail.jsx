@@ -4,9 +4,7 @@ import { useLocation, useParams } from 'react-router-dom';
 import arrowLeft from '../../../assets/arrow-left-solid.svg';
 import copy from '../../../assets/copiar-archivo.png';
 import '../../../index.css';
-import { getEquippedEmblem } from '../../EquippedEmblem';
 import { getTimeSinceLastConnection } from '../../LastConexion';
-import { fetchCharacterIds } from '../../RecentActivity';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';
 import CurrentActivity from '../CurrentActivity/CurrentActivity';
@@ -76,13 +74,23 @@ function MemberDetail() {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                //console.log(responseProfile.data.Response)
+                const responselight = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=Characters&lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+
+                const characters = responselight.data.Response.characters.data;
+                const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
+                    return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
+                });
+
                 setMemberDetail(responseProfile.data.Response);
                 setUserMemberships(membershipsResponse.data.Response);
                 setGuardianRank(guardianRankResponse.data.Response);
-                setCurrentLight(await getEquippedEmblem(membershipId, membershipType, "CharacterPower"));
-                setEmblem(await getEquippedEmblem(membershipId, membershipType, "Large"));
-                const clase = await getEquippedEmblem(membershipId, membershipType, "CharacterClass");
+                setCurrentLight(mostRecentCharacter.light);
+                setEmblem(mostRecentCharacter.emblemBackgroundPath);
+                const clase = mostRecentCharacter.classType;
 
                 switch (clase) {
                     case 2: setClassImg({
@@ -103,7 +111,7 @@ function MemberDetail() {
                 }
 
                 if (member?.isOnline) {
-                    setActivity(await fetchCharacterIds(member, "activity", "MemberDetail"));
+                    setActivity("");
                 } else {
                     setActivity("Última conexión hace " + getTimeSinceLastConnection(member?.lastOnlineStatusChange, member?.isOnline));
                 }

@@ -2,7 +2,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
-import { fetchActivityDetails } from "../../RecentActivity";
 
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);
@@ -130,6 +129,23 @@ export default function CurrentActivity({ type, id }) {
 
     }, [partyMembers.length]);
 
+    const fetchActivityDetails = async (activityHash, type, Subclase) => {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            if (response.data.Response == null) return null;
+            else if (Subclase === "general") return response.data.Response;
+            else return response.data.Response.displayProperties.name;
+
+        } catch (error) {
+            console.error(`Error fetching activity details for hash ${activityHash}:`, error);
+            return null;
+        }
+    };
 
     return (
         <div className="w-fit mt-10">

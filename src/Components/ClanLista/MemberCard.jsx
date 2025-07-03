@@ -1,8 +1,6 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { getEquippedEmblem } from '../EquippedEmblem';
+import { useEffect, useState } from 'react';
 import { getTimeSinceLastConnection } from '../LastConexion';
-import { fetchCharacterIds } from '../RecentActivity';
 import '../Tabla.css';
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
@@ -71,18 +69,29 @@ export default function MemberCard({ member }) {
                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                     },
                 });
-                let totalLight = await fetchCharacterIds(member, "total", 2)
+                const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
+                    headers: {
+                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                    },
+                });
+
+                const characters = response.data.Response.characters.data;
+                const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
+                    return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
+                });
+
+                let totalLight = response.data.Response.characters.data[mostRecentCharacter.characterId].light
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);
-                
+
                 const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setEquippedEmblem(await getEquippedEmblem(member.destinyUserInfo.membershipId, member.destinyUserInfo.membershipType));
-                
+                setEquippedEmblem(mostRecentCharacter.emblemPath);
+
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
-                    setActivity(await fetchCharacterIds(member, "activity", 3));
+                    setActivity(await fetchActivity(member));
                 }
 
             } catch (error) {
@@ -98,8 +107,60 @@ export default function MemberCard({ member }) {
         }
     }, [maxLight, artifactLight]);
     //Ultima conexión
-    
 
+
+    const fetchActivity = async (member) => {
+        try {
+            const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            const characterIds = response.data.Response.characters.data;
+            const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
+                return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
+            });
+
+            const activityResponse = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterActivities`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            
+            const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
+            const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
+            const currentPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
+            const responseMode = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityModeDefinition/${currentActivityHash}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            const responseName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityNameDefinition/${currentActivityMode}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+            const responsePlaylist = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityModeDefinition/${currentPlaylist}/?lc=es`, {
+                headers: {
+                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
+                },
+            });
+
+            const name = responseName.data.Response.displayProperties.name;
+            const type = responseMode.data.Response.displayProperties.name;
+            const playlist = responsePlaylist.data.Response.displayProperties.name;
+
+            return {
+                name: name,
+                type: type,
+                playlist: playlist,
+            };
+        } catch (error) {
+            console.error('Error fetching current activity:', error);
+            return null;
+        }
+    }
 
     //Rol dentro del clan
     const getMemberType = (type) => {
