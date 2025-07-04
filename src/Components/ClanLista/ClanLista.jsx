@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useBungieAPI } from "../APIservices/BungieAPIcache";
 import Spinner from '../Spinner';
 import '../Tabla.css';
 import MemberCard from './MemberCard';
@@ -16,25 +16,17 @@ export default function ClanLista() {
     const [isNameAscending, setIsNameAscending] = useState(true);
     const [isJoinDateAscending, setIsJoinDateAscending] = useState(true);
     const [typeSort, setTypeSort] = useState("LastOnline");
+    const { getClanMembers, getManifest, getCompChars } = useBungieAPI();
 
     useEffect(() => {
         const fetchClanMembers = async () => {
             try {
-                const response = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const clan = await getClanMembers();
 
-                const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const manifest = await getManifest();
 
-                console.log("Manifest: ", manifest.data.Response);
-                let unSorted = response.data.Response.results;
-                const membersWithLight = await lightLevel(unSorted);
+                console.log("Manifest: ", manifest);
+                const membersWithLight = await lightLevel(clan);
                 setMembersLight(membersWithLight);
                 setOriginalMembers(membersWithLight); // Almacena los datos originales
                 sortMembers(membersWithLight, typeSort, true);
@@ -210,18 +202,12 @@ export default function ClanLista() {
     async function lightLevel(members) {
         const membersWithLight = await Promise.all(members.map(async (member) => {
             try {
-                const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                
-                const characterIds = response.data.Response.characters.data;
+                const characterIds = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
                 const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                return { ...member, PowerLevel: response.data.Response.characters.data[mostRecentCharacter.characterId].light };
+                return { ...member, PowerLevel: characterIds[mostRecentCharacter.characterId].light };
             } catch (error) {
                 console.error('Error fetching light level:', error);
                 return { ...member, PowerLevel: 0 };

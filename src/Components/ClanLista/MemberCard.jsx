@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useBungieAPI } from '../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../LastConexion';
 import '../Tabla.css';
 export default function MemberCard({ member }) {
@@ -13,6 +13,7 @@ export default function MemberCard({ member }) {
     const [killsPvE, setKillsPvE] = useState(null);
     const [killsPvP, setKillsPvP] = useState(null);
     const [showBaseLight, setShowBaseLight] = useState(false);
+    const { getGeneralStats, getCompChars, getCompCharsActs, getItemManifest, getFullCharacterProfile } = useBungieAPI();
 
     //Armas e iconos
     const weaponTranslations = {
@@ -64,28 +65,18 @@ export default function MemberCard({ member }) {
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
-                const responseGeneral = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Account/${member.destinyUserInfo.membershipId}/Stats/`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const characters = response.data.Response.characters.data;
+                const responseGeneral = await getGeneralStats(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
+                const characters = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                let totalLight = response.data.Response.characters.data[mostRecentCharacter.characterId].light
+                let totalLight = characters[mostRecentCharacter.characterId].light;
                 setArtifactLight(await getAritfactBonusLevel())
                 setLight(totalLight);
 
-                const AllTimePVE = responseGeneral.data.Response.mergedAllCharacters.results.allPvE.allTime;
-                const AllTimePVP = responseGeneral.data.Response.mergedAllCharacters.results.allPvP.allTime;
+                const AllTimePVE = responseGeneral.mergedAllCharacters.results.allPvE.allTime;
+                const AllTimePVP = responseGeneral.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
                 setEquippedEmblem(mostRecentCharacter.emblemPath);
@@ -111,45 +102,23 @@ export default function MemberCard({ member }) {
 
     const fetchActivity = async (member) => {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=Characters&lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            const characterIds = response.data.Response.characters.data;
+            const characterIds = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
             const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
                 return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
             });
 
-            const activityResponse = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/Character/${mostRecentCharacter.characterId}/?components=CharacterActivities`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, mostRecentCharacter.characterId);
             
-            const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
-            const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
-            const currentPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
-            const responseMode = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityModeDefinition/${currentActivityHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const responseName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityNameDefinition/${currentActivityMode}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const responsePlaylist = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityModeDefinition/${currentPlaylist}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            const name = responseName.data.Response.displayProperties.name;
-            const type = responseMode.data.Response.displayProperties.name;
-            const playlist = responsePlaylist.data.Response.displayProperties.name;
+            const currentActivityHash = activityResponse.currentActivityHash;
+            const currentActivityMode = activityResponse.currentActivityModeHash;
+            const currentPlaylist = activityResponse.currentPlaylistActivityHash;
+            const responseMode = await getItemManifest(currentActivityMode, "DestinyActivityModeDefinition");
+            const responseName = await getItemManifest(currentActivityHash, "DestinyActivityDefinition");
+            const responsePlaylist = await getItemManifest(currentPlaylist, "DestinyActivityDefinition");
+            console.log("Response Playlist: ", responseName);
+            const name = responseName?.displayProperties?.name;
+            const type = responseMode?.displayProperties?.name;
+            const playlist = responsePlaylist?.displayProperties?.name;
 
             return {
                 name: name,
@@ -192,13 +161,8 @@ export default function MemberCard({ member }) {
 
     async function getAritfactBonusLevel() {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/${member.destinyUserInfo.membershipType}/Profile/${member.destinyUserInfo.membershipId}/?components=104`, {
-                headers: {
-                    'X-API-Key': "f83a251bf2274914ab739f4781b5e710",
-                },
-            });
-
-            return response.data.Response.profileProgression.data.seasonalArtifact.powerBonus;
+            const response = await getFullCharacterProfile(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
+            return response.profileProgression.data.seasonalArtifact.powerBonus;
         } catch (error) {
             console.error('Error fetching artifact bonus level:', error);
             return null;
@@ -213,12 +177,12 @@ export default function MemberCard({ member }) {
         <>
             {equippedEmblem && (
                 <tr className='font-Inter'>
-                    <a href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
-                        <td className='flex items-center' title={member.bungieNetUserInfo.supplementalDisplayName}>
+                    <td title={member.bungieNetUserInfo.supplementalDisplayName}>
+                        <a className='flex items-center' href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
                             <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
                             {member.destinyUserInfo.displayName}
-                        </td>
-                    </a>
+                        </a>
+                    </td>
                     <td>
                         {member.isOnline ?
                             (activity ? (

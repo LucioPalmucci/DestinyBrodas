@@ -172,6 +172,13 @@ export const useBungieAPI = () => {
         return response?.Response;
     }, [apiRequest]);
 
+    // Obtener estadísticas generales de un usuario
+    const getGeneralStats = useCallback(async (membershipType, membershipId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Account/${membershipId}/Stats/`;
+        const response = await apiRequest('generalStats', url, [membershipType, membershipId]);
+        return response?.Response;
+    }, [apiRequest]);
+
     // Obtener actividades de un personaje
     const getCharacterActivities = useCallback(async (membershipType, userId, characterId) => {
         const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?lc=es`;
@@ -362,6 +369,7 @@ export const useBungieAPI = () => {
         getCompChars,
         getCompCharsActs,
         getCompsProfile,
+        getGeneralStats,
         getParty,
         getUserMembershipsById,
         getCharsAndEquipment,
