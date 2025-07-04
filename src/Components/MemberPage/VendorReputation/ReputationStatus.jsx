@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
@@ -6,6 +5,7 @@ import "slick-carousel/slick/slick.css";
 import caretLeft from "../../../assets/caret-left-solid.svg";
 import caretRight from "../../../assets/caret-right-solid.svg";
 import "../../../index.css";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Commendations from "../Commendations/Commendations";
 import FavouriteActivity from "../FavActivity/FavouriteActivity";
 
@@ -13,27 +13,18 @@ export default function ReputationStatus({ membershipType, userId }) {
     const [rango, setRango] = useState(null);
     const [page, setPage] = useState(0);
     const [move, setMove] = useState("next");
+    const { getCompChars, getFullCharacterProfile, getItemManifest } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
-                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es-mx`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const characterIds = Object.keys(response.data.Response.characters.data);
+                const response = await getCompChars(membershipType, userId);
+                const characterIds = Object.keys(response);
                 const firstCharacterId = characterIds[0];
 
-                const reputationRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=202,900`, {
-                    headers: {
-                        "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-                    }
-                });
+                const reputationRes = await getFullCharacterProfile(membershipType, userId);
 
-                //console.log(reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions);
-
-                const AllProgresions = reputationRes.data.Response.characterProgressions.data[firstCharacterId].progressions;
+                const AllProgresions = reputationRes.characterProgressions.data[firstCharacterId].progressions;
                 const progressions = ["3008065600", "457612306", "2083746873", "3696598664", "2755675426", "599071390", "198624022", "784742260"];
                 let rangoVanguardia = [], rangoCrisol = [], rangoCompetitivo = [], rangoPruebas = [], rangoEstandarte = [], rangoGambito = [], rangoClanes = [], rangoEngramas = [];
 
@@ -175,13 +166,8 @@ export default function ReputationStatus({ membershipType, userId }) {
 
     async function getLogo(progression, hash) {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyProgressionDefinition/${hash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            return response.data.Response.steps[progression] || response.data.Response.steps[15];
+            const response = await getItemManifest(hash, "DestinyProgressionDefinition");
+            return response.steps[progression] || response.steps[15];
         } catch (error) {
             console.error(error);
         }

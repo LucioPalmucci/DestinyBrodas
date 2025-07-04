@@ -1,21 +1,19 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
+import { useBungieAPI } from '../../APIservices/BungieAPIcache';
+
 
 export default function TriumphScore({ membershipType, userId }) {
     const [triumphs, setTriumphs] = useState(null);
+    const { getAllSeals } = useBungieAPI();
 
     useEffect(() => {
         const fetchTriumphs = async () => {
 
-            const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const response = await getAllSeals(membershipType, userId);
 
             setTriumphs({
-                Total: response.data.Response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
-                Active: response.data.Response.profileRecords.data.activeScore.toLocaleString('en-US'),
+                Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
+                Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
             });
         }
         fetchTriumphs();

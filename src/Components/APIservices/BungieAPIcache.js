@@ -120,7 +120,7 @@ export const useBungieAPI = () => {
     const getCompChars = useCallback(async (membershipType, userId) => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`;
         const response = await apiRequest('compChars', url, [membershipType, userId]);
-        return response?.data?.Response?.characters?.data;
+        return response?.Response?.characters?.data;
     }, [apiRequest]);
 
     // Obtener actividades de un personaje
@@ -166,9 +166,9 @@ export const useBungieAPI = () => {
     }, [apiRequest]);
 
     // Obtener membresías de usuario por ID y plataforma
-    const getUserMembershipsById = useCallback(async (membershipId, platform) => {
-        const url = `/api/Platform/User/GetMembershipsById/${membershipId}/${platform}/`;
-        const response = await apiRequest('userMembershipsById', url, [membershipId, platform]);
+    const getUserMembershipsById = useCallback(async (membershipId, membershipType) => {
+        const url = `/api/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`;
+        const response = await apiRequest('userMembershipsById', url, [membershipId, membershipType]);
         return response?.Response;
     }, [apiRequest]);
 

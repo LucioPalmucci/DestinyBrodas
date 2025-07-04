@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import "../../../Index.css"; // Importar estilos globales
+import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
 
@@ -8,37 +9,24 @@ export default function ClanTeammates({ userId, membershipType }) {
     const [playersClan, setJugadoresClan] = useState([]);
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
+    const { getCompChars, getClanMembers, getCharacterActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
-            const userData = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            const characterIds = userData.data.Response.characters.data;
+            const userData = await getCompChars(membershipType, userId);
             let clanMemmbersIDs = [];
 
-            const clan = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const clan = await getClanMembers();
 
-            clan.data.Response.results.forEach(member => {
+            clan.forEach(member => {
                 if (member.destinyUserInfo.membershipId === userId) return;
                 clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
             });
 
             let activity = [];
-            for (const character of Object.values(characterIds)) {
-                let activityChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${character.characterId}/Stats/Activities/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                activity = activity.concat(activityChar.data.Response.activities || []);
+            for (const character of Object.values(userData)) {
+                let activityChar = await getCharacterActivities(membershipType, userId, character.characterId);
+                activity = activity.concat(activityChar || []);
             }
 
             activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
@@ -46,28 +34,17 @@ export default function ClanTeammates({ userId, membershipType }) {
 
             for (const act of activity) {
                 if (jugadoresClan.length >= peopleLimit) break;
-                const carnageReportResponse = await axios.get(`/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${act.activityDetails.instanceId}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const carnageReportResponse = await getCarnageReport(act.activityDetails.instanceId);
 
-                for (const entry of carnageReportResponse.data.Response.entries) {
+                for (const entry of carnageReportResponse.entries) {
                     if (
                         clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId)
                     ) {
                         // Obtener detalles de la actividad para este jugador
-                        const activityName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyActivityDefinition/${act.activityDetails.directorActivityHash}/?lc=es`, {
-                            headers: {
-                                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                            },
-                        });
-                        const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-                            headers: {
-                                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                            },
-                        });
-                        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
+                        //act.activityDetails.directorActivityHash DestinyActivityDefinition
+                        const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
+                        const manifest = await getManifest();
+                        const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
                         const metricsData = await axios.get(`/api${manifestUrl}`);
                         const matchingMetric = Object.values(metricsData.data).find(metric =>
                             metric.modeType == act.activityDetails.mode
@@ -84,7 +61,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                             emblemaBig: await fetchEmblema(entry.player.emblemHash),
                             guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
                             mode: matchingMetric ? matchingMetric.displayProperties.name : '',
-                            activityName: activityName.data.Response.displayProperties.name,
+                            activityName: activityName.displayProperties.name,
                             date: new Date(act.period).toLocaleDateString('es-ES', {
                                 day: '2-digit',
                                 month: '2-digit',
@@ -94,7 +71,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                             }),
                             duration: formatDuration(act.values.activityDurationSeconds.basic.value),
                             iconActivity: matchingMetric ? matchingMetric.displayProperties.icon : '',
-                            pgcrImg: activityName.data.Response.pgcrImage,
+                            pgcrImg: activityName.pgcrImage,
                         });
                     }
                     if (jugadoresClan.length >= peopleLimit) break;
@@ -111,54 +88,24 @@ export default function ClanTeammates({ userId, membershipType }) {
 
     const fetchCommendations = async (id, type) => {
         try {
-            const commendation = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=1400`, {
-                headers: {
-                    "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-                }
-            });
-            const dataHonor = commendation.data.Response.profileCommendations.data;
-            return ({
-                totalScore: dataHonor.totalScore.toLocaleString('en-US'),
-                recibidas: dataHonor.scoreDetailValues[1],
-                enviadas: dataHonor.scoreDetailValues[0],
-                verdes: dataHonor.commendationNodePercentagesByHash[154475713],
-                rosas: dataHonor.commendationNodePercentagesByHash[1341823550],
-                azules: dataHonor.commendationNodePercentagesByHash[1390663518],
-                naranjas: dataHonor.commendationNodePercentagesByHash[4180748446],
-                verdesPuntos: dataHonor.commendationNodeScoresByHash[154475713],
-                rosasPuntos: dataHonor.commendationNodeScoresByHash[1341823550],
-                azulesPuntos: dataHonor.commendationNodeScoresByHash[1390663518],
-                naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
-            })
+            return await getCommendations(type, id);
         } catch (error) {
-            console.error('Error al cargar gonor del jugador:', error);
+            console.error('Error al cargar honor del jugador:', error);
         }
     }
 
     const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblem}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
-        return emblemaResponse.data.Response.secondaryIcon;
+        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
+        return emblemaResponse.secondaryIcon;
     }
 
     const fetchGuardianRank = async (id, type) => {
         try {
-            const responseProfile = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=100`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const RankNum = responseProfile.data.Response.profile.data.currentGuardianRank;
-            const guardianRankResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${RankNum}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const responseProfile = await getCompsProfile(type, id);
+            const RankNum = responseProfile.profile.data.currentGuardianRank;
+            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
             return ({
-                title: guardianRankResponse.data.Response.displayProperties.name,
+                title: guardianRankResponse.displayProperties.name,
                 num: RankNum,
             });
         } catch (error) {

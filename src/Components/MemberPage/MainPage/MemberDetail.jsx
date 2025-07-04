@@ -1,9 +1,9 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import arrowLeft from '../../../assets/arrow-left-solid.svg';
 import copy from '../../../assets/copiar-archivo.png';
 import '../../../index.css';
+import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../../LastConexion';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';
@@ -30,16 +30,12 @@ function MemberDetail() {
     const [error, setError] = useState(null);
     const [classImg, setClassImg] = useState(null);
     const [copied, setCopied] = useState(false);
+    const { getClanMembers, getCompsProfile, getUserMembershipsById, getItemManifest, getCompChars } = useBungieAPI();
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await axios.get('/api/Platform/GroupV2/3942032/Members/', {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            response.data.Response.results.forEach((member) => {
+            const response = await getClanMembers();
+            response.forEach((member) => {
                 if (member.destinyUserInfo.membershipId === membershipId) {
                     setMember(member);
                 }
@@ -58,36 +54,19 @@ function MemberDetail() {
     useEffect(() => {
         const fetchMemberDetail = async () => {
             try {
-                const responseProfile = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=100`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const membershipsResponse = await axios.get(`/api/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const RankNum = responseProfile.data.Response.profile.data.currentGuardianRank;
-                const guardianRankResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${RankNum}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const responselight = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${membershipId}/?components=Characters&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const responseProfile = await getCompsProfile(membershipType, membershipId);
+                const membershipsResponse = await getUserMembershipsById(membershipId, membershipType);
+                const RankNum = responseProfile.profile.data.currentGuardianRank;
+                const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
+                const responselight = await getCompChars(membershipType, membershipId);
 
-                const characters = responselight.data.Response.characters.data;
-                const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
+                const mostRecentCharacter = Object.values(responselight).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                setMemberDetail(responseProfile.data.Response);
-                setUserMemberships(membershipsResponse.data.Response);
-                setGuardianRank(guardianRankResponse.data.Response);
+                setMemberDetail(responseProfile);
+                setUserMemberships(membershipsResponse);
+                setGuardianRank(guardianRankResponse);
                 setCurrentLight(mostRecentCharacter.light);
                 setEmblem(mostRecentCharacter.emblemBackgroundPath);
                 const clase = mostRecentCharacter.classType;

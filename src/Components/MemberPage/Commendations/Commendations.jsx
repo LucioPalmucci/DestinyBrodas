@@ -5,7 +5,7 @@ import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 
 export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
-    const { loading, error, getCommendations } = useBungieAPI();
+    const { getCommendations } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
