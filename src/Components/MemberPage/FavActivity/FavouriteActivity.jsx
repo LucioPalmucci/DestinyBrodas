@@ -201,7 +201,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         </div>
                         <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
                             {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
-                                <div className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
+                                <div key={char} className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
                                     <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%
                                 </div>
                             ))}
@@ -209,7 +209,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     </div>
                     <div>
                         {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 ml-10" />}
-
                     </div>
                 </div>
             ) : (

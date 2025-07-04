@@ -108,7 +108,7 @@ export default function MemberCard({ member }) {
             });
 
             const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, mostRecentCharacter.characterId);
-            
+
             const currentActivityHash = activityResponse.currentActivityHash;
             const currentActivityMode = activityResponse.currentActivityModeHash;
             const currentPlaylist = activityResponse.currentPlaylistActivityHash;
@@ -187,7 +187,11 @@ export default function MemberCard({ member }) {
                         {member.isOnline ?
                             (activity ? (
                                 <div style={{ whiteSpace: 'pre-line' }}>
-                                    {activity}
+                                    <div>{activity.name}</div>
+                                    <div className="text-sm text-gray-600">{activity.type}</div>
+                                    {activity.playlist && activity.playlist !== activity.name && (
+                                        <div className="text-xs text-gray-500">{activity.playlist}</div>
+                                    )}
                                 </div>
                             ) : ' En línea'
                             ) : ` Hace ${getTimeSinceLastConnection(member.lastOnlineStatusChange, member.isOnline)}`}

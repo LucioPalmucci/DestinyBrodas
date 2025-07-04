@@ -131,7 +131,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                                     </div>
                                     <div className="ml-4 items-center">
                                         <p className="text-sm">{weapon.name}</p>
-                                        <p className="text-xs flex space-x-2">
+                                        <div className="text-xs flex space-x-2">
                                             <p>
                                                 <i className="icon-kills-black" />{weapon.kills}
                                             </p>
@@ -139,7 +139,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                                                 <i className="icon-precision" style={{ fontStyle: "normal" }} />
                                                 {weapon.precisionPro}%
                                             </p>
-                                        </p>
+                                        </div>
                                     </div>
                                 </div>
                             </li>

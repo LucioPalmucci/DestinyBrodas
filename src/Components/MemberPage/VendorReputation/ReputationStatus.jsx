@@ -9,6 +9,17 @@ import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Commendations from "../Commendations/Commendations";
 import FavouriteActivity from "../FavActivity/FavouriteActivity";
 
+const NextArrow = ({ onClick }) => (
+    <div className="custom-arrow cursor-pointer" onClick={onClick}>
+        <img src={caretRight} width={30} height={30} alt="Next" />
+    </div>
+);
+
+const PrevArrow = ({ onClick }) => (
+    <div className="custom-arrow cursor-pointer" onClick={onClick}>
+        <img src={caretLeft} width={30} height={30} alt="Previous" />
+    </div>
+);
 export default function ReputationStatus({ membershipType, userId }) {
     const [rango, setRango] = useState(null);
     const [page, setPage] = useState(0);
@@ -186,8 +197,8 @@ export default function ReputationStatus({ membershipType, userId }) {
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
-        nextArrow: <img src={caretRight} width={10} height={10} class="custom-arrow" />,
-        prevArrow: <img src={caretLeft} width={10} height={10} class="custom-arrow" />,
+        nextArrow: <NextArrow />,
+        prevArrow: <PrevArrow />,
         afterChange: (current) => setPage(current),
         height: 100,
     };
@@ -199,12 +210,12 @@ export default function ReputationStatus({ membershipType, userId }) {
             {rango && (
                 <div className="mt-6 bg-gray-300 p-4 rounded-lg flex flex-col items-center">
                     <h2 className="text-2xl font-semibold self-start">Reputación</h2>
-                    <Slider {...sliderSettings} className="w-full max-w-[420px] flex justify-center items-center pt-2 h-[100px]">
+                    <Slider {...sliderSettings} className="w-full max-w-[420px] !flex justify-center items-center pt-2 h-[100px]">
                         {pages.map((pageKeys, index) => (
-                            <div key={index} className="!flex flex-row justify-center gap-4 w-full items-center px-0">
+                            <div key={"page-" + index} className="!flex flex-row justify-center gap-4 w-full items-center px-0">
                                 {pageKeys.map((key) => (
                                     rango[key] && (
-                                        <div key={key} className="relative justify-center flex space-x-1 items-center">
+                                        <div key={"reputation-" + key} className="relative justify-center flex space-x-1 items-center">
                                             {rango[key].logo && (
                                                 <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
                                                     <img
