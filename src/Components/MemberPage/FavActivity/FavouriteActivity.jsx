@@ -1,10 +1,13 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+
 
 export default function FavouriteActivity({ membershipType, userId }) {
     const [mostPlayedActivity, setMostPlayedMode] = useState(null);
     const [charCompl, setCharCompl] = useState(null);
     const [error, setError] = useState(null);
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
@@ -29,12 +32,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol" },
                 };
 
-                const profileRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100,104`, {
-                    headers: {
-                        "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-                    }
-                });
-                const characterIds = profileRes.data.Response.profile.data.characterIds;
+                const profileRes = await getCompsProfile(membershipType, userId);
+                const characterIds = profileRes.profile.data.characterIds;
 
                 let allActivities = await activitiesStats(characterIds, membershipType, userId);
 
@@ -103,15 +102,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     const fetchActivityDetails = async (activityHash, type, Subclase) => {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const response = await getItemManifest(activityHash, type);
 
-            if (response.data.Response == null) return null;
-            else if (Subclase === "general") return response.data.Response;
-            else return response.data.Response.displayProperties.name;
+            if (response == null) return null;
+            else if (Subclase === "general") return response;
+            else return response.displayProperties.name;
 
         } catch (error) {
             console.error(`Error fetching activity details for hash ${activityHash}:`, error);
@@ -121,12 +116,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
 
     async function activityHashes(mode, pvp) {
-        const manifestRes = await axios.get("/api/Platform/Destiny2/Manifest/", {
-            headers: {
-                "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-            }
-        });
-        const activityUrl = `https://www.bungie.net${manifestRes.data.Response.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
+        const manifestRes = await getManifest();
+        const activityUrl = `https://www.bungie.net${manifestRes.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
 
         const activityRes = await axios.get(activityUrl);
 
@@ -142,26 +133,17 @@ export default function FavouriteActivity({ membershipType, userId }) {
     async function activitiesStats(characterIds, membershipType, userId) {
         let allActivities = [];
         for (const characterId of characterIds) {
-            const activitiesStats = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            allActivities = allActivities.concat(activitiesStats.data.Response.activities);
+            const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
+            allActivities = allActivities.concat(activitiesStats.activities);
         }
         //console.log("Actividades", allActivities);
         return allActivities;
     }
 
     async function mostPlayedCharacter(mode, characterId, membershipType, userId) {
+        const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
 
-        const activitiesStats = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
-
-        let allActivities = activitiesStats.data.Response.activities;
+        let allActivities = activitiesStats.activities;
         let classCompletitions = 0;
 
         allActivities.forEach(activity => {
@@ -175,14 +157,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }
 
     async function characterClass(characterId, membershipType, userId) {
-
-        const characterRes = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${characterId}/?components=200`, {
-            headers: {
-                "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-            }
-        });
-        const characterData = characterRes.data.Response.character.data;
-        switch (characterData.classType) {
+        const characterRes = await getProfileChars(membershipType, userId, characterId);
+        console.log("Character data", characterRes);
+        switch (characterRes.classType) {
             case 0:
                 return "Titán";
             case 1:

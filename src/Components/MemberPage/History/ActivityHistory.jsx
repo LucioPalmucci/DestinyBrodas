@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import circleEmpty from "../../../assets/circle-empty.svg";
 import circleSolid from "../../../assets/circle-solid.svg";
@@ -7,6 +6,7 @@ import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
 import "../../../index.css";
+import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import Spinner from '../../Spinner';
 import '../../Tab.css';
 import PopUp from './PopUp';
@@ -19,30 +19,21 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentActivityType, setCurrentActivityType] = useState('Todas');
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
+    const { getCompsProfile, getCarnageReport, getItemManifest , getCharacterActivities} = useBungieAPI();
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
             try {
-                const userData = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const characterIds = userData.data.Response.characters.data;
-                const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
+                const characterIds = await getCompsProfile(membershipType, userId);
+                const mostRecentCharacter = Object.values(characterIds.profile.data.characterIds).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${mostRecentCharacter.characterId}/Stats/Activities/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
+                const responseActs = await getCharacterActivities(membershipType, userId, mostRecentCharacter);
+                
                 //console.log("Activity History Response: ", response.data.Response.activities);
 
-                const details = await Promise.all(response.data.Response.activities.map(async (activity) => {
+                const details = await Promise.all(responseActs.map(async (activity) => {
                     const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                     const date = new Date(activity.period).toLocaleString();
                     const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
@@ -95,12 +86,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
     const fetchCarnageReport = async (instanceId) => {
         try {
-            const carnageReportResponse = await axios.get(`/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${instanceId}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-            const people = await Promise.all(carnageReportResponse.data.Response.entries.map(async (entry) => ({
+            const carnageReportResponse = await getCarnageReport(instanceId);
+            const people = await Promise.all(carnageReportResponse.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
                 deaths: entry.values.deaths.basic.value,
@@ -118,11 +105,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
                 assists: entry.values.assists.basic.value,
             })));
-            const teams = carnageReportResponse.data.Response.teams;
+            const teams = carnageReportResponse.teams;
 
             return { people, teams };
         } catch (error) {
-            //console.error('Error fetching carnage report:', error);
+            console.error('Error fetching carnage report:', error);
             return { people, teams: [] }; // Valores por defecto en caso de error
         }
     };
@@ -166,15 +153,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
     }
     const fetchActivityDetails = async (activityHash, type, Subclase) => {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            if (response.data.Response == null) return null;
-            else if (Subclase === "general") return response.data.Response;
-            else return response.data.Response.displayProperties.name;
+            const response = await getItemManifest(activityHash, type);
+            if (response == null) return null;
+            else if (Subclase === "general") return response;
+            else return response.displayProperties.name;
 
         } catch (error) {
             console.error(`Error fetching activity details for hash ${activityHash}:`, error);

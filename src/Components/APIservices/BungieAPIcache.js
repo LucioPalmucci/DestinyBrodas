@@ -120,6 +120,7 @@ export const useBungieAPI = () => {
     const getCompChars = useCallback(async (membershipType, userId) => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`;
         const response = await apiRequest('compChars', url, [membershipType, userId]);
+        console.log("CompChars Response: ", response);
         return response?.data?.Response?.characters?.data;
     }, [apiRequest]);
 
@@ -128,6 +129,13 @@ export const useBungieAPI = () => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charId}/?components=CharacterActivities`;
         const response = await apiRequest('CompCharsActs', url, [membershipType, userId, charId]);
         return response?.Response?.activities?.data;
+    }, [apiRequest]);
+
+    // Obtener inventario de un personaje
+    const getProfileChars = useCallback(async (membershipType, userId, characterId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${characterId}/?components=200`;
+        const response = await apiRequest('characterInventory', url, [membershipType, userId, characterId]);
+        return response?.Response?.character?.data;
     }, [apiRequest]);
 
     // Obtener datos de fireteam/party
@@ -169,6 +177,19 @@ export const useBungieAPI = () => {
     const getCharacterActivities = useCallback(async (membershipType, userId, characterId) => {
         const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?lc=es`;
         const response = await apiRequest('activities', url, [membershipType, userId, characterId]);
+        return response?.Response?.activities || [];
+    }, [apiRequest]);
+
+    const getAggregateActivityStats = useCallback(async (membershipType, userId, characterId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`;
+        const response = await apiRequest('aggregateActivityStats', url, [membershipType, userId, characterId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    // Obtener las últimas actividades de un personaje (limitadas por count)
+    const getRecentActivities = useCallback(async (membershipType, userId, characterId, count) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}`;
+        const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count]);
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
@@ -227,9 +248,9 @@ export const useBungieAPI = () => {
     }, [apiRequest]);
 
     // Obtener definición de un item en el manifest
-    const getItemManifest = useCallback(async (activityHash, type) => {
-        const url = `/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`;
-        const response = await apiRequest('activityDefinition', url, [activityHash, type]);
+    const getItemManifest = useCallback(async (hash, type) => {
+        const url = `/api/Platform/Destiny2/Manifest/${type}/${hash}/?lc=es`;
+        const response = await apiRequest('activityDefinition', url, [hash, type]);
         return response?.Response;
     }, [apiRequest]);
 
@@ -240,7 +261,7 @@ export const useBungieAPI = () => {
         return response?.Response;
     }, [apiRequest]);
 
-    // Obtener datos de manifest específicos
+    // Obtener datos de manifest
     const getManifestData = useCallback(async (manifestUrl) => {
         const url = `/api${manifestUrl}`;
         const response = await apiRequest('manifest', url, [manifestUrl]);
@@ -303,7 +324,10 @@ export const useBungieAPI = () => {
         getCharsAndEquipment,
         getClanMembers,
         getCharacterActivities,
+        getRecentActivities,
+        getAggregateActivityStats,
         getCommendations,
+        getProfileChars,
         getEmblem,
         getGuardianRank,
         getCarnageReport,

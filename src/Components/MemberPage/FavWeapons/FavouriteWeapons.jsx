@@ -1,7 +1,7 @@
-import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import crownIcon from "../../../assets/crown-solid.svg";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Spinner from "../../Spinner";
 
 const API_KEY = "f83a251bf2274914ab739f4781b5e710";
@@ -10,37 +10,27 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     const [weapons, setWeapons] = useState({ pve: [], pvp: [] });
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState("pve");
+    const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities } = useBungieAPI();
 
     useEffect(() => {
         const fetchTopWeapons = async () => {
             setLoading(true);
 
             try {
-                const profileRes = await axios.get(
-                    `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100`,
-                    { headers: { "X-API-Key": API_KEY } }
-                );
-                const characterIds = profileRes.data.Response.profile.data.characterIds;
+                const profileRes = await getCompsProfile(membershipType, userId);
+                const characterIds = profileRes.profile.data.characterIds;
 
                 let weaponKills = { pve: {}, pvp: {} };
                 let precisionKills = { pve: {}, pvp: {} };
                 let precisionPro = { pve: {}, pvp: {} };
 
                 for (const characterId of characterIds) {
-                    const activitiesRes = await axios.get(
-                        `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=5`,
-                        { headers: { "X-API-Key": API_KEY } }
-                    );
-                    const activities = activitiesRes.data.Response?.activities || [];
+                    const activitiesRes = await getRecentActivities(membershipType, userId, characterId, 5);
 
-                    for (const activity of activities) {
-                        const pgcrRes = await axios.get(
-                            `/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${activity.activityDetails.instanceId}/`,
-                            { headers: { "X-API-Key": API_KEY } }
-                        );
-                        const pgcrData = pgcrRes.data.Response;
+                    for (const activity of activitiesRes) {
+                        const pgcrRes = await getCarnageReport(activity.activityDetails.instanceId);
 
-                        const playerEntry = pgcrData.entries.find(
+                        const playerEntry = pgcrRes.entries.find(
                             (entry) => entry.player.destinyUserInfo.membershipId === userId
                         );
 
@@ -59,14 +49,10 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 const getWeaponDetails = async (mode) => {
                     return await Promise.all(
                         Object.keys(weaponKills[mode]).map(async (weaponId) => {
-                            const itemRes = await axios.get(
-                                `/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${weaponId}/?lc=es`,
-                                { headers: { "X-API-Key": API_KEY } }
-                            );
-                            const itemData = itemRes.data.Response;
+                            const itemRes = await getItemManifest(weaponId, "DestinyInventoryItemDefinition");
                             return {
-                                name: itemData.displayProperties.name,
-                                icon: `/api${itemData.displayProperties.icon}`,
+                                name: itemRes.displayProperties.name,
+                                icon: `/api${itemRes.displayProperties.icon}`,
                                 kills: weaponKills[mode][weaponId],
                                 precisionKills: precisionKills[mode][weaponId],
                                 precisionPro: (precisionPro[mode][weaponId] * 100).toFixed(0),

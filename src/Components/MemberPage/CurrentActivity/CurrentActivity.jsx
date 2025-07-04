@@ -119,9 +119,9 @@ export default function CurrentActivity({ type, id }) {
         try {
             const response = getItemManifest(activityHash, type);
             console.log("Current activity hash:", response);
-            if (response.data.Response == null) return null;
-            else if (Subclase === "general") return response.data.Response;
-            else return response.data.Response.displayProperties.name;
+            if (response == null) return null;
+            else if (Subclase === "general") return response;
+            else return response.displayProperties.name;
 
         } catch (error) {
             console.error(`Error fetching activity details for hash ${activityHash}:`, error);
