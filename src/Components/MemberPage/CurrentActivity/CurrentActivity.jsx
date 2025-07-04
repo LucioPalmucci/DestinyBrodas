@@ -1,49 +1,35 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
     const [numColumns, setColums] = useState(0);
+    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters&lc=es-mx`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-
-                const characterIds = response.data.Response.characters.data;
-                const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
+                const characterIds = await getCompsProfile(type, id);
+                const mostRecentCharacter = Object.values(characterIds.profile.data.characterIds).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                const activityResponse = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/Character/${mostRecentCharacter.characterId}/?components=CharacterActivities`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const activityResponse = await getCompCharsActs(type, id, mostRecentCharacter);
 
-                const partyResponse = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=1000`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const partyResponse = await getParty(type, id);
 
-                //console.log("Current activity response:", activityResponse.data.Response);
-                const currentActivityHash = activityResponse.data.Response.activities.data.currentActivityHash;
-                const currentActivityMode = activityResponse.data.Response.activities.data.currentActivityModeHash;
-                const currentActivityPlaylist = activityResponse.data.Response.activities.data.currentPlaylistActivityHash;
-                const fecha = partyResponse.data.Response.profileTransitoryData.data.currentActivity.startTime;
-                let oponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.numberOfOpponents;
-                const jugadores = partyResponse.data.Response.profileTransitoryData.data.currentActivity.numberOfPlayers;
-                const puntosAliados = partyResponse.data.Response.profileTransitoryData.data.currentActivity.score;
-                const puntosOponentes = partyResponse.data.Response.profileTransitoryData.data.currentActivity.highestOpposingFactionScore;
-                const slots = partyResponse.data.Response.profileTransitoryData.data.joinability.openSlots;
+                const currentActivityHash = activityResponse.currentActivityHash;
+                const currentActivityMode = activityResponse.currentActivityModeHash;
+                const currentActivityPlaylist = activityResponse.currentPlaylistActivityHash;
+                const fecha =  partyResponse.currentActivity.startTime;
+                let oponentes = partyResponse.currentActivity.numberOfOpponents;
+                const jugadores = partyResponse.currentActivity.numberOfPlayers;
+                const puntosAliados = partyResponse.currentActivity.score;
+                const puntosOponentes = partyResponse.currentActivity.highestOpposingFactionScore;
+                const slots = partyResponse.joinability.openSlots;
 
                 let datosGenerales = await fetchActivityDetails(currentActivityHash, "DestinyActivityDefinition", "general");
                 let planeta = await fetchActivityDetails(datosGenerales.placeHash, "DestinyDestinationDefinition");
@@ -131,12 +117,8 @@ export default function CurrentActivity({ type, id }) {
 
     const fetchActivityDetails = async (activityHash, type, Subclase) => {
         try {
-            const response = await axios.get(`/api/Platform/Destiny2/Manifest/${type}/${activityHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
+            const response = getItemManifest(activityHash, type);
+            console.log("Current activity hash:", response);
             if (response.data.Response == null) return null;
             else if (Subclase === "general") return response.data.Response;
             else return response.data.Response.displayProperties.name;
@@ -243,11 +225,7 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
         let successfulPlatform = null;
         for (const plataforma of plataformas) {
             try {
-                profileResponse = await axios.get(`/api/Platform/Destiny2/${plataforma}/Profile/${member.membershipId}/?components=100`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                profileResponse = await getCompsProfile(plataforma, member.membershipId);
                 successfulPlatform = plataforma;
                 break;
             } catch (error) {
@@ -260,14 +238,9 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
         }
 
         // Obtener el uniqueName usando el endpoint adecuado
-        const userResponse = await axios.get(`/api/Platform/User/GetMembershipsById/${member.membershipId}/${successfulPlatform}/`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
-
-        const displayName = profileResponse.data.Response.profile.data.userInfo.displayName;
-        const uniqueName = userResponse.data.Response.bungieNetUser.uniqueName;
+        const userResponse = await getUserMembershipsById(member.membershipId, successfulPlatform);
+        const displayName = profileResponse.profile.data.userInfo.displayName;
+        const uniqueName = userResponse.bungieNetUser.uniqueName;
         const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
         //console.log(`Data of member ${member.membershipId} on platform ${successfulPlatform}:`, displayName);
 
@@ -286,14 +259,10 @@ const fetchPartyMembersDetails = async (partyMembersData) => {
 const getPartyEmblem = async (id, type) => {
     try {
         // Hacer una sola llamada a la API para obtener el perfil completo del miembro
-        const response = await axios.get(`/api/Platform/Destiny2/${type}/Profile/${id}/?components=Characters,CharacterEquipment&lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
+        const response = await getCharsAndEquipment(type, id);
 
-        const characters = response.data.Response.characters.data;
-        const equipment = response.data.Response.characterEquipment.data;
+        const characters = response.characters.data;
+        const equipment = response.characterEquipment.data;
 
         const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
             return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;

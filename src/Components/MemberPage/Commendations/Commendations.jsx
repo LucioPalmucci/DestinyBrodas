@@ -1,35 +1,19 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import elogio from "../../../assets/elogio.png";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+
 
 export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
-    const [error, setError] = useState(null);
+    const { loading, error, getCommendations } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
-                const commendation = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1400`, {
-                    headers: {
-                        "X-API-Key": "f83a251bf2274914ab739f4781b5e710",
-                    }
-                });
-                const dataHonor = commendation.data.Response.profileCommendations.data;
-                //console.log(dataHonor);
-
-                setCommendations({
-                    totalScore: dataHonor.totalScore.toLocaleString('en-US'),
-                    recibidas: dataHonor.scoreDetailValues[1],
-                    enviadas: dataHonor.scoreDetailValues[0],
-                    verdes: dataHonor.commendationNodePercentagesByHash[154475713],
-                    rosas: dataHonor.commendationNodePercentagesByHash[1341823550],
-                    azules: dataHonor.commendationNodePercentagesByHash[1390663518],
-                    naranjas: dataHonor.commendationNodePercentagesByHash[4180748446],
-                    verdesPuntos: dataHonor.commendationNodeScoresByHash[154475713],
-                    rosasPuntos: dataHonor.commendationNodeScoresByHash[1341823550],
-                    azulesPuntos: dataHonor.commendationNodeScoresByHash[1390663518],
-                    naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
-                })
+                const commendationsData = await getCommendations(membershipType, userId);
+                if (commendationsData) {
+                    setCommendations(commendationsData);
+                }
             } catch (error) {
                 setError(error);
             }
