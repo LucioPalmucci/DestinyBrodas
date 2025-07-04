@@ -90,8 +90,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     });
                 }
                 setCharCompl(characterCompletions);
-
-                //console.log("Char completions", charCompl);
             } catch (error) {
                 console.error(error);
             }
@@ -136,7 +134,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
             const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
             allActivities = allActivities.concat(activitiesStats.activities);
         }
-        //console.log("Actividades", allActivities);
         return allActivities;
     }
 
@@ -158,7 +155,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function characterClass(characterId, membershipType, userId) {
         const characterRes = await getProfileChars(membershipType, userId, characterId);
-        console.log("Character data", characterRes);
         switch (characterRes.classType) {
             case 0:
                 return "Titán";

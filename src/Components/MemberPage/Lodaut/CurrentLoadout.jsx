@@ -11,10 +11,12 @@ import bgStasis from "../../../assets/subClassBg/subclass-stasis.png";
 import bgStrand from "../../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../../assets/subClassBg/subclass-void.png";
 import "../../../index.css";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Spinner from "../../Spinner";
 import frasesES from "../frases/frasesArtefactoES";
 import CaruselArtefacto from "./CaruselArtefacto";
 import RecoilStat from "./RecoliStat";
+
 
 export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
     const [items, setItems] = useState([]);
@@ -35,16 +37,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [artifact, setArtifact] = useState(null);
     const [slidesArtifact, setslidesArtifact] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { getProfileGeneralProgressions, getCharacterSimpleInventoryAndEquipment, getManifest, getItemManifest, getFullItemDetails, getAllSeals } = useBungieAPI();
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             setLoading(true);
             try {
-                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const characters = responseChar.data.Response.characters.data;
+                const responseChar = await getProfileGeneralProgressions(membershipType, userId);
+                const characters = responseChar.characters.data;
 
                 //0 masculino, 1 femenino
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
@@ -54,64 +53,37 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 const charID = mostRecentCharacter.characterId;
                 const classType = mostRecentCharacter.classType;
 
-                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const response = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, charID);
 
-                const manifest = await axios.get('/api/Platform/Destiny2/Manifest/', {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const manifest = await getManifest();
 
                 let totalStats = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218];
                 await getTotalStats(totalStats);
                 await getOtherEmblems(characters, mostRecentCharacter);
                 await getSeal(mostRecentCharacter, manifest);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
-                getArtifactDetails(responseChar.data.Response.profileProgression?.data?.seasonalArtifact);
+                getArtifactDetails(responseChar.profileProgression?.data?.seasonalArtifact);
                 const seasonProgress = await getCurrentSeason(seasonHash, manifest);
 
-                const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
-                    const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        },
-                    });
-
-                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=300,301,304,305,309,302,303,306,307,308,310`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        },
-                    });
-
-                    //console.log(itemD.data.Response);
+                const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
+                    const itemResponse = await getItemManifest(item.itemHash, "DestinyInventoryItemDefinition");
+                    const itemD = await getFullItemDetails(membershipType, userId, item.itemInstanceId);
 
                     let perks = [];
-                    if (response.data.Response.equipment.data.items.indexOf(item) === 16) { //Artifact
-                        const activePerks = response.data.Response.progressions?.data?.seasonalArtifact.tiers.flatMap(tier =>
+                    if (response.equipment.data.items.indexOf(item) === 16) { //Artifact
+                        const activePerks = response.progressions?.data?.seasonalArtifact.tiers.flatMap(tier =>
                             tier.items.filter(perk => perk.isActive && perk.isVisible)
                         );
 
                         if (activePerks) {
                             perks = await Promise.all(activePerks.map(async (perk) => {
-                                const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
-                                    headers: {
-                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                    },
-                                });
-                                const sanbox = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkResponse.data.Response.perks[0]?.perkHash}/?lc=es`, {
-                                    headers: {
-                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                    },
-                                });
+                                const perkResponse = await getItemManifest(perk.itemHash, "DestinyInventoryItemDefinition");
+                                const sanbox = await getItemManifest(perkResponse.perks[0]?.perkHash, "DestinySandboxPerkDefinition");
                                 return {
                                     ...perk,
-                                    name: perkResponse.data.Response.displayProperties.name,
-                                    iconPath: "/api" + perkResponse.data.Response.displayProperties.icon,
-                                    desc: sanbox.data.Response.displayProperties.description,
+                                    name: perkResponse.displayProperties.name,
+                                    iconPath: "/api" + perkResponse.displayProperties.icon,
+                                    desc: sanbox.displayProperties.description,
                                 };
                             })) || [];
 
@@ -128,28 +100,24 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             setslidesArtifact(perks);
                         }
 
-                    } else if ([11, 15, 14].includes(response.data.Response.equipment.data.items.indexOf(item))) { //Sublcase, gestos y remates
-                        perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
-                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
-                                headers: {
-                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                },
-                            });
-                            if (perkResponse.data.Response.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                if (perkResponse.data.Response.hash == 2272984671 || perkResponse.data.Response.hash == 1727069360) { //Si es un fragmento de clase
+                    } else if ([11, 15, 14].includes(response.equipment.data.items.indexOf(item))) { //Sublcase, gestos y remates
+                        perks = await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
+                            const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
+                            if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
+                                if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
                                     switch (classType) {
                                         case 0: //Titan resto resistencia
-                                            totalStats[1].value -= Math.abs(perkResponse.data.Response.investmentStats[3].value);
+                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
                                             break;
                                         case 1: //Cazador resto movilidad
-                                            totalStats[4].value -= Math.abs(perkResponse.data.Response.investmentStats[2].value);
+                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
                                             break;
                                         case 2: //Hechicero resto recuperacion
-                                            totalStats[3].value -= Math.abs(perkResponse.data.Response.investmentStats[1].value);
+                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
                                             break;
                                     }
                                 }
-                                else for (const stat of Object.values(perkResponse.data.Response.investmentStats).slice(1)) {
+                                else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
                                     const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
                                     if (stat.value < 0) {
                                         baseStat.value -= Math.abs(stat.value);
@@ -158,57 +126,48 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     }
                                 }
                             }
-                            if (perkResponse.data.Response.displayProperties?.description == "") {
-                                const sandboxHash = perkResponse.data.Response.perks[0]?.perkHash;
+                            if (perkResponse.displayProperties?.description == "") {
+                                const sandboxHash = perkResponse.perks[0]?.perkHash;
                                 if (sandboxHash) {
-                                    const perkResponse2 = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${sandboxHash}/?lc=es`, {
-                                        headers: {
-                                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                        },
-                                    });
-                                    perkResponse.data.Response.displayProperties.description = perkResponse2.data.Response.displayProperties.description;
+                                    const perkResponse2 = await getItemManifest(sandboxHash, "DestinySandboxPerkDefinition");
+                                    perkResponse.displayProperties.description = perkResponse2.displayProperties.description;
                                 }
                             }
                             let fragmentsStats;
 
-                            if (perkResponse.data.Response.investmentStats.length >= 2) fragmentsStats = await getFragemtsStats(perkResponse.data.Response.investmentStats, perkResponse.data.Response.hash, classType);
+                            if (perkResponse.investmentStats.length >= 2) fragmentsStats = await getFragemtsStats(perkResponse.investmentStats, perkResponse.hash, classType);
 
                             return {
                                 ...perk,
-                                name: perkResponse.data.Response.displayProperties.name,
-                                iconPath: perkResponse.data.Response.displayProperties.icon,
-                                watermark: perkResponse.data.Response.iconWatermark || null,
-                                desc: perkResponse.data.Response.displayProperties?.description || perkResponse.data.Response.flavorText,
-                                gameplayImg: perkResponse.data.Response.displayProperties?.highResIcon || perkResponse.data.Response.secondaryIcon,
-                                type: perkResponse.data.Response.itemTypeDisplayName,
+                                name: perkResponse.displayProperties.name,
+                                iconPath: perkResponse.displayProperties.icon,
+                                watermark: perkResponse.iconWatermark || null,
+                                desc: perkResponse.displayProperties?.description || perkResponse.flavorText,
+                                gameplayImg: perkResponse.displayProperties?.highResIcon || perkResponse.secondaryIcon,
+                                type: perkResponse.itemTypeDisplayName,
                                 fragmentsStats: fragmentsStats,
                             };
                         }
                         ) || []);
                     } else { //Resto de items
-                        perks = await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
+                        perks = await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
                             if (!perk.plugHash) return null;
-                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
-                                headers: {
-                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                },
-                            });
-                            //if(perkResponse.data.Response.plug.plugCategoryIdentifier.includes("intrinsics")) console.log("Perks ", perkResponse.data.Response);
+                            const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
 
                             return {
                                 ...perk,
-                                name: perkResponse.data.Response.displayProperties.name,
-                                desc: perkResponse.data.Response.displayProperties.description || await getDescription(perkResponse.data.Response.perks[0]?.perkHash),
-                                iconPath: perkResponse.data.Response.displayProperties.icon,
-                                perkHash: perkResponse.data.Response.perks[0]?.perkHash,
-                                perkType: perkResponse.data.Response.plug.plugCategoryIdentifier,
-                                isEnhanced: perkResponse.data.Response.itemTypeDisplayName,
-                                investmentStats: perkResponse.data.Response.investmentStats,
+                                name: perkResponse.displayProperties.name,
+                                desc: perkResponse.displayProperties.description || await getDescription(perkResponse.perks[0]?.perkHash),
+                                iconPath: perkResponse.displayProperties.icon,
+                                perkHash: perkResponse.perks[0]?.perkHash,
+                                perkType: perkResponse.plug.plugCategoryIdentifier,
+                                isEnhanced: perkResponse.itemTypeDisplayName,
+                                investmentStats: perkResponse.investmentStats,
                             };
                         }) || []);
                     }
 
-                    if (response.data.Response.equipment.data.items.indexOf(item) === 11) {
+                    if (response.equipment.data.items.indexOf(item) === 11) {
                         const perkAtIndex2 = perks.splice(2, 1)[0];
                         perks.unshift(perkAtIndex2);
                         if (perks.some(perk => perk.name === "Trascendencia")) { //Si es prismatico eliminar granada prismatica y trasendencia
@@ -219,24 +178,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         }
                     }
 
-                    const statsList = itemD.data.Response.stats.data?.stats;
+                    const statsList = itemD.stats.data?.stats;
                     let armorStats = []; //Stats de armadura
-                    if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                    if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
                         let totalStatValue = 0;
                         for (const stat of Object.values(statsList)) {
                             try {
-                                const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
-                                    headers: {
-                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                    },
-                                });
-
+                                const statResponse = await getItemManifest(stat.statHash, "DestinyStatDefinition");
                                 totalStats.find((baseStat) => baseStat.statHash === stat.statHash).value += stat.value;
                                 armorStats.push({
                                     ...stat,
-                                    name: statResponse.data.Response.displayProperties.name,
-                                    iconPath: statResponse.data.Response.displayProperties.icon,
-                                    desc: statResponse.data.Response.displayProperties.description,
+                                    name: statResponse.displayProperties.name,
+                                    iconPath: statResponse.displayProperties.icon,
+                                    desc: statResponse.displayProperties.description,
                                     value: stat.value,
                                 });
                                 totalStatValue += stat.value;
@@ -258,85 +212,85 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     }
 
                     let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor, secondaryBgImg, ghostEnergy;
-                    if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                    if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
                             name: perk.name,
                             hash: perk.plugHash,
                         }));
-                        armorStats = getArmorStats(itemResponse.data.Response, investmentStats, armorStats);
+                        armorStats = getArmorStats(itemResponse, investmentStats, armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
                             cosmeticPerks: designPerks
                         };
-                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                        bgColor = getRarityColor(itemResponse.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
-                        armorCategory = getArmorCategory(itemResponse.data.Response.itemTypeDisplayName, itemResponse.data.Response.classType);
+                        armorCategory = getArmorCategory(itemResponse.itemTypeDisplayName, itemResponse.classType);
                         armorIntrinsic = await getArmorIntrinsicDetails(perks.modifierPerks);
                     }
-                    else if ([0, 1, 2].includes(response.data.Response.equipment.data.items.indexOf(item))) {
+                    else if ([0, 1, 2].includes(response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
                             investmentStats: perk.investmentStats,
                             name: perk.name,
                             hash: perk.plugHash,
                         }));
-                        weaponStats = await getWeaponStats(itemResponse.data.Response, investmentStats, getWeaponLevel(itemD.data.Response.plugObjectives.data.objectivesPerPlug), itemD.data.Response.stats.data.stats);
-                        weaponStats = colorStats(itemResponse.data.Response, perks.filter(perk => perk != null), weaponStats)
+                        weaponStats = await getWeaponStats(itemResponse, investmentStats, getWeaponLevel(itemD.plugObjectives.data.objectivesPerPlug), itemD.stats.data.stats);
+                        weaponStats = colorStats(itemResponse, perks.filter(perk => perk != null), weaponStats)
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
                             cosmeticPerks: cosmeticPerks
                         };
-                        tracker = getTrackerKills(perks.cosmeticPerks?.tracker[0]?.plugHash, itemD.data.Response.plugObjectives?.data?.objectivesPerPlug)
-                        dmgType = await getdmgType(itemResponse.data.Response.defaultDamageTypeHash)
-                        ammo = await getAmmoType(itemResponse.data.Response.equippingBlock.ammoType)
-                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                        tracker = getTrackerKills(perks.cosmeticPerks?.tracker[0]?.plugHash, itemD.plugObjectives?.data?.objectivesPerPlug)
+                        dmgType = await getdmgType(itemResponse.defaultDamageTypeHash)
+                        ammo = await getAmmoType(itemResponse.equippingBlock.ammoType)
+                        bgColor = getRarityColor(itemResponse.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
-                        champmod = await getChampMod(itemResponse.data.Response, response.data.Response.progressions?.data?.seasonalArtifact.tiers)
-                        weaponLevel = await getWeaponLevelAndProgression(itemD.data.Response.plugObjectives.data.objectivesPerPlug, itemD.data.Response.sockets.data.sockets);
-                        perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse.data.Response, perks.cosmeticPerks.archetype, manifest);
-                        perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks, itemResponse.data.Response);
-                        perks.cosmeticPerks.archetype = await getDescriptionPerksWeapons(perks.cosmeticPerks.archetype, itemResponse.data.Response);
-                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 11) {
-                        elementalColor = await getElementalColor(itemResponse.data.Response.talentGrid?.hudDamageType, manifest)
-                        secondaryBgImg = getSecondaryBgImg(itemResponse.data.Response.talentGrid?.hudDamageType);
-                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 16) { //Artifact
-                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                        champmod = await getChampMod(itemResponse, response.progressions?.data?.seasonalArtifact.tiers)
+                        weaponLevel = await getWeaponLevelAndProgression(itemD.plugObjectives.data.objectivesPerPlug, itemD.sockets.data.sockets);
+                        perks.cosmeticPerks.archetype = await getMwEnchancedWeapons(itemResponse, perks.cosmeticPerks.archetype, manifest);
+                        perks.modifierPerks = await getDescriptionPerksWeapons(perks.modifierPerks, itemResponse);
+                        perks.cosmeticPerks.archetype = await getDescriptionPerksWeapons(perks.cosmeticPerks.archetype, itemResponse);
+                    } else if (response.equipment.data.items.indexOf(item) == 11) {
+                        elementalColor = await getElementalColor(itemResponse.talentGrid?.hudDamageType, manifest)
+                        secondaryBgImg = getSecondaryBgImg(itemResponse.talentGrid?.hudDamageType);
+                    } else if (response.equipment.data.items.indexOf(item) == 16) { //Artifact
+                        bgColor = getRarityColor(itemResponse.inventory.tierType);
                         bgMasterwork = showArtifact?.points == 12 ? masterworkBlue : null;
-                    } else if (response.data.Response.equipment.data.items.indexOf(item) == 8) { //Ghost
-                        bgColor = getRarityColor(itemResponse.data.Response.inventory.tierType);
+                    } else if (response.equipment.data.items.indexOf(item) == 8) { //Ghost
+                        bgColor = getRarityColor(itemResponse.inventory.tierType);
                         bgMasterwork = [8, 5, 4, 9].some(value => item.state && item.state === value) ? masterworkHeader : null;
                         ghostEnergy = getGhostEnergy(item.state, perks);
                     }
 
                     return {
-                        name: itemResponse.data.Response.displayProperties.name,
-                        desc: itemResponse.data.Response.displayProperties.description || itemResponse.data.Response.flavorText,
-                        icon: cosmetic || itemResponse.data.Response.displayProperties.icon,
-                        rarity: itemResponse.data.Response.inventory.tierType,
-                        rarityName: itemResponse.data.Response.inventory.tierTypeName,
+                        name: itemResponse.displayProperties.name,
+                        desc: itemResponse.displayProperties.description || itemResponse.flavorText,
+                        icon: cosmetic || itemResponse.displayProperties.icon,
+                        rarity: itemResponse.inventory.tierType,
+                        rarityName: itemResponse.inventory.tierTypeName,
                         perks: perks,
                         stats: weaponStats != null ? weaponStats : armorStats,
                         masterwork: item.state,
-                        watermark: itemResponse.data.Response.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.data.Response.iconWatermark || null,
-                        power: itemD.data.Response.instance?.data?.primaryStat?.value,
+                        watermark: itemResponse.quality?.displayVersionWatermarkIcons?.[0] || itemResponse.iconWatermark || null,
+                        power: itemD.instance?.data?.primaryStat?.value,
                         tracker: tracker,
                         itemHash: item.itemHash,
-                        weaponType: itemResponse.data.Response.itemTypeDisplayName,
+                        weaponType: itemResponse.itemTypeDisplayName,
                         dmgType: dmgType,
                         ammo: ammo,
                         bgColor: bgColor,
                         mwHeader: bgMasterwork,
                         champmod: champmod,
-                        craftedenchanced: itemResponse.data.Response.tooltipNotifications[0]?.displayStyle,
+                        craftedenchanced: itemResponse.tooltipNotifications[0]?.displayStyle,
                         weaponLevel: weaponLevel,
                         armorCategory: armorCategory,
                         armorEnergy: {
-                            energyCapacity: itemD.data.Response.instance?.data?.energy?.energyCapacity,
-                            energyUsed: itemD.data.Response.instance?.data?.energy?.energyUsed || ghostEnergy,
-                            energyUnused: itemD.data.Response.instance?.data?.energy?.energyUnused || 10 - ghostEnergy,
-                            energyCapacityUnused: 10 - itemD.data.Response.instance?.data?.energy?.energyCapacity || 0,
+                            energyCapacity: itemD.instance?.data?.energy?.energyCapacity,
+                            energyUsed: itemD.instance?.data?.energy?.energyUsed || ghostEnergy,
+                            energyUnused: itemD.instance?.data?.energy?.energyUnused || 10 - ghostEnergy,
+                            energyCapacityUnused: 10 - itemD.instance?.data?.energy?.energyCapacity || 0,
                         },
                         armorIntrinsic: armorIntrinsic,
                         elementalColor: elementalColor,
@@ -344,8 +298,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     };
                 }));
 
-                setPassLevel(responseChar.data.Response.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
-                setTriumphRecord(responseChar.data.Response.profileRecords.data?.activeScore?.toLocaleString('en-US'));
+                setPassLevel(responseChar.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
+                setTriumphRecord(responseChar.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
                 setTotalStats(totalStats);
 
@@ -391,15 +345,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getTotalStats(totalStats) {
         const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
-            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${statHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
             return {
                 statHash,
-                name: statResponse.data.Response.displayProperties.name,
-                iconPath: statResponse.data.Response.displayProperties.icon,
+                name: statResponse.displayProperties.name,
+                iconPath: statResponse.displayProperties.icon,
                 value: 0,
             };
         }));
@@ -407,12 +357,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getCosmetic(overrideStyleItemHash) {
-        const cosmetic = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${overrideStyleItemHash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
-        return cosmetic.data.Response.displayProperties.icon;
+        const cosmetic = await getItemManifest(overrideStyleItemHash, "DestinyInventoryItemDefinition");
+        return cosmetic.displayProperties.icon;
     }
 
     function sortByArtificePerk(perks) {
@@ -525,15 +471,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         let intrinsics = [];
         Object.values(perks).forEach(async (perk) => {
             if (perk.perkType == "intrinsics" && perk.name != "") {
-                const perkDets = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const perkDets = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
                 intrinsics.push({
-                    name: perkDets.data.Response.displayProperties.name,
-                    iconPath: perkDets.data.Response.displayProperties.icon,
-                    desc: perkDets.data.Response.displayProperties.description,
+                    name: perkDets.displayProperties.name,
+                    iconPath: perkDets.displayProperties.icon,
+                    desc: perkDets.displayProperties.description,
                 });
 
             }
@@ -627,19 +569,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
         const group = item.stats.statGroupHash;
         const name = item.displayProperties.name;
-        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${group}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        })
-        const interpolatingStats = response.data.Response.scaledStats;
-        const order = response.data.Response.scaledStats.map(stat => stat.statHash);
+        const response = await getItemManifest(group, "DestinyStatGroupDefinition");
+        const interpolatingStats = response.scaledStats;
+        const order = response.scaledStats.map(stat => stat.statHash);
         let weaponStats = await Promise.all(Object.values(stats).map(async (stat) => {
-            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statTypeHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const statResponse = await getItemManifest(stat.statTypeHash, "DestinyStatDefinition");
             // Verificar si algúna perk afecta el valor de la stat
             let modifiedValue = stat.value;
             perksinvestmentStats.forEach((perksinvestmentStat) => {
@@ -651,7 +585,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias de obra maestra
                     else {
                         modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
-                        //if (item.itemTypeDisplayName == "Cañón de mano") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.data.Response.displayProperties.name, ":", matchingStat.value);
+                        //if (item.itemTypeDisplayName == "Cañón de mano") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.displayProperties.name, ":", matchingStat.value);
                     }
 
                     if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
@@ -664,9 +598,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             });
             return {
                 statHash: stat.statTypeHash,
-                name: statResponse.data.Response.displayProperties.name == "Disparos por minuto" ? "DPM" : statResponse.data.Response.displayProperties.name,
+                name: statResponse.displayProperties.name == "Disparos por minuto" ? "DPM" : statResponse.displayProperties.name,
                 value: modifiedValue,
-                desc: statResponse.data.Response.displayProperties.description || null,
+                desc: statResponse.displayProperties.description || null,
             };
         }));
 
@@ -869,50 +803,34 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getdmgType(dmgType) {
-        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyDamageTypeDefinition/${dmgType}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
+        const response = await getItemManifest(dmgType, "DestinyDamageTypeDefinition");
         return {
-            name: response.data.Response.displayProperties.name,
-            iconPath: response.data.Response.displayProperties.icon,
+            name: response.displayProperties.name,
+            iconPath: response.displayProperties.icon,
         };
     }
 
     async function getAmmoType(ammoType) {
         switch (ammoType) {
             case 1: {
-                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/1731162900/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const response = await getItemManifest(1731162900, "DestinyPresentationNodeDefinition");
                 return {
-                    name: response.data.Response.displayProperties.name,
-                    iconPath: response.data.Response.displayProperties.icon,
+                    name: response.displayProperties.name,
+                    iconPath: response.displayProperties.icon,
                 }
             }
             case 2: {
-                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/638914517/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const response = await getItemManifest(638914517, "DestinyPresentationNodeDefinition");
                 return {
-                    name: response.data.Response.displayProperties.name,
-                    iconPath: response.data.Response.displayProperties.icon,
+                    name: response.displayProperties.name,
+                    iconPath: response.displayProperties.icon,
                 }
             }
             case 3: {
-                const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyPresentationNodeDefinition/3686962409/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const response = await getItemManifest(3686962409, "DestinyPresentationNodeDefinition");
                 return {
-                    name: response.data.Response.displayProperties.name,
-                    iconPath: response.data.Response.displayProperties.icon,
+                    name: response.displayProperties.name,
+                    iconPath: response.displayProperties.icon,
                 }
             }
             default: return null;
@@ -922,14 +840,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     async function getChampMod(item, artifactMods) {
         if (!artifactMods) return null;
         if (item.breakerType != 0) {
-            const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/${item.breakerTypeHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                }
-            });
+            const response = await getItemManifest(item.breakerType, "DestinyBreakerTypeDefinition");
             return {
-                name: response.data.Response.displayProperties.name,
-                iconPath: response.data.Response.displayProperties.icon,
+                name: response.displayProperties.name,
+                iconPath: response.displayProperties.icon,
             }
         } else {
             const activePerks = artifactMods.flatMap(tier =>
@@ -937,12 +851,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             );
 
             let perks = await Promise.all(activePerks.map(async (perk) => {
-                const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.itemHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                return perkResponse.data.Response.displayProperties.name;
+                const perkResponse = await getItemManifest(perk.itemHash, "DestinyInventoryItemDefinition");
+                return perkResponse.displayProperties.name;
             })) || [];
 
             let modActivo;
@@ -961,28 +871,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 let breakerInfo;
                 const text = modActivo.trim().toLowerCase();
                 if (text.includes("imparable")) {
-                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/3178805705/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        }
-                    });
+                    breakerInfo = await getItemManifest(3178805705, "DestinyBreakerTypeDefinition");
                 } else if (text.includes("sobrecarga")) {
-                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/2611060930/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        }
-                    });
+                    breakerInfo = await getItemManifest(2611060930, "DestinyBreakerTypeDefinition");
                 } else if (text.includes("antibarrera") || text.includes("penetrante")) {
-                    breakerInfo = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyBreakerTypeDefinition/485622768/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        }
-                    });
+                    breakerInfo = await getItemManifest(485622768, "DestinyBreakerTypeDefinition");
                 }
 
                 return {
-                    name: breakerInfo?.data.Response.displayProperties.name,
-                    iconPath: breakerInfo?.data.Response.displayProperties.icon,
+                    name: breakerInfo?.displayProperties.name,
+                    iconPath: breakerInfo?.displayProperties.icon,
                     backgroundColor: "#3f8e90",
                 }
             }
@@ -1039,12 +937,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
         for (const socket of Object.values(sockets)) { //Recorre los sockets del arma para ver que nivel de mejora esta
             if (socket.plugHash == 2728416798 || socket.plugHash == 2728416797 || socket.plugHash == 2728416796) { //Si es una mejora de nivel 1 o 3
-                const mejoraResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${socket.plugHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    }
-                });
-                mejora = mejoraResponse.data.Response.displayProperties.name;
+                const mejoraResponse = await getItemManifest(socket.plugHash, "DestinyInventoryItemDefinition");
+                mejora = mejoraResponse.displayProperties.name;
                 break;
             }
         }
@@ -1059,17 +953,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     async function getOtherEmblems(characters, mostRecentCharacter) {
         let emblems, classe;
         const emblemPromises = Object.values(characters).map(async (char) => {
-            const rep = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${char.characterId}/?components=205`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
-
-            const emblem = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${rep.data.Response.equipment.data.items[13].itemHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const rep = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, char.characterId);
+            const emblem = await getItemManifest(rep.equipment.data.items[13].itemHash, "DestinyInventoryItemDefinition");
 
             switch (char.classType) {
                 case 0:
@@ -1087,10 +972,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (mostRecentCharacter.classType === char.classType ? actual = true : actual = false);
 
             return {
-                name: emblem.data.Response.displayProperties.name,
-                iconPath: emblem.data.Response.displayProperties.icon,
-                desc: emblem.data.Response.displayProperties.description,
-                hash: emblem.data.Response.hash,
+                name: emblem.displayProperties.name,
+                iconPath: emblem.displayProperties.icon,
+                desc: emblem.displayProperties.description,
+                hash: emblem.hash,
                 class: classe,
                 currentClass: actual,
             };
@@ -1102,29 +987,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getSeal(char, manifest) {
         if (char.titleRecordHash == null) return;
-        const sealResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyRecordDefinition/${char.titleRecordHash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            }
-        });
-        const allseals = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            },
-        });
+        const sealResponse = await getItemManifest(char.titleRecordHash, "DestinyRecordDefinition");
+        const allseals = await getAllSeals(membershipType, userId);
 
-
-        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
+        const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
         // Buscar el parentNodeHash que coincida con el hash del título
         const matchingNode = Object.values(metricsData.data).find(node => node.completionRecordHash === char.titleRecordHash);
         setSeal({
-            name: sealResponse.data.Response.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.data.Response.displayProperties.name,
-            desc: sealResponse.data.Response.displayProperties.description,
-            iconPath: matchingNode.originalIcon || sealResponse.data.Response.displayProperties.icon,
+            name: sealResponse.titleInfo.titlesByGender[char.genderType == 0 ? "Male" : "Female"] || sealResponse.displayProperties.name,
+            desc: sealResponse.displayProperties.description,
+            iconPath: matchingNode.originalIcon || sealResponse.displayProperties.icon,
             sealHash: matchingNode.hash,
-            timesGilded: allseals.data.Response.profileRecords.data?.records?.[sealResponse.data.Response.titleInfo?.gildingTrackingRecordHash]?.completedCount
+            timesGilded: allseals.profileRecords.data?.records?.[sealResponse.titleInfo?.gildingTrackingRecordHash]?.completedCount
         });
     }
 
@@ -1139,31 +1015,23 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getEmblemElements(emblemHash) {
-        const emblemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            }
-        })
+        const emblemResponse = await getItemManifest(emblemHash, "DestinyInventoryItemDefinition");
         setEmblemElements({
-            icon: emblemResponse.data.Response.secondaryOverlay,
-            bg: emblemResponse.data.Response.secondarySpecial,
+            icon: emblemResponse.secondaryOverlay,
+            bg: emblemResponse.secondarySpecial,
         });
     }
 
     async function getCurrentSeason(seasonHash, manifest) {
-        const seasonResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySeasonDefinition/${seasonHash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            }
-        })
-        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
+        const seasonResponse = await getItemManifest(seasonHash, "DestinySeasonDefinition");
+        const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
         // Buscar la métrica que coincida con el nombre de la temporada
         const matchingMetric = Object.values(metricsData.data).find(metric =>
-            metric.displayProperties.name.toLowerCase().includes(seasonResponse.data.Response.displayProperties.name.toLowerCase())
+            metric.displayProperties.name.toLowerCase().includes(seasonResponse.displayProperties.name.toLowerCase())
         );
-        setSeason(seasonResponse.data.Response.seasonNumber);
+        setSeason(seasonResponse.seasonNumber);
         return matchingMetric.hash;
     }
 
@@ -1201,13 +1069,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         if (enchancedPerk) {
             const statMw = enchancedPerk.investmentStats.find(invStat => invStat.value == 10)
             if (statMw) {
-                const statMwResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${statMw.statTypeHash}/?lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    }
-                });
-                const statName = statMwResponse.data.Response.displayProperties.name;
-                const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyInventoryItemDefinition;
+                const statMwResponse = await getItemManifest(statMw.statTypeHash, "DestinyStatDefinition");
+                const statName = statMwResponse.displayProperties.name;
+                const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyInventoryItemDefinition;
                 const metricsData = await axios.get(`/api${manifestUrl}`);
 
                 const matchingMetric = Object.values(metricsData.data).find(metric =>
@@ -1228,41 +1092,28 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     async function getDescription(hash) {
         if (hash == null) return;
         let color;
-        const response = await axios.get(`/api/Platform/Destiny2/Manifest/DestinySandboxPerkDefinition/${hash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            }
-        });
-        if (response.data.Response.displayProperties.description.includes("+10") || response.data.Response.displayProperties.description.includes("+5")) {
+        const response = await getItemManifest(hash, "DestinySandboxPerkDefinition");
+        if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5")) {
             color = "#68a0b7";
-        } else if (response.data.Response.displayProperties.description.includes("+3")) {
+        } else if (response.displayProperties.description.includes("+3")) {
             color = "rgba(104, 160, 183, 0.8)";
         }
-        if (response.data.Response.displayProperties.description == "") return null;
+        if (response.displayProperties.description == "") return null;
         else return {
-            description: response.data.Response.displayProperties.description,
+            description: response.displayProperties.description,
             color: color,
         }
     }
 
     async function getDescriptionPerksWeapons(perks, item) {
-        //console.log("statsGroup", perks, item.stats.statGroupHash)
-        const group = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatGroupDefinition/${item.stats.statGroupHash}/?lc=es`, {
-            headers: {
-                'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-            }
-        });
-        const statsOfGroup = group.data.Response.scaledStats;
+        const group = await getItemManifest(item.stats.statGroupHash, "DestinyStatGroupDefinition");
+        const statsOfGroup = group.scaledStats;
         perks.forEach((perk) => {
             perk.statDescripton = [];
             perk?.investmentStats?.forEach(async (invStat) => {
                 let color, num;
                 if (statsOfGroup.find(stat => stat.statHash == invStat.statTypeHash)) {//Si la stat esta en el grupo, conitnuo
-                    const statName = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${invStat.statTypeHash}/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        }
-                    });
+                    const statName = await getItemManifest(invStat.statTypeHash, "DestinyStatDefinition");
                     if (invStat.value != 0 && !(perk.perkType.includes("masterworks") && invStat.value === 3)) { //Si la stat no es cero o es una obra maestra de un arma comun
                         if (invStat.value < 0) { //perk negativa
                             color = "#A42323";
@@ -1285,7 +1136,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             num = "+" + invStat.value;
                         }
                         perk.statDescripton.push({
-                            name: `<strong>${num}</strong> ${statName.data.Response.displayProperties.name}`,
+                            name: `<strong>${num}</strong> ${statName.displayProperties.name}`,
                             color: color,
                         });
                     }
@@ -1297,7 +1148,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getElementalColor(elementindex, manifest) {
-        const manifestUrl = manifest.data.Response.jsonWorldComponentContentPaths.es.DestinyDamageTypeDefinition;
+        const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyDamageTypeDefinition;
         const metricsData = await axios.get(`/api${manifestUrl}`);
 
         // Buscar la métrica que coincida con el elemento
@@ -1334,15 +1185,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             }
         }
         const stats = await Promise.all(investmentStats.slice(1).map(async (stat) => {
-            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statTypeHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                }
-            });
+            const statResponse = await getItemManifest(stat.statTypeHash, "DestinyStatDefinition");
             return {
                 value: stat.value > 0 ? "+" + stat.value : stat.value,
-                iconPath: statResponse.data.Response.displayProperties.icon,
-                name: statResponse.data.Response.displayProperties.name,
+                iconPath: statResponse.displayProperties.icon,
+                name: statResponse.displayProperties.name,
                 statHash: stat.statTypeHash,
                 color: stat.value < 0 ? "#A42323" : "",
             }
@@ -1392,7 +1239,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
             window.addEventListener("keydown", handleKeyDown);
 
-            // Cleanup: eliminar el evento cuando isVisible cambie o el componente se desmonte
             return () => {
                 window.removeEventListener("keydown", handleKeyDown);
             };

@@ -1,6 +1,6 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import inventory from "../../../assets/inventory.png";
+import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import CurrentLoadout from "./CurrentLoadout";
 
 export default function SimpleLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
@@ -11,16 +11,13 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
     const [superAbility, setSuperAbility] = useState(null);
     const [isVisible, setIsVisible] = useState(false);
     const [animatePopup, setAnimatePopup] = useState(false);
+    const { getFullCharacterProfile, getCharacterSimpleInventoryAndEquipment, getItemManifest, getItemInstance } = useBungieAPI();
 
     useEffect(() => {
         const fetchSimpleLoadout = async () => {
             try {
-                const responseChar = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
-                const characters = responseChar.data.Response.characters.data;
+                const responseChar = await getFullCharacterProfile(membershipType, userId);
+                const characters = responseChar.characters.data;
 
                 //0 masculino, 1 femenino
                 const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
@@ -30,72 +27,55 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 const charID = mostRecentCharacter.characterId;
                 const classType = mostRecentCharacter.classType;
 
-                const response = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`, {
-                    headers: {
-                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                    },
-                });
+                const response = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, charID);
 
                 let totalStats = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218];
                 await getTotalStats(totalStats);
 
-                const itemDetails = await Promise.all(response.data.Response.equipment.data.items.map(async (item) => {
-                    const itemResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${item.itemHash}/?lc=es`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        },
-                    });
-                    const itemD = await axios.get(`/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${item.itemInstanceId}/?components=305,304`, {
-                        headers: {
-                            'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                        },
-                    });
+                const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
+                    const itemResponse = await getItemManifest(item.itemHash, "DestinyInventoryItemDefinition");
+                    const itemD = await getItemInstance(membershipType, userId, item.itemInstanceId);
 
-                    if ([3, 4, 5, 6, 7].includes(response.data.Response.equipment.data.items.indexOf(item))) {
-                        const statsList = itemD.data.Response.stats.data?.stats;
+                    if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
+                        const statsList = itemD.stats.data?.stats;
                         for (const stat of Object.values(statsList)) {
                             try {
-                                const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
+                                /*const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
                                     headers: {
                                         'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
                                     },
-                                });
+                                });*/
                                 totalStats.find((baseStat) => baseStat.statHash === stat.statHash).value += stat.value;
                             } catch (error) {
                                 console.error(`Error fetching stat definition for ${stat.statHash}:`, error);
                             }
                         }
                     }
-                    if ([11].includes(response.data.Response.equipment.data.items.indexOf(item))) { //Sublcase
-                        setBackground(itemResponse.data.Response.screenshot);
-                        await Promise.all(itemD.data.Response.sockets.data?.sockets?.map(async (perk) => {
-                            const perkResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${perk.plugHash}/?lc=es`, {
-                                headers: {
-                                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                },
-                            });
-                            //console.log("A",perkResponse.data.Response.itemTypeDisplayName);
-                            if (perkResponse.data.Response.itemTypeDisplayName.includes("Súper")) {
+                    if ([11].includes(response.equipment.data.items.indexOf(item))) { //Sublcase
+                        setBackground(itemResponse.screenshot);
+                        await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
+                            const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
+                            if (perkResponse.itemTypeDisplayName.includes("Súper")) {
                                 setSuperAbility({
-                                    name: perkResponse.data.Response.displayProperties.name,
-                                    iconPath: perkResponse.data.Response.displayProperties.icon,
+                                    name: perkResponse.displayProperties.name,
+                                    iconPath: perkResponse.displayProperties.icon,
                                 });
                             }
-                            if (perkResponse.data.Response.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                if (perkResponse.data.Response.hash == 2272984671 || perkResponse.data.Response.hash == 1727069360) { //Si es un fragmento de clase
+                            if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
+                                if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
                                     switch (classType) {
                                         case 0: //Titan resto resistencia
-                                            totalStats[1].value -= Math.abs(perkResponse.data.Response.investmentStats[3].value);
+                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
                                             break;
                                         case 1: //Cazador resto movilidad
-                                            totalStats[4].value -= Math.abs(perkResponse.data.Response.investmentStats[2].value);
+                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
                                             break;
                                         case 2: //Hechicero resto recuperacion
-                                            totalStats[3].value -= Math.abs(perkResponse.data.Response.investmentStats[1].value);
+                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
                                             break;
                                     }
                                 }
-                                else for (const stat of Object.values(perkResponse.data.Response.investmentStats).slice(1)) {
+                                else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
                                     const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
                                     if (stat.value < 0) {
                                         baseStat.value -= Math.abs(stat.value);
@@ -107,9 +87,9 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                         }) || []);
                     }
                     return {
-                        name: itemResponse.data.Response.displayProperties.name,
-                        icon: itemResponse.data.Response.displayProperties.icon,
-                        rarity: itemResponse.data.Response.inventory.tierType,
+                        name: itemResponse.displayProperties.name,
+                        icon: itemResponse.displayProperties.icon,
+                        rarity: itemResponse.inventory.tierType,
                     };
                 }))
                 setTotalStats(totalStats);
@@ -125,15 +105,11 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
 
     async function getTotalStats(totalStats) {
         const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
-            const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${statHash}/?lc=es`, {
-                headers: {
-                    'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                },
-            });
+            const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
             return {
                 statHash,
-                name: statResponse.data.Response.displayProperties.name,
-                iconPath: statResponse.data.Response.displayProperties.icon,
+                name: statResponse.displayProperties.name,
+                iconPath: statResponse.displayProperties.icon,
                 value: 0,
             };
         }));

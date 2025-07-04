@@ -120,7 +120,6 @@ export const useBungieAPI = () => {
     const getCompChars = useCallback(async (membershipType, userId) => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`;
         const response = await apiRequest('compChars', url, [membershipType, userId]);
-        console.log("CompChars Response: ", response);
         return response?.data?.Response?.characters?.data;
     }, [apiRequest]);
 
@@ -192,6 +191,50 @@ export const useBungieAPI = () => {
         const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count]);
         return response?.Response?.activities || [];
     }, [apiRequest]);
+
+    // ---------------- Metodos del lodaut SimpleLodaut.jsx ----------------
+
+    const getFullCharacterProfile = useCallback(async (membershipType, userId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
+        const response = await apiRequest('fullCharacterProfile', url, [membershipType, userId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    const getCharacterSimpleInventoryAndEquipment = useCallback(async (membershipType, userId, charID) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`;
+        const response = await apiRequest('characterSimpleInventoryAndEquipment', url, [membershipType, userId, charID]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    const getItemInstance = useCallback(async (membershipType, userId, itemInstanceId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=305,304`;
+        const response = await apiRequest('itemInstance', url, [membershipType, userId, itemInstanceId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    //------------------ Métodos del lodaut CurrentLodaut.jsx ----------------
+
+    // Obtener artefacto, triunfos, personajes, pase
+    const getProfileGeneralProgressions = useCallback(async (membershipType, userId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
+        const response = await apiRequest('characterProfileWithComponents', url, [membershipType, userId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    // Obtener detalles completos de un item por instanceId
+    const getFullItemDetails = useCallback(async (membershipType, userId, itemInstanceId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=300,301,304,305,309,302,303,306,307,308,310`;
+        const response = await apiRequest('fullItemDetails', url, [membershipType, userId, itemInstanceId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    const getAllSeals = useCallback(async (membershipType, userId) => {
+        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`;
+        const response = await apiRequest('allSeals', url, [membershipType, userId]);
+        return response?.Response;
+    }, [apiRequest]);
+
+    //------------------------------------------------------------------------
 
     // Obtener commendaciones/honor
     const getCommendations = useCallback(async (membershipType, userId) => {
@@ -322,10 +365,16 @@ export const useBungieAPI = () => {
         getParty,
         getUserMembershipsById,
         getCharsAndEquipment,
+        getProfileGeneralProgressions,
         getClanMembers,
         getCharacterActivities,
+        getItemInstance,
+        getCharacterSimpleInventoryAndEquipment,
+        getAllSeals,
         getRecentActivities,
+        getFullItemDetails,
         getAggregateActivityStats,
+        getFullCharacterProfile,
         getCommendations,
         getProfileChars,
         getEmblem,
