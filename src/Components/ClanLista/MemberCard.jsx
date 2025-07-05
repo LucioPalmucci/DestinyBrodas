@@ -189,7 +189,7 @@ export default function MemberCard({ member }) {
                                 <div style={{ whiteSpace: 'pre-line' }}>
                                     <div>{activity.name}</div>
                                     <div className="text-sm text-gray-600">{activity.type}</div>
-                                    {activity.playlist && activity.playlist !== activity.name && (
+                                    {activity.playlist && activity.playlist !== activity.name && activity.playlist !== activity.type && (
                                         <div className="text-xs text-gray-500">{activity.playlist}</div>
                                     )}
                                 </div>

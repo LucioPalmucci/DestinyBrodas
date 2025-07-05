@@ -7,7 +7,9 @@ import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../../LastConexion';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';
+import Commendations from '../Commendations/Commendations';
 import CurrentActivity from '../CurrentActivity/CurrentActivity';
+import FavouriteActivity from '../FavActivity/FavouriteActivity';
 import FavouriteWeapons from '../FavWeapons/FavouriteWeapons';
 import ActivityHistory from '../History/ActivityHistory';
 import SimpleLoadout from '../Lodaut/SimpleLodaut';
@@ -122,9 +124,9 @@ function MemberDetail() {
                     Volver al inicio
                 </a>
             </button>
-            <div className='justify-start flex mt-10 font-Inter items-center flex-col w-3/4'>
-                <div className='w-3/4 text-start'>
-                    <div className='flex items-center mb-1 relative'>
+            <div className='justify-between flex flex-row mt-10 font-Inter w-full px-15'>
+                <div className='w-[30.5%]'>
+                    <div className='flex items-center mb-1'>
                         <img src={`${classImg.link}`} className={`w-10 h-10 mr-2`} style={{ filter: `${classImg.colore}`, marginLeft: '-3px' }} />
                         <h1 className='text-4xl font-bold text-gray-700 mr-0.5'>
                             {userMemberships?.bungieNetUser?.uniqueName?.slice(0, -5)}
@@ -139,7 +141,7 @@ function MemberDetail() {
                         <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
                     </div>
                     {memberDetail && userMemberships && (
-                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between w-1/2'>
+                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between'>
                             <div className='ml-1 items-center'>
                                 <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
                                 <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
@@ -156,18 +158,22 @@ function MemberDetail() {
                         </div>
                     )}
                     <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
+                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
+                    <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
+                    <TriumphScore userId={membershipId} membershipType={membershipType} />
                 </div>
-                <div className='w-3/4 text-start'>
-                    <div>
-                        <div className='flex'>
+                <div className='w-[65%]'>
+                    <div className='flex justify-between items-center'>
+                        <div className='w-[47%]'>
                             <CurrentActivity type={membershipType} id={membershipId} />
+                            <Commendations userId={membershipId} membershipType={membershipType} />
+                        </div>
+                        <div className='w-[47%]'>
+                            <FavouriteActivity userId={membershipId} membershipType={membershipType} />
                             <ReputationStatus userId={membershipId} membershipType={membershipType} />
                         </div>
-                        <ClanTeammates userId={membershipId} membershipType={membershipType} />
-                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
-                        <ActivityHistory userId={membershipId} membershipType={membershipType} />
-                        <TriumphScore userId={membershipId} membershipType={membershipType} />
                     </div>
+                    <ActivityHistory userId={membershipId} membershipType={membershipType} />
                 </div>
             </div>
         </div>

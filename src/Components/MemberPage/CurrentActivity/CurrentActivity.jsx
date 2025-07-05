@@ -24,7 +24,7 @@ export default function CurrentActivity({ type, id }) {
                 const currentActivityHash = activityResponse.currentActivityHash;
                 const currentActivityMode = activityResponse.currentActivityModeHash;
                 const currentActivityPlaylist = activityResponse.currentPlaylistActivityHash;
-                const fecha =  partyResponse.currentActivity.startTime;
+                const fecha = partyResponse.currentActivity.startTime;
                 let oponentes = partyResponse.currentActivity.numberOfOpponents;
                 const jugadores = partyResponse.currentActivity.numberOfPlayers;
                 const puntosAliados = partyResponse.currentActivity.score;
@@ -38,9 +38,6 @@ export default function CurrentActivity({ type, id }) {
                 let name = datosGenerales.displayProperties.name;
                 let mapaDePVP = datosGenerales.displayProperties.description;
                 const actividadImg = datosGenerales.pgcrImage || orbit;
-                //console.log("Current activity hash:", actividadImg);
-
-                //console.log("Current activity hash:", datosGenerales);
 
                 let playlist = await fetchActivityDetails(currentActivityPlaylist, "DestinyActivityDefinition");
 
@@ -62,13 +59,13 @@ export default function CurrentActivity({ type, id }) {
                 if (aliados > 6) aliados = 6;
 
                 let PVPoPVE;
-                if (activityResponse.data.Response.activities.data.currentActivityModeTypes == null) {
+                if (activityResponse.currentActivityModeTypes == null) {
                     PVPoPVE = "PVE";
-                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 5)) {
+                } else if (activityResponse.currentActivityModeTypes.some(mode => mode === 5)) {
                     PVPoPVE = "PVP"
-                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 63)) {
+                } else if (activityResponse.currentActivityModeTypes.some(mode => mode === 63)) {
                     PVPoPVE = "PVP"; // Gambito
-                } else if (activityResponse.data.Response.activities.data.currentActivityModeTypes.some(mode => mode === 6)) {
+                } else if (activityResponse.currentActivityModeTypes.some(mode => mode === 6)) {
                     PVPoPVE = "PVP"; // Patrulla
                 }
 
@@ -91,7 +88,7 @@ export default function CurrentActivity({ type, id }) {
                     tieneIcono: tieneIcono,
                 });
 
-                const partyMembersData = partyResponse.data.Response.profileTransitoryData.data.partyMembers;
+                const partyMembersData = partyResponse.partyMembers;
                 const partyMembersDetails = await fetchPartyMembersDetails(partyMembersData);
                 setPartyMembers(partyMembersDetails);
 
@@ -117,10 +114,10 @@ export default function CurrentActivity({ type, id }) {
 
     const fetchActivityDetails = async (activityHash, type, Subclase) => {
         try {
-            const response = getItemManifest(activityHash, type);
-            console.log("Current activity hash:", response);
+            const response = await getItemManifest(activityHash, type);
             if (response == null) return null;
             else if (Subclase === "general") return response;
+            else if (Subclase === "sub") return response.talentGrid.buildName;
             else return response.displayProperties.name;
 
         } catch (error) {
@@ -129,8 +126,102 @@ export default function CurrentActivity({ type, id }) {
         }
     };
 
+    const fetchPartyMembersDetails = async (partyMembersData) => {
+        return await Promise.all(partyMembersData.map(async member => {
+            const plataformas = [3, 1, 2, 10, 6];
+            let profileResponse;
+            let successfulPlatform = null;
+            for (const plataforma of plataformas) {
+                try {
+                    profileResponse = await getCompsProfile(plataforma, member.membershipId);
+                    if (profileResponse && profileResponse.profile?.data) {
+                        successfulPlatform = plataforma;
+                        break;
+                    }
+                } catch (error) {
+                    console.error("No es de la plataforma", plataforma);
+                }
+            }
+
+            if (!profileResponse || !successfulPlatform) {
+                throw new Error(`No se pudo obtener el perfil para el miembro con ID ${member.membershipId}`);
+            }
+
+            // Obtener el uniqueName usando el endpoint adecuado
+            const userResponse = await getUserMembershipsById(member.membershipId, successfulPlatform);
+            const displayName = profileResponse.profile.data.userInfo.displayName;
+            const uniqueName = userResponse.bungieNetUser.uniqueName;
+            const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
+
+            return {
+                id: member.membershipId,
+                emblemPath: emblemPath.emblemPath,
+                clase: emblemPath.clase,
+                light: emblemPath.light,
+                subclass: emblemPath.subclass,
+                displayName: displayName,
+                uniqueName: uniqueName,
+                platform: successfulPlatform, // Agregar la plataforma exitosa al objeto de miembro
+            };
+        }));
+    };
+
+    const getPartyEmblem = async (id, type) => {
+        try {
+            // Hacer una sola llamada a la API para obtener el perfil completo del miembro
+            const response = await getCharsAndEquipment(type, id);
+
+            const characters = response.characters.data;
+            const equipment = response.characterEquipment.data;
+
+            const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
+                return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
+            });
+
+            let clase;
+            switch (mostRecentCharacter.classType) {
+                case 0: // Titán
+                    clase = mostRecentCharacter.genderType === 0 ? "Titán" : "Titán";
+                    break;
+                case 1: // Cazador
+                    clase = mostRecentCharacter.genderType === 0 ? "Cazador" : "Cazadora";
+                    break;
+                case 2: // Hechicero
+                    clase = mostRecentCharacter.genderType === 0 ? "Hechicero" : "Hechicera";
+                    break;
+                default:
+                    clase = "Desconocido";
+            }
+
+            const equippedSubclass = equipment[mostRecentCharacter.characterId].items.find(item => item.bucketHash === 3284755031);
+            let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
+
+            if (subclass.includes("arc")) {
+                subclass = "arco";
+            } else if (subclass.includes("void")) {
+                subclass = "vacío";
+            } else if (subclass.includes("thermal")) {
+                subclass = "solar";
+            } else if (subclass.includes("stasis")) {
+                subclass = "estasis";
+            } else if (subclass.includes("strand")) {
+                subclass = "cuerda";
+            } else if (subclass.includes("prism")) {
+                subclass = "prismatico";
+            } else {
+                subclass = "Desconocido";
+            }
+
+            return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass };
+
+        } catch (error) {
+            console.error('Error fetching equipped emblem:', error);
+            return null;
+        }
+    };
+
     return (
-        <div className="w-fit mt-10">
+        <div>
             {activity ? (
                 <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${activity.imagen})` }}>
                     <div>
@@ -213,100 +304,26 @@ export default function CurrentActivity({ type, id }) {
                         : null}
                 </div>
             ) : (
-                <p className="text-center text-gray-500">No está jugando ahora</p>
+                <div
+                    className="text-white p-6 rounded-lg content-fit shadow-lg h-[450px] flex flex-col bg-center bg-cover relative"
+                    style={{ backgroundImage: `url(${orbit})` }}
+                >
+                    {/* Overlay de transparencia */}
+                    <div className="absolute inset-0 bg-black opacity-80 rounded-lg"></div>
+
+                    {/* Contenido por encima del overlay */}
+                    <div className="relative z-10 flex flex-col h-full">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit mb-4">
+                            <p className="flex text-lg font-semibold mb-0 p-0 leading-tight">
+                                Actividad en curso
+                            </p>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center">
+                            <p className="text-2xl bg-black/25 p-2 rounded text-center uppercase">No está en línea</p>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
 }
-const fetchPartyMembersDetails = async (partyMembersData) => {
-    return await Promise.all(partyMembersData.map(async member => {
-        const plataformas = [3, 1, 2, 10, 6];
-        let profileResponse;
-        let successfulPlatform = null;
-        for (const plataforma of plataformas) {
-            try {
-                profileResponse = await getCompsProfile(plataforma, member.membershipId);
-                successfulPlatform = plataforma;
-                break;
-            } catch (error) {
-                console.error("No es de la plataforma", plataforma);
-            }
-        }
-
-        if (!profileResponse) {
-            throw new Error(`No se pudo obtener el perfil para el miembro con ID ${member.membershipId}`);
-        }
-
-        // Obtener el uniqueName usando el endpoint adecuado
-        const userResponse = await getUserMembershipsById(member.membershipId, successfulPlatform);
-        const displayName = profileResponse.profile.data.userInfo.displayName;
-        const uniqueName = userResponse.bungieNetUser.uniqueName;
-        const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
-        //console.log(`Data of member ${member.membershipId} on platform ${successfulPlatform}:`, displayName);
-
-        return {
-            id: member.membershipId,
-            emblemPath: emblemPath.emblemPath,
-            clase: emblemPath.clase,
-            light: emblemPath.light,
-            subclass: emblemPath.subclass,
-            displayName: displayName,
-            uniqueName: uniqueName,
-            platform: successfulPlatform, // Agregar la plataforma exitosa al objeto de miembro
-        };
-    }));
-};
-const getPartyEmblem = async (id, type) => {
-    try {
-        // Hacer una sola llamada a la API para obtener el perfil completo del miembro
-        const response = await getCharsAndEquipment(type, id);
-
-        const characters = response.characters.data;
-        const equipment = response.characterEquipment.data;
-
-        const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
-            return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
-        });
-
-        let clase;
-        switch (mostRecentCharacter.classType) {
-            case 0: // Titán
-                clase = mostRecentCharacter.genderType === 0 ? "Titán" : "Titán";
-                break;
-            case 1: // Cazador
-                clase = mostRecentCharacter.genderType === 0 ? "Cazador" : "Cazadora";
-                break;
-            case 2: // Hechicero
-                clase = mostRecentCharacter.genderType === 0 ? "Hechicero" : "Hechicera";
-                break;
-            default:
-                clase = "Desconocido";
-        }
-
-        const equippedSubclass = equipment[mostRecentCharacter.characterId].items.find(item => item.bucketHash === 3284755031);
-        let subclass = equippedSubclass ? await fetchActivityDetails(equippedSubclass.itemHash, "DestinyInventoryItemDefinition", "sub") : "Desconocido";
-
-
-        if (subclass.includes("arc")) {
-            subclass = "arco";
-        } else if (subclass.includes("void")) {
-            subclass = "vacío";
-        } else if (subclass.includes("thermal")) {
-            subclass = "solar";
-        } else if (subclass.includes("stasis")) {
-            subclass = "estasis";
-        } else if (subclass.includes("strand")) {
-            subclass = "cuerda";
-        } else if (subclass.includes("prism")) {
-            subclass = "prismatico";
-        } else {
-            subclass = "Desconocido";
-        }
-
-        return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass };
-
-    } catch (error) {
-        console.error('Error fetching equipped emblem:', error);
-        return null;
-    }
-};

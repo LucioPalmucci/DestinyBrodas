@@ -141,7 +141,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
     return (
         <>
             {totalStats && background && items && (
-                <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg w-1/2 space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
+                <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
                     <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
                     <div className="justify-evenly flex">
                         <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">

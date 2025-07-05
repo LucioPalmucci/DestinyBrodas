@@ -165,7 +165,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     };
 
     return (
-        <div className='w-2/3'>
+        <div >
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
             <div className="flex mb-4">
                 <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>

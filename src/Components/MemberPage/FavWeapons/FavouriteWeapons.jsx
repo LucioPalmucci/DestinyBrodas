@@ -79,7 +79,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     }, [userId, membershipType]);
 
     return (
-        <div className="p-4 bg-neutral-300 rounded-lg shadow-md w-2xs">
+        <div className="p-4 bg-neutral-300 rounded-lg shadow-md mt-6">
             <h2 className="text-xl font-bold">Armas más usadas</h2>
             <p className="text-xs italic">Últimos 7 días</p>
             <div className="flex justify-center mb-4 mt-1">

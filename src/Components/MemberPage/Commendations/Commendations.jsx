@@ -23,7 +23,7 @@ export default function Commendations({ membershipType, userId }) {
 
     return (
         honor && (
-            <div className="mt-6 bg-gray-300 p-6 font-Lato rounded-lg pt-2 pb-8 space-y-2">
+            <div className="mt-6 bg-gray-300 p-6 font-Lato rounded-lg py-4 pb-10 h-[6.3%] space-y-2 items-center">
                 <h2 className="text-2xl font-semibold">Elogios</h2>
                 <div className="flex justify-between items-center space-x-4 mb-3">
                     <p className="flex items-center text-2xl font-bold"><img src={elogio} className="w-12 h-12 mr-2" />{honor.totalScore}</p>

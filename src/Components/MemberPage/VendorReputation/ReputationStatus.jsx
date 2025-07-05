@@ -6,8 +6,6 @@ import caretLeft from "../../../assets/caret-left-solid.svg";
 import caretRight from "../../../assets/caret-right-solid.svg";
 import "../../../index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
-import Commendations from "../Commendations/Commendations";
-import FavouriteActivity from "../FavActivity/FavouriteActivity";
 
 const NextArrow = ({ onClick }) => (
     <div className="custom-arrow cursor-pointer" onClick={onClick}>
@@ -205,8 +203,6 @@ export default function ReputationStatus({ membershipType, userId }) {
 
     return (
         <div>
-            <FavouriteActivity membershipType={membershipType} userId={userId} />
-            <Commendations membershipType={membershipType} userId={userId} />
             {rango && (
                 <div className="mt-6 bg-gray-300 p-4 rounded-lg flex flex-col items-center">
                     <h2 className="text-2xl font-semibold self-start">Reputación</h2>
