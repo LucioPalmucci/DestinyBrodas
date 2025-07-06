@@ -79,7 +79,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     }, [userId, membershipType]);
 
     return (
-        <div className="p-4 bg-neutral-300 rounded-lg shadow-md mt-6">
+        <div className="p-4 bg-neutral-300 rounded-lg shadow-md mt-6 h-[370px]">
             <h2 className="text-xl font-bold">Armas más usadas</h2>
             <p className="text-xs italic">Últimos 7 días</p>
             <div className="flex justify-center mb-4 mt-1">
@@ -87,7 +87,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 <button onClick={() => setPage("pvp")} className={`cursor-pointer text-sm p-2 py-1 ${page === "pvp" ? "bg-gray-400" : ""} rounded-lg`}>PvP</button>
             </div>
             {loading ? (
-                <Spinner small={true} />
+                <Spinner small={true} className="place-self-center" />
             ) : (
                 <AnimatePresence mode="wait">
                     <motion.ul

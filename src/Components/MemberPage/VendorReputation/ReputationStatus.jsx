@@ -203,53 +203,57 @@ export default function ReputationStatus({ membershipType, userId }) {
 
     return (
         <div>
-            {rango && (
-                <div className="mt-6 bg-gray-300 p-4 rounded-lg flex flex-col items-center">
-                    <h2 className="text-2xl font-semibold self-start">Reputación</h2>
-                    <Slider {...sliderSettings} className="w-full max-w-[420px] !flex justify-center items-center pt-2 h-[100px]">
-                        {pages.map((pageKeys, index) => (
-                            <div key={"page-" + index} className="!flex flex-row justify-center gap-4 w-full items-center px-0">
-                                {pageKeys.map((key) => (
-                                    rango[key] && (
-                                        <div key={"reputation-" + key} className="relative justify-center flex space-x-1 items-center">
-                                            {rango[key].logo && (
-                                                <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
-                                                    <img
-                                                        src={rango[key].logo}
-                                                        width={70}
-                                                        height={70}
-                                                        alt={`${rango[key].nombre} logo`}
-                                                        className="absolute z-10 p-3"
-                                                    />
-                                                    <svg className="absolute" width="100" height="100">
-                                                        <circle cx="50" cy="50" r="30" fill="#222222" />
-                                                        <circle
-                                                            cx="50"
-                                                            cy="50"
-                                                            r="32"
-                                                            stroke={rango[key].color}
-                                                            strokeWidth="4"
-                                                            fill="none"
-                                                            strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 189`}
-                                                            transform="rotate(-90 50 50)"
+            <div className="mt-6 bg-gray-300 p-4 rounded-lg flex flex-col items-center">
+                {rango ? (
+                    <>
+                        <h2 className="text-2xl font-semibold self-start">Reputación</h2>
+                        <Slider {...sliderSettings} className="w-full max-w-[420px] !flex justify-center items-center pt-2 h-[100px]">
+                            {pages.map((pageKeys, index) => (
+                                <div key={"page-" + index} className="!flex flex-row justify-center gap-4 w-full items-center px-0">
+                                    {pageKeys.map((key) => (
+                                        rango[key] && (
+                                            <div key={"reputation-" + key} className="relative justify-center flex space-x-1 items-center">
+                                                {rango[key].logo && (
+                                                    <div className={`relative w-[70px] h-[70px] flex flex-row items-center justify-center ${rango[key].resets == null ? "mt-2" : "mt-0"}`}>
+                                                        <img
+                                                            src={rango[key].logo}
+                                                            width={70}
+                                                            height={70}
+                                                            alt={`${rango[key].nombre} logo`}
+                                                            className="absolute z-10 p-3"
                                                         />
-                                                    </svg>
+                                                        <svg className="absolute" width="100" height="100">
+                                                            <circle cx="50" cy="50" r="30" fill="#222222" />
+                                                            <circle
+                                                                cx="50"
+                                                                cy="50"
+                                                                r="32"
+                                                                stroke={rango[key].color}
+                                                                strokeWidth="4"
+                                                                fill="none"
+                                                                strokeDasharray={`${(rango[key].progreso / rango[key].valorMaximo) * 176}, 189`}
+                                                                transform="rotate(-90 50 50)"
+                                                            />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                                <div className="text-start leading-5">
+                                                    <p>Rango {rango[key].level}</p>
+                                                    <p className="font-semibold">{rango[key].stepName}</p>
+                                                    <p className="text-sm">{rango[key].valor} ({rango[key].progreso || 0} / {rango[key].valorMaximo || 0})</p>
+                                                    {rango[key].resets != null && <p className="text-sm">{rango[key].resets} reinicios</p>}
                                                 </div>
-                                            )}
-                                            <div className="text-start leading-5">
-                                                <p>Rango {rango[key].level}</p>
-                                                <p className="font-semibold">{rango[key].stepName}</p>
-                                                <p className="text-sm">{rango[key].valor} ({rango[key].progreso || 0} / {rango[key].valorMaximo || 0})</p>
-                                                {rango[key].resets != null && <p className="text-sm">{rango[key].resets} reinicios</p>}
                                             </div>
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        ))}
-                    </Slider>
-                </div>
-            )}
+                                        )
+                                    ))}
+                                </div>
+                            ))}
+                        </Slider>
+                    </>
+                ) : (
+                    <div className="text-center text-lg flex font-semibold h-[130px] items-center">Cargando reputación...</div>
+                )}
+            </div>
         </div>
     )
 }

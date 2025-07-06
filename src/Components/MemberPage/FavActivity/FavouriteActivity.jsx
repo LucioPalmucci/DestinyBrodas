@@ -184,36 +184,38 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     return (
         <div className="font-Inter">
-            {mostPlayedActivity && charCompl ? (
-                <div className="text-white h-[450px] p-6 rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity.pgcrImg})` }}>
-                    <div className="space-y-10 flex flex-col">
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
-                            Actividad más jugada
+            <div className="text-white h-[450px]">
+                {mostPlayedActivity && charCompl ? (
+                    <div className="p-6 h-full rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity?.pgcrImg})` }}>
+                        <div className="space-y-10 flex flex-col">
+                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
+                                Actividad más jugada
+                            </div>
+                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold p-0">
+                                {mostPlayedActivity.mode}
+                            </div>
+                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0">
+                                Completiciones: {mostPlayedActivity.completions}<br />
+                                Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
+                                Bajas: {mostPlayedActivity.kills}<br />
+                                Favorita: {mostPlayedActivity.fav}
+                            </div>
+                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
+                                {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
+                                    <div key={char} className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
+                                        <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold p-0">
-                            {mostPlayedActivity.mode}
-                        </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0">
-                            Completiciones: {mostPlayedActivity.completions}<br />
-                            Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
-                            Bajas: {mostPlayedActivity.kills}<br />
-                            Favorita: {mostPlayedActivity.fav}
-                        </div>
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
-                            {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
-                                <div key={char} className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
-                                    <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%
-                                </div>
-                            ))}
+                        <div>
+                            {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 ml-10" />}
                         </div>
                     </div>
-                    <div>
-                        {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 ml-10" />}
-                    </div>
-                </div>
-            ) : (
-                <p>Cargando actividad...</p>
-            )}
+                ) : (
+                    <p className="bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold h-full w-full text-black rounded-lg">Cargando actividad más jugada...</p>
+                )}
+            </div>
             {error && <p>{error}</p>}
         </div>
     );

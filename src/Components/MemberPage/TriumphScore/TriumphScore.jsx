@@ -20,7 +20,7 @@ export default function TriumphScore({ membershipType, userId }) {
     }, []);
 
     return (
-        triumphs && (
+        triumphs ? (
             <div className='p-6 bg-gray-300 rounded-lg mt-6'>
                 <p className='font-bold text-2xl'>Triunfo</p>
                 <div className='flex justify-evenly space-x-8 mt-2'>
@@ -40,6 +40,8 @@ export default function TriumphScore({ membershipType, userId }) {
                     </div>
                 </div>
             </div>
+        ) : (
+            <div className='p-6 bg-gray-300 rounded-lg mt-6 flex items-center justify-center h-[150px] '>Cargando triunfos...</div>
         )
     )
 }

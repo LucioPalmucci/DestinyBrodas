@@ -115,7 +115,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
         }));
         totalStats.splice(0, totalStats.length, ...updatedStats);
     }
-     useEffect(() => {
+    useEffect(() => {
         if (showFull) {
             setIsVisible(true);
             setTimeout(() => setAnimatePopup(true), 100);
@@ -140,60 +140,64 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
 
     return (
         <>
-            {totalStats && background && items && (
-                <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4 h-[475px]" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
-                    <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
-                    <div className="justify-evenly flex">
-                        <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
-                            {[11, 3, 4, 5, 6, 7, 0, 1, 2].map((index) => (
-                                items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
-                                    index != 11 ? (
-                                        <div key={index} className="flex items-center space-x-2">
-                                            <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
-                                            <p className="font-semibold">{items[index].name}</p>
-                                        </div>
-                                    ) : (
-                                        <div key={index} className="flex items-center space-x-2">
-                                            <img src={`/api${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
-                                            <p className="font-semibold">{superAbility?.name}</p>
-                                        </div>
+            <div className={`font-Inter h-[475px]`}>
+                {totalStats && background && items ? (
+                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
+                        <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
+                        <div className="justify-evenly flex">
+                            <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
+                                {[11, 3, 4, 5, 6, 7, 0, 1, 2].map((index) => (
+                                    items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
+                                        index != 11 ? (
+                                            <div key={index} className="flex items-center space-x-2">
+                                                <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
+                                                <p className="font-semibold">{items[index].name}</p>
+                                            </div>
+                                        ) : (
+                                            <div key={index} className="flex items-center space-x-2">
+                                                <img src={`/api${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
+                                                <p className="font-semibold">{superAbility?.name}</p>
+                                            </div>
+                                        )
                                     )
-                                )
-                            ))}
+                                ))}
+                            </div>
+                            {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
+                                {totalStats.map((stat) => (
+                                    stat.iconPath && (
+                                        <p key={stat.statHash} className="flex items-center space-x-4 font-semibold text-xl">
+                                            <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
+                                            {stat.value}
+                                        </p>
+                                    )
+                                ))}
+                            </div>}
                         </div>
-                        {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
-                            {totalStats.map((stat) => (
-                                stat.iconPath && (
-                                    <p key={stat.statHash} className="flex items-center space-x-4 font-semibold text-xl">
-                                        <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
-                                        {stat.value}
-                                    </p>
-                                )
-                            ))}
-                        </div>}
+                        <div className="flex justify-center">
+                            <a onClick={() => setShowFull(true)} className="-translate-x-8 cristal transform transition-transform duration-200 hover:scale-105">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                Ver Más
+                            </a>
+                        </div>
                     </div>
-                    <div className="flex justify-center">
-                        <a onClick={() => setShowFull(true)} className="-translate-x-8 cristal transform transition-transform duration-200 hover:scale-105">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                            Ver Más
-                        </a>
-                    </div>
-                </div>
-            )}
+                ) : (
+                    <div className="bg-gray-300 items-center flex text-2xl mt-4 text-black h-full justify-center rounded-lg text-semibold">Cargando loadout...</div>
+                )}
+            </div>
             {showFull && (
                 <div className="fixed inset-0 flex items-center justify-center w-full z-40 bg-black/50" onClick={() => setShowFull(false)}>
                     <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
-                    <CurrentLoadout
-                        membershipType={membershipType}
-                        userId={userId}
-                        name={name}
-                        seasonHash={seasonHash}
-                        rank={rank}
-                        light={light}
-                    />
+                        <CurrentLoadout
+                            membershipType={membershipType}
+                            userId={userId}
+                            name={name}
+                            seasonHash={seasonHash}
+                            rank={rank}
+                            light={light}
+                        />
                     </div>
                     <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowFull(false); }}>✕</button>
                 </div>

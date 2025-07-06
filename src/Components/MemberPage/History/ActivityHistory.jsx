@@ -5,7 +5,7 @@ import Completed from "../../../assets/Completed.png";
 import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
-import "../../../index.css";
+//import "../../../index.css";
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import Spinner from '../../Spinner';
 import '../../Tab.css';
@@ -34,14 +34,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 //console.log("Activity History Response: ", response.data.Response.activities);
 
                 const details = await Promise.all(responseActs.map(async (activity) => {
-                    const activityName = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
+                    const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
                     const date = new Date(activity.period).toLocaleString();
                     const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
                     const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
-                    const modoDeLaActividad = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition", "general");
+                    const activityMode = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                     let datosDelModo;
-                    if (!modoDeLaActividad.directActivityModeHash) datosDelModo == null;
-                    else datosDelModo = await fetchActivityDetails(modoDeLaActividad.directActivityModeHash, "DestinyActivityModeDefinition", "general");
+                    if (!activityMode.directActivityModeHash) datosDelModo == null;
+                    else datosDelModo = await fetchActivityDetails(activityMode.directActivityModeHash, "DestinyActivityModeDefinition");
 
                     let activityType;
                     if (activity.activityDetails.modes.includes(7)) {
@@ -51,10 +51,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
-
+                    console.log("Activity Type: ", activity.activityDetails);
                     return {
-                        activityName,
+                        activityName: activityMode?.displayProperties?.name || null,
                         activityIcon: datosDelModo?.displayProperties?.icon || null,
+                        pgcrImage: activityMain?.pgcrImage || null,
                         activityType,
                         date,
                         duration,
@@ -137,7 +138,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const getWeaponDetails = async () => {
         if (isOpen != false) {
             const weaponD = await Promise.all(isOpen.weapons.map(async (weapon) => {
-                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition", "general");
+                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
                 //console.log("Weapon Info: ", weaponInfo);
                 return {
                     name: weaponInfo.displayProperties.name,
@@ -155,8 +156,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
         try {
             const response = await getItemManifest(activityHash, type);
             if (response == null) return null;
-            else if (Subclase === "general") return response;
-            else return response.displayProperties.name;
+            else return response;
 
         } catch (error) {
             console.error(`Error fetching activity details for hash ${activityHash}:`, error);
@@ -208,18 +208,18 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             </button>
                             <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === index ? 'max-h-screen' : 'max-h-0'}`}>
                                 {expandedIndex === index && (
-                                    <div className='mt-2 p-6 bg-white'>
+                                    <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(/api${activity.pgcrImage})` }}>
                                         {activity.teams.length > 0 ? (
-                                            <div className='justify-between space-y-4 w-full'>
+                                            <div className='justify-between space-y-4 w-full text-black'>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                        Equipo 1
-                                                        <span className='flex items-center'>
+                                                        <p className='px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>Equipo 1</p>
+                                                        <span className='flex items-center px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>
                                                             {winnerPoints}
                                                             <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
                                                         </span>
                                                     </h3>
-                                                    <table className='bg-white tablapartida'>
+                                                    <table className='tablapartida'>
                                                         <thead>
                                                             <tr>
                                                                 <th className='py-2'>Nombre</th>
@@ -242,7 +242,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                                             </div>
                                                                         </button>
                                                                     </td>
-                                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                                    {hasPoints && <td className='py-2' >{person.points}</td>}
                                                                     <td className='py-2'>{person.kills}</td>
                                                                     <td className='py-2'>{person.deaths}</td>
                                                                     <td className='py-2'>{person.kd}</td>
@@ -254,13 +254,13 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </div>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                        Equipo 2
-                                                        <span className='flex items-center'>
+                                                        <p className='px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>Equipo 2</p>
+                                                        <span className='flex items-center px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>
                                                             {loserPoints}
                                                             <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
                                                         </span>
                                                     </h3>
-                                                    <table className='bg-white tablapartida'>
+                                                    <table className='tablapartida'>
                                                         <thead>
                                                             <tr>
                                                                 <th className='py-2'>Nombre</th>
@@ -295,8 +295,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <table className='min-w-full bg-white tablapartida'>
-                                                <thead>
+                                            <table className='min-w-full tablapartida text-black'>
+                                                <thead >
                                                     <tr>
                                                         <th className='py-2'>Nombre</th>
                                                         {hasPoints && <th className='py-2'>Puntos</th>}

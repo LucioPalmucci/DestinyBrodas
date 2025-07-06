@@ -141,8 +141,9 @@ export default function ClanTeammates({ userId, membershipType }) {
     }
 
     return (
-        playersClan && playersClan.length > 0 && (
-            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover bg-neutral-900 mt-6" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
+        <div>
+        {playersClan && playersClan.length > 0 ? (
+            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
                         Actividades con miembros del clan
@@ -178,6 +179,11 @@ export default function ClanTeammates({ userId, membershipType }) {
                     ))}
                 </div>
             </div>
-        )
+        ): (
+            <div className="text-black rounded-lg bg-gray-300 text-semibold text-xl mt-6 h-[400px] flex items-center justify-center">
+                Cargando compañeros del clan...
+            </div>
+        )}
+        </div>
     );
 }
