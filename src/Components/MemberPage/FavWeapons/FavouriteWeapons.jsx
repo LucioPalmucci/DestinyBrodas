@@ -87,7 +87,9 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 <button onClick={() => setPage("pvp")} className={`cursor-pointer text-sm p-2 py-1 ${page === "pvp" ? "bg-gray-400" : ""} rounded-lg`}>PvP</button>
             </div>
             {loading ? (
-                <Spinner small={true} className="place-self-center" />
+                <div className="flex justify-center items-center h-64">
+                    <Spinner small={true} />
+                </div>
             ) : (
                 <AnimatePresence mode="wait">
                     <motion.ul

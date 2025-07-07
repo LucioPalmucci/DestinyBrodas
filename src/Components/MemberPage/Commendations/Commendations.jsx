@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import elogio from "../../../assets/elogio.png";
+import elogio from "../../../assets/elogio.png"; // Importar el icono de elogio
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 
 
@@ -22,7 +22,7 @@ export default function Commendations({ membershipType, userId }) {
     }, [])
 
     return (
-        <div className="mt-6 bg-gray-300 p-6 font-Lato rounded-lg py-4 pb-10 h-[6.3%] space-y-2 items-center">
+        <div className="mt-6 bg-gray-300 p-6 font-Lato rounded-lg  h-[162px] py-4 pb-10 space-y-2 items-center">
             {honor ? (
                 <>
                     <h2 className="text-2xl font-semibold">Elogios</h2>
@@ -57,8 +57,8 @@ export default function Commendations({ membershipType, userId }) {
                     </div>
                 </>
             ) : (
-                <div>Cargando elogios...</div>
-                )}
+                <div className="animate-pulse h-full"></div>
+            )}
         </div>
     )
 }

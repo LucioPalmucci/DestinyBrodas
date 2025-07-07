@@ -184,7 +184,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-gray-300 items-center flex text-2xl mt-4 text-black h-full justify-center rounded-lg text-semibold">Cargando loadout...</div>
+                    <div className="bg-gray-300 items-center flex text-2xl mt-4 text-black h-full justify-center rounded-lg font-semibold animate-pulse"></div>
                 )}
             </div>
             {showFull && (

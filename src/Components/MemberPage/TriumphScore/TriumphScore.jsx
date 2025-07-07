@@ -41,7 +41,7 @@ export default function TriumphScore({ membershipType, userId }) {
                 </div>
             </div>
         ) : (
-            <div className='p-6 bg-gray-300 rounded-lg mt-6 flex items-center justify-center h-[150px] '>Cargando triunfos...</div>
+            <div className='p-6 bg-gray-300 rounded-lg mt-6 flex items-center justify-center h-[150px] font-semibold animate-pulse'></div>
         )
     )
 }

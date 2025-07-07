@@ -180,8 +180,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                 </div>
             </div>
         ): (
-            <div className="text-black rounded-lg bg-gray-300 text-semibold text-xl mt-6 h-[400px] flex items-center justify-center">
-                Cargando compañeros del clan...
+            <div className="text-black rounded-lg bg-gray-300 font-semibold text-xl mt-6 h-[390px] flex items-center justify-center animate-pulse">
             </div>
         )}
         </div>

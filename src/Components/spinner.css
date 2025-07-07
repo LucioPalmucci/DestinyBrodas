@@ -17,8 +17,7 @@
 .spinner-small {
     display: flex;
     justify-content: center;
-    height: 100%;
-    align-items: start;
+    align-items: center;
 }
 
 .small-spinner-wheel {

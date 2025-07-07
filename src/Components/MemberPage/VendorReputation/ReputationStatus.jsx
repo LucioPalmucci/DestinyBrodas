@@ -251,7 +251,7 @@ export default function ReputationStatus({ membershipType, userId }) {
                         </Slider>
                     </>
                 ) : (
-                    <div className="text-center text-lg flex font-semibold h-[130px] items-center">Cargando reputación...</div>
+                    <div className="text-center text-lg flex font-semibold h-[130px] items-center animate-pulse"></div>
                 )}
             </div>
         </div>

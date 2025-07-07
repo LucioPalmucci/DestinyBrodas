@@ -19,30 +19,48 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentActivityType, setCurrentActivityType] = useState('Todas');
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
-    const { getCompsProfile, getCarnageReport, getItemManifest , getCharacterActivities} = useBungieAPI();
+    const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
             try {
                 const characterIds = await getCompsProfile(membershipType, userId);
-                const mostRecentCharacter = Object.values(characterIds.profile.data.characterIds).reduce((latest, current) => {
-                    return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
-                });
+                const allActivities = [];
 
-                const responseActs = await getCharacterActivities(membershipType, userId, mostRecentCharacter);
-                
-                //console.log("Activity History Response: ", response.data.Response.activities);
+                //Todos los personajes del usuario
+                for (const characterId of characterIds.profile.data.characterIds) {
+                    try {
+                        const responseActs = await getCharacterActivities(membershipType, userId, characterId);
+                        allActivities.push(...responseActs);
+                    } catch (error) {
+                        console.error(`Error fetching activities for character ${characterId}:`, error);
+                    }
+                }
 
-                const details = await Promise.all(responseActs.map(async (activity) => {
+                const sortedActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
+                const recentActivities = sortedActivities.slice(0, 25);
+
+
+                const details = await Promise.all(recentActivities.map(async (activity) => {
                     const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
-                    const date = new Date(activity.period).toLocaleString();
+                    const date = new Date(activity.period).toLocaleString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
                     const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
                     const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
                     const activityMode = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                     let datosDelModo;
-                    if (!activityMode.directActivityModeHash) datosDelModo == null;
-                    else datosDelModo = await fetchActivityDetails(activityMode.directActivityModeHash, "DestinyActivityModeDefinition");
+                    let modeHash = activityMode.directActivityModeHash || activityMode.activityTypeHash;
+                    if (!modeHash) datosDelModo = null;
+                    else datosDelModo = await fetchActivityDetails(modeHash, "DestinyActivityModeDefinition");
 
+                    const clase = getUserClass(carnageReport)
                     let activityType;
                     if (activity.activityDetails.modes.includes(7)) {
                         activityType = "PvE";
@@ -51,11 +69,12 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
-                    console.log("Activity Type: ", activity.activityDetails);
                     return {
                         activityName: activityMode?.displayProperties?.name || null,
                         activityIcon: datosDelModo?.displayProperties?.icon || null,
+                        clase: clase || null,
                         pgcrImage: activityMain?.pgcrImage || null,
+                        instanceId: activity.activityDetails.instanceId,
                         activityType,
                         date,
                         duration,
@@ -72,17 +91,31 @@ const ActivityHistory = ({ userId, membershipType }) => {
     }, [userId, membershipType]);
 
     const formatDuration = (seconds) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        let horas = h > 1 ? 'horas' : 'hora';
-        let minutos = m != 1 ? 'minutos' : 'minuto';
-        let segundos = s != 1 ? 'segundos' : 'segundo';
-        if (h > 0) {
-            return `${h} ${horas} ${m} ${minutos}`;
-        } else {
-            return `${m} ${minutos} ${s} ${segundos}`;
-        }
+        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    const getUserClass = (carnageReport) => {
+        const user = carnageReport.people.find(person => person.membershipId == userId);
+
+        if (!user) return null;
+
+        console.log("User: ", user.class, carnageReport);
+
+        const classIcons = {
+            "Hechicero": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+            "Hechicera": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+            "Titán": "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+            "Cazador": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
+            "Cazadora": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png"
+        };
+
+        return {
+            icon: classIcons[user.class] || null,
+            name: user.class || null,
+        };
     }
 
     const fetchCarnageReport = async (instanceId) => {
@@ -165,7 +198,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     };
 
     return (
-        <div >
+        <div>
             <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
             <div className="flex mb-4">
                 <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
@@ -173,13 +206,24 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 <button onClick={() => filterActivities(activityDetails, 'PvP')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 'PvP' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
                 <button onClick={() => filterActivities(activityDetails, 'Gambito')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 'Gambito' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
             </div>
-            <ul>
+            {filteredActivities.length > 0 && (
+                <div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
+                    <p className='w-[15%]'>Fecha/Hora</p>
+                    <p className='w-[12%]'>Clase</p>
+                    <p className='w-[28%]'>Actividad</p>
+                    <p className='w-[10.5%]'>Duración</p>
+                    <p className='w-[8%]'>Completado</p>
+                </div>
+            )}
+            <div>
                 {filteredActivities.length > 0 ? filteredActivities.map((activity, index) => {
                     const hasPoints = activity.people.some(person => person.points > 0);
                     const hasMedals = activity.people.some(person => person.medals > 0);
 
                     const team0 = activity.people.filter(person => person.standing === 0);
                     const team1 = activity.people.filter(person => person.standing === 1);
+
+                    const uniqueId = activity.instanceId;
 
                     const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
                     const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
@@ -196,25 +240,33 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     }
 
                     return (
-                        <div className={`w-full bg-gray-300 rounded-lg mt-4 border-1`} key={index}>
-                            <button onClick={() => toggleExpand(index)} className='cursor-pointer w-full'>
-                                <li key={index} className={`p-2 text-sm justify-evenly flex items-center`}>
-                                    <p>{activity.date}</p>
-                                    {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-8 h-8' style={{ filter: "brightness(0) contrast(100%)" }} />}
-                                    <p>{activity.activityName}</p>
-                                    <p>{activity.duration}</p>
-                                    <img src={symbol} className='w-6 h-6' />
-                                </li>
+                        <div className={`bg-gray-300 hover:bg-white border-1`} key={uniqueId}>
+                            <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[45px]'>
+                                <div key={uniqueId} className={`py-2 px-10 text-sm text-start justify-between flex items-center`}>
+                                    <p className='w-[15%]'>{activity.date}</p>
+                                    <div className='w-[10%] flex items-center'>
+                                        <img className='w-6 h-6' src={activity.clase.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
+                                        <p>{activity.clase.name}</p>
+                                    </div> 
+                                    <p className='w-[30%] flex items-center'>
+                                        {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                        {activity.activityName}
+                                    </p>
+                                    <p className='w-[10%]'>{activity.duration}</p>
+                                    <div className='w-[8%] flex justify-center mr-1'>
+                                        <img src={symbol} className='w-6 h-6' />
+                                    </div>
+                                </div>
                             </button>
-                            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === index ? 'max-h-screen' : 'max-h-0'}`}>
-                                {expandedIndex === index && (
+                            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
+                                {expandedIndex === (uniqueId) && (
                                     <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(/api${activity.pgcrImage})` }}>
                                         {activity.teams.length > 0 ? (
                                             <div className='justify-between space-y-4 w-full text-black'>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                        <p className='px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>Equipo 1</p>
-                                                        <span className='flex items-center px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>
+                                                        <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 1</p>
+                                                        <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
                                                             {winnerPoints}
                                                             <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
                                                         </span>
@@ -254,8 +306,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                 </div>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                        <p className='px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>Equipo 2</p>
-                                                        <span className='flex items-center px-1 rounded' style={{backgroundColor: "rgba(255, 255, 255, 0.7)"}}>
+                                                        <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 2</p>
+                                                        <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
                                                             {loserPoints}
                                                             <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
                                                         </span>
@@ -339,7 +391,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 }) : (
                     <div className='top-0'><Spinner /></div>
                 )}
-            </ul>
+            </div>
         </div>
     );
 };

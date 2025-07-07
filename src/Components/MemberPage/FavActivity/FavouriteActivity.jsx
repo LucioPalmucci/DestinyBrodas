@@ -213,7 +213,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         </div>
                     </div>
                 ) : (
-                    <p className="bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold h-full w-full text-black rounded-lg">Cargando actividad más jugada...</p>
+                    <p className="bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold h-full w-full text-black rounded-lg animate-pulse"></p>
                 )}
             </div>
             {error && <p>{error}</p>}
