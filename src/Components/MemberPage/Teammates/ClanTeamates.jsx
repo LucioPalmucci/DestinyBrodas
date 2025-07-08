@@ -143,14 +143,14 @@ export default function ClanTeammates({ userId, membershipType }) {
     return (
         <div>
         {playersClan && playersClan.length > 0 ? (
-            <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
+            <div className="text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
                         Actividades con miembros del clan
                     </p>
                     <p className="italic text-xs leading-tight">Últimos 7 días</p>
                 </div>
-                <div className={`gap-3 grid grid-cols-2 w-fit mt-4`}>
+                <div className={`gap-3 grid grid-cols-2 w-full mt-4`}>
                     {playersClan.map((jugador, idx) => (
                         <div key={idx} className="relative w-full">
                             <a

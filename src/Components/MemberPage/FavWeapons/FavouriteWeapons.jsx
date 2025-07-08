@@ -65,8 +65,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 const pvpWeapons = await getWeaponDetails("pvp");
 
                 setWeapons({
-                    pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 5),
-                    pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 5),
+                    pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 10),
+                    pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 10),
                 });
             } catch (error) {
                 console.error("Error fetching weapons:", error);
@@ -97,7 +97,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                         initial={{ opacity: 0, x: page === "pve" ? -10 : 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 0 }}
-                        className="space-y-3 mt-4"
+                        className={`space-y-3 mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-5 grid-flow-col ' : ''}`}
                     >
                         {weapons[page].map((weapon, index) => (
                             <li
@@ -105,7 +105,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                                 className={`flex text-start`}
                             >
                                 <div className="flex items-center">
-                                    <div className="relative flex-shrink-0">
+                                    <div className="relative flex items-center">
+                                        <p className="font-semibold text-lg mr-2">{index+1}.</p>
                                         <img
                                             src={weapon.icon}
                                             width={40}

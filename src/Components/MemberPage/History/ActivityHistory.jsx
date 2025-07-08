@@ -69,9 +69,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
+                    console.log("Activity Type: ", activityMain.displayProperties?.name, activityMain.hash);
                     return {
                         activityName: activityMode?.displayProperties?.name || null,
-                        activityIcon: datosDelModo?.displayProperties?.icon || null,
+                        activityIcon: !activityMode?.displayProperties?.icon.includes("missing_icon") ? activityMode?.displayProperties?.icon : datosDelModo?.displayProperties?.icon,
                         clase: clase || null,
                         pgcrImage: activityMain?.pgcrImage || null,
                         instanceId: activity.activityDetails.instanceId,
@@ -101,8 +102,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
         const user = carnageReport.people.find(person => person.membershipId == userId);
 
         if (!user) return null;
-
-        console.log("User: ", user.class, carnageReport);
 
         const classIcons = {
             "Hechicero": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
@@ -210,8 +209,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 <div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
                     <p className='w-[15%]'>Fecha/Hora</p>
                     <p className='w-[12%]'>Clase</p>
-                    <p className='w-[28%]'>Actividad</p>
-                    <p className='w-[10.5%]'>Duración</p>
+                    <p className='w-[26%] '>Actividad</p>
+                    <p className='w-[9.5%]'>Duración</p>
                     <p className='w-[8%]'>Completado</p>
                 </div>
             )}
@@ -244,12 +243,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[45px]'>
                                 <div key={uniqueId} className={`py-2 px-10 text-sm text-start justify-between flex items-center`}>
                                     <p className='w-[15%]'>{activity.date}</p>
-                                    <div className='w-[10%] flex items-center'>
+                                    <div className='w-[11%] flex items-center'>
                                         <img className='w-6 h-6' src={activity.clase.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
+                                        <div className='w-1'></div>
                                         <p>{activity.clase.name}</p>
-                                    </div> 
+                                    </div>
                                     <p className='w-[30%] flex items-center'>
                                         {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                        <div className='w-1.5'></div>
                                         {activity.activityName}
                                     </p>
                                     <p className='w-[10%]'>{activity.duration}</p>
