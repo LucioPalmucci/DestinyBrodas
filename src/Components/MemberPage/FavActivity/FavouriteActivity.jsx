@@ -38,7 +38,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 let allActivities = await activitiesStats(characterIds, membershipType, userId);
 
                 allActivities.forEach(activity => {
-                    const hash = activity.activityHash;
+                    const hash = activity?.activityHash;
+                    if (hash == null) return; // Maneja el caso de hash null
                     for (const mode in modeGroups) {
                         if (modeGroups[mode].hashes.includes(hash)) {
                             modeGroups[mode].timePlayed += activity.values.activitySecondsPlayed.basic.value;
@@ -48,6 +49,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         }
                     }
                 });
+
                 let mostPlayedMode = null;
                 let maxTimePlayed = 0;
                 for (const mode in modeGroups) {
@@ -59,7 +61,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 let mostPlayedActivity = { name: null, completions: 0 };
                 allActivities.forEach(activity => {
-                    const hash = activity.activityHash;
+                    const hash = activity?.activityHash;
+                    if (hash == null) return;
                     if (modeGroups[mostPlayedMode].hashes.includes(hash)) {
                         if (activity.values.activityCompletions.basic.value > mostPlayedActivity.completions) {
                             mostPlayedActivity = { name: activity.activityHash, completions: activity.values.activityCompletions.basic.value };
@@ -140,11 +143,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
     async function mostPlayedCharacter(mode, characterId, membershipType, userId) {
         const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
 
+        if (!activitiesStats || !activitiesStats.activities || !Array.isArray(activitiesStats.activities) || activitiesStats.activities.length === 0) {
+            console.warn(`No activities found for character ${characterId}`);
+            return 0;
+        }
         let allActivities = activitiesStats.activities;
         let classCompletitions = 0;
 
         allActivities.forEach(activity => {
-            const hash = activity.activityHash;
+            const hash = activity?.activityHash;
+            if (hash == null) return;
             if (mode.hashes.includes(hash)) {
                 classCompletitions += activity.values.activityCompletions.basic.value;
             }

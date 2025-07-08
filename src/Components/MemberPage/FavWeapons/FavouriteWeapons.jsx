@@ -65,8 +65,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 const pvpWeapons = await getWeaponDetails("pvp");
 
                 setWeapons({
-                    pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 10),
-                    pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 10),
+                    pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8),
+                    pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8),
                 });
             } catch (error) {
                 console.error("Error fetching weapons:", error);
@@ -97,7 +97,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                         initial={{ opacity: 0, x: page === "pve" ? -10 : 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 0 }}
-                        className={`space-y-3 mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-5 grid-flow-col ' : ''}`}
+                        className={`space-y-3 mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-4 grid-flow-col ' : ''}`}
                     >
                         {weapons[page].map((weapon, index) => (
                             <li

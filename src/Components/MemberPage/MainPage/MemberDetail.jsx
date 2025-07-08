@@ -126,7 +126,7 @@ function MemberDetail() {
             </button>
             <div className='justify-between flex flex-row mt-10 font-Inter w-full px-15'>
                 <div className='w-[30.5%]'>
-                    <div className='flex items-center mb-1'>
+                    <div className='flex items-center mb-1 w-full'>
                         <img src={`${classImg.link}`} className={`w-10 h-10 mr-2`} style={{ filter: `${classImg.colore}`, marginLeft: '-3px' }} />
                         <h1 className='text-4xl font-bold text-gray-700 mr-0.5'>
                             {userMemberships?.bungieNetUser?.uniqueName?.slice(0, -5)}
@@ -135,7 +135,7 @@ function MemberDetail() {
                             </span>
                         </h1>
                         <img src={copy} style={{ width: "1.2%", height: "1.2%", position: 'relative', top: '-0.50rem', cursor: "pointer" }} onClick={handleCopy} title='Copiar nombre' />
-                        <div className={`z-10 bg-green-500 text-white p-0.5 rounded transition-opacity duration-500 ease-in-out -translate-y-4 ${copied ? 'opacity-100' : 'opacity-0'}`} style={{ fontSize: '0.5rem', top: "-10px" }}>
+                        <div className={`z-10 bg-green-500 text-white p-0.5 rounded transition-opacity duration-500 ease-in-out -translate-y-4 w-fit ${copied ? 'opacity-100' : 'opacity-0'}`} style={{ fontSize: '0.5rem', top: "-10px" }}>
                             ¡Copiado!
                         </div>
                         <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />

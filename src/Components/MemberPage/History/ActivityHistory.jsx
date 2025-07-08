@@ -69,7 +69,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
-                    console.log("Activity Type: ", activityMain.displayProperties?.name, activityMain.hash);
                     return {
                         activityName: activityMode?.displayProperties?.name || null,
                         activityIcon: !activityMode?.displayProperties?.icon.includes("missing_icon") ? activityMode?.displayProperties?.icon : datosDelModo?.displayProperties?.icon,
@@ -107,6 +106,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
             "Hechicero": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
             "Hechicera": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
             "Titán": "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+            "Titan": "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
             "Cazador": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
             "Cazadora": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png"
         };
@@ -184,7 +184,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
             setWeaponDetails(weaponD);
         }
     }
-    const fetchActivityDetails = async (activityHash, type, Subclase) => {
+    const fetchActivityDetails = async (activityHash, type) => {
         try {
             const response = await getItemManifest(activityHash, type);
             if (response == null) return null;
@@ -241,18 +241,18 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     return (
                         <div className={`bg-gray-300 hover:bg-white border-1`} key={uniqueId}>
                             <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[45px]'>
-                                <div key={uniqueId} className={`py-2 px-10 text-sm text-start justify-between flex items-center`}>
+                                <div key={uniqueId} className={`px-10 text-sm text-start justify-between flex items-center`}>
                                     <p className='w-[15%]'>{activity.date}</p>
                                     <div className='w-[11%] flex items-center'>
                                         <img className='w-6 h-6' src={activity.clase.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
                                         <div className='w-1'></div>
                                         <p>{activity.clase.name}</p>
                                     </div>
-                                    <p className='w-[30%] flex items-center'>
+                                    <div className='w-[30%] flex items-center'>
                                         {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                         <div className='w-1.5'></div>
                                         {activity.activityName}
-                                    </p>
+                                    </div>
                                     <p className='w-[10%]'>{activity.duration}</p>
                                     <div className='w-[8%] flex justify-center mr-1'>
                                         <img src={symbol} className='w-6 h-6' />

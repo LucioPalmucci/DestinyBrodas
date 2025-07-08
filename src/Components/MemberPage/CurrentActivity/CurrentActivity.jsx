@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
+import "../../../Index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import PopUpTeammate from "./PopUpTeammate";
 
 export default function CurrentActivity({ type, id }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
+    const [jugadorSelected, setJugadorSelected] = useState(null);
+    const popupRef = useRef(null);
     const [numColumns, setColums] = useState(0);
-    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment } = useBungieAPI();
+    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -18,7 +22,7 @@ export default function CurrentActivity({ type, id }) {
                 });
 
                 const activityResponse = await getCompCharsActs(type, id, mostRecentCharacter);
-
+                console.log("activityResponse", activityResponse);
                 const partyResponse = await getParty(type, id);
 
                 const currentActivityHash = activityResponse.currentActivityHash;
@@ -67,6 +71,7 @@ export default function CurrentActivity({ type, id }) {
                     PVPoPVE = "PVP"; // Gambito
                 } else if (activityResponse.currentActivityModeTypes.some(mode => mode === 6)) {
                     PVPoPVE = "PVP"; // Patrulla
+                    oponentes = null;
                 }
 
                 setActivity({
@@ -88,16 +93,12 @@ export default function CurrentActivity({ type, id }) {
                     tieneIcono: tieneIcono,
                 });
 
-                const partyMembersData = partyResponse.partyMembers;
-                const partyMembersDetails = await fetchPartyMembersDetails(partyMembersData);
+                const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
                 setPartyMembers(partyMembersDetails);
 
-                if (partyMembers.length > 3) {
+                if (partyMembers.length > 2) {
                     setColums(2)
-                } else if (partyMembers.length > 6) {
-                    setColums(3)
-                }
-                else setColums(1);
+                } else setColums(1);
 
             } catch (error) {
                 console.error(`Error fetching current activity:`, error);
@@ -126,7 +127,7 @@ export default function CurrentActivity({ type, id }) {
         }
     };
 
-    const fetchPartyMembersDetails = async (partyMembersData) => {
+    const fetchPartyMembersDetails = async (partyMembersData, activity2) => {
         return await Promise.all(partyMembersData.map(async member => {
             const plataformas = [3, 1, 2, 10, 6];
             let profileResponse;
@@ -154,12 +155,19 @@ export default function CurrentActivity({ type, id }) {
             const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
 
             return {
-                id: member.membershipId,
+                membershipId: member.membershipId,
+                membershipType: successfulPlatform,
+                guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform),
+                honor: await getCommendations(successfulPlatform, member.membershipId),
+                emblemaBig: await fetchEmblema(emblemPath.emblemHash),
                 emblemPath: emblemPath.emblemPath,
                 clase: emblemPath.clase,
                 light: emblemPath.light,
                 subclass: emblemPath.subclass,
-                displayName: displayName,
+                iconActivity: activity2?.logo || null,
+                activityName: activity2?.name || null,
+                mode: activity2?.type || null,
+                name: displayName,
                 uniqueName: uniqueName,
                 platform: successfulPlatform, // Agregar la plataforma exitosa al objeto de miembro
             };
@@ -212,7 +220,7 @@ export default function CurrentActivity({ type, id }) {
                 subclass = "Desconocido";
             }
 
-            return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass };
+            return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass, emblemHash: mostRecentCharacter.emblemHash };
 
         } catch (error) {
             console.error('Error fetching equipped emblem:', error);
@@ -220,22 +228,61 @@ export default function CurrentActivity({ type, id }) {
         }
     };
 
+    const fetchGuardianRank = async (id, type) => {
+        try {
+            const responseProfile = await getCompsProfile(type, id);
+            const RankNum = responseProfile.profile.data.currentGuardianRank;
+            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
+            return ({
+                title: guardianRankResponse.displayProperties.name,
+                num: RankNum,
+            });
+        } catch (error) {
+            console.error('Error al cargar datos del popup del jugador:', error);
+        }
+    }
+
+    const fetchEmblema = async (emblem) => {
+        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
+        return emblemaResponse.secondaryIcon;
+    }
+
+    useEffect(() => {
+        if (jugadorSelected === null) return;
+        function handleClickOutside(event) {
+            if (popupRef.current && !popupRef.current.contains(event.target)) {
+                setJugadorSelected(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [jugadorSelected]);
+
     return (
-        <div>
+        <div  className="w-full">
             {activity ? (
-                <div className="text-white p-6 rounded-lg space-x-6 content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div>
+                <div className="h-[450px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className="w-full">
                         {activity.name ? (
                             <div className="gap-0">
-                                <div className="bg-black/25 p-2 rounded-lg w-fit">
-                                    <p className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
-                                        Actividad en curso
-                                        <div className="relative ml-2">
-                                            <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
-                                            <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="bg-black/25 p-2 rounded-lg w-fit">
+                                        <div className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
+                                            Actividad en curso
+                                            <div className="relative ml-2">
+                                                <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                                <img src={circleSolid} width={15} height={15} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
+                                            </div>
                                         </div>
-                                    </p>
-                                    <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
+                                        <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
+                                    </div>
+                                    {activity.logo && !activity.logo.includes("missing") ?
+                                        <div className="opacity-50">
+                                            <img src={`/api${activity.logo}`} width={80} height={80} />
+                                        </div>
+                                        : null}
                                 </div>
                                 <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
                                     {activity.PVPoPVE === "PVP" ? (
@@ -285,23 +332,28 @@ export default function CurrentActivity({ type, id }) {
                         <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
                             <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-4`}>
-                                {partyMembers.map(member => (
-                                    <li key={member.id} className=" items-center space-x-1 flex">
-                                        <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                        <div className="flex flex-col">
-                                            <span title={member.uniqueName}>{member.displayName}</span>
-                                            <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
-                                        </div>
+                                {partyMembers.map((member, idx) => (
+                                    <li key={member.membershipId} className="relative w-full items-center space-x-1 flex">
+                                        <a
+                                            className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 shadow-inner hover:scale-105 hover:shadow-lg hover:bg-black/40 clan-member-idle clan-member-shimmer"
+                                            onClick={() => setJugadorSelected(idx)}
+                                        >
+                                            <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
+                                            <div className="flex flex-col">
+                                                <span title={member.uniqueName}>{member.name}</span>
+                                                <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
+                                            </div>
+                                        </a>
+                                        {jugadorSelected === idx && (
+                                            <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
+                                                <PopUpTeammate jugador={member} />
+                                            </div>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
                         </div>
                     </div>
-                    {activity.logo && !activity.logo.includes("missing") ?
-                        <div className="opacity-50">
-                            <img src={`/api${activity.logo}`} width={80} height={80} />
-                        </div>
-                        : null}
                 </div>
             ) : (
                 <div

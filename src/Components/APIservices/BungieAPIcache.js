@@ -6,7 +6,7 @@ const globalCache = new Map();
 const globalLoading = new Set();
 
 // TTL por tipo de dato (en millisegundos)
-const TTL_CONFIG = 2 * 60 * 1000; // 2 minutos
+const TTL_CONFIG = 60 * 1000; // 2 minutos
     /*compChars: 5 * 60 * 1000,        // 5 minutos
     clanMembers: 10 * 60 * 1000,    // 10 minutos
     activities: 2 * 60 * 1000,      // 2 minutos
