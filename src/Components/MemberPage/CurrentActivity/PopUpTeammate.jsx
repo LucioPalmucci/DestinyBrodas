@@ -6,7 +6,7 @@ import raidReportIcon from '../../../assets/raidreport.png';
 
 export default function PopUpTeammate({ jugador }) {
     return (
-            <div className="font-Inter w-[350px] bg-black/75 text-start justify-start flex mt-10 font-Inter items-center flex-col space-y-4">
+            <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start flex mt-10 font-Inter items-center flex-col space-y-4">
                 <div style={{ backgroundImage: `url(/api${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full'>
                     <div className='ml-1 items-center'>
                         <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.name}</h2>

@@ -3,6 +3,7 @@ import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
 import "../../../Index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 
 export default function CurrentActivity({ type, id }) {
@@ -101,7 +102,7 @@ export default function CurrentActivity({ type, id }) {
                 } else setColums(1);
 
             } catch (error) {
-                console.error(`Error fetching current activity:`, error);
+                //console.error(`Error fetching current activity:`, error);
             }
         };
 
@@ -122,7 +123,7 @@ export default function CurrentActivity({ type, id }) {
             else return response.displayProperties.name;
 
         } catch (error) {
-            console.error(`Error fetching activity details for hash ${activityHash}:`, error);
+            //console.error(`Error fetching activity details for hash ${activityHash}:`, error);
             return null;
         }
     };
@@ -140,7 +141,7 @@ export default function CurrentActivity({ type, id }) {
                         break;
                     }
                 } catch (error) {
-                    console.error("No es de la plataforma", plataforma);
+                    //console.error("No es de la plataforma", plataforma);
                 }
             }
 
@@ -223,7 +224,7 @@ export default function CurrentActivity({ type, id }) {
             return { clase: clase, emblemPath: mostRecentCharacter.emblemPath, light: mostRecentCharacter.light, subclass: subclass, emblemHash: mostRecentCharacter.emblemHash };
 
         } catch (error) {
-            console.error('Error fetching equipped emblem:', error);
+            //console.error('Error fetching equipped emblem:', error);
             return null;
         }
     };
@@ -238,7 +239,7 @@ export default function CurrentActivity({ type, id }) {
                 num: RankNum,
             });
         } catch (error) {
-            console.error('Error al cargar datos del popup del jugador:', error);
+            //console.error('Error al cargar datos del popup del jugador:', error);
         }
     }
 
@@ -261,7 +262,7 @@ export default function CurrentActivity({ type, id }) {
     }, [jugadorSelected]);
 
     return (
-        <div  className="w-full">
+        <div className="w-full">
             {activity ? (
                 <div className="h-[450px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
                     <div className="w-full">
@@ -329,29 +330,39 @@ export default function CurrentActivity({ type, id }) {
                         ) : (
                             <p className="text-4xl font-semibold items-center">En órbita </p>
                         )}
-                        <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
+                        <div className="bg-black/25 p-2 rounded-lg w-full mt-4">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-4`}>
-                                {partyMembers.map((member, idx) => (
-                                    <li key={member.membershipId} className="relative w-full items-center space-x-1 flex">
-                                        <a
-                                            className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 shadow-inner hover:scale-105 hover:shadow-lg hover:bg-black/40 clan-member-idle clan-member-shimmer"
-                                            onClick={() => setJugadorSelected(idx)}
-                                        >
-                                            <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                            <div className="flex flex-col">
-                                                <span title={member.uniqueName}>{member.name}</span>
-                                                <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
-                                            </div>
-                                        </a>
-                                        {jugadorSelected === idx && (
-                                            <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
-                                                <PopUpTeammate jugador={member} />
-                                            </div>
-                                        )}
-                                    </li>
-                                ))}
-                            </ul>
+                            {partyMembers.length > 4 ? (
+                                <div className="relative">
+                                    <CaruselTemmate
+                                        members={partyMembers}
+                                        onMemberClick={setJugadorSelected}
+                                        selectedMember={jugadorSelected}
+                                    />
+                                </div>
+                            ) : (
+                                <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-4`}>
+                                    {partyMembers.map((member, idx) => (
+                                        <li key={member.membershipId} className="relative">
+                                            <a
+                                                className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg  clan-member-shimmer-hover"
+                                                onClick={() => setJugadorSelected(idx)}
+                                            >
+                                                <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
+                                                <div className="flex flex-col">
+                                                    <span>{member.name}</span>
+                                                    <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
+                                                </div>
+                                            </a>
+                                            {jugadorSelected === idx && (
+                                                <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
+                                                    <PopUpTeammate jugador={member} />
+                                                </div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                     </div>
                 </div>

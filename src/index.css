@@ -497,13 +497,18 @@ title{
     animation: idleGlow 3s ease-in-out infinite;
 }
 
+.clan-temmate-idle {
+    animation: idleGlow 3s ease-in-out infinite;
+}
+
+
 /* Animación más sutil de shimmer */
 @keyframes shimmer {
     0% {
-        background-position: -200% 0;
+        background-position: 200% 0;
     }
     100% {
-        background-position: 200% 0;
+        background-position: -200% 0;
     }
 }
 
@@ -532,6 +537,35 @@ title{
 }
 
 .clan-member-shimmer > * {
+    position: relative;
+    z-index: 2;
+}
+
+.clan-member-shimmer-hover {
+    position: relative;
+    overflow: hidden;
+}
+
+.clan-member-shimmer-hover:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.clan-member-shimmer-hover > * {
     position: relative;
     z-index: 2;
 }
