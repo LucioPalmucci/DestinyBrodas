@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import circleEmpty from "../../../assets/circle-empty.svg";
 import circleSolid from "../../../assets/circle-solid.svg";
 import Completed from "../../../assets/Completed.png";
@@ -19,7 +19,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentActivityType, setCurrentActivityType] = useState('Todas');
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
-    const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities } = useBungieAPI();
+    const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+    const [jugadorSelected, setJugadorSelected] = useState(null);
+    const popupRef = useRef(null);
+    const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities, getCommendations, getClanUser } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -131,10 +134,16 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 class: entry.player.characterClass,
                 power: entry.player.lightLevel,
                 membershipId: entry.player.destinyUserInfo.membershipId,
+                membershipType: entry.player.destinyUserInfo.membershipType,
+                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
+                honor: await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId),
+                guardinRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                emblemBig: await fetchEmblema(entry.player.emblemHash),
+                clan: await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,
-                weapons: entry.extended?.weapons,
+                weapons: await getWeaponDetails(entry.extended?.weapons) || null,
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
                 assists: entry.values.assists.basic.value,
             })));
@@ -161,29 +170,55 @@ const ActivityHistory = ({ userId, membershipType }) => {
         setExpandedIndex(expandedIndex === index ? null : index);
     };
 
-    useEffect(() => {
-        if (isOpen != false) {
-            getWeaponDetails();
-        }
-    }, [isOpen]);
-
-    const getWeaponDetails = async () => {
-        if (isOpen != false) {
-            const weaponD = await Promise.all(isOpen.weapons.map(async (weapon) => {
-                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
-                //console.log("Weapon Info: ", weaponInfo);
-                return {
-                    name: weaponInfo.displayProperties.name,
-                    icon: weaponInfo.displayProperties.icon,
-                    archetype: weaponInfo.itemTypeDisplayName,
-                    kills: weapon.values.uniqueWeaponKills.basic.value,
-                    precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
-                    precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
-                };
-            }));
-            setWeaponDetails(weaponD);
+    const fetchGuardianRank = async (id, type) => {
+        try {
+            const responseProfile = await getCompsProfile(type, id);
+            const RankNum = responseProfile.profile.data.currentGuardianRank;
+            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
+            return ({
+                title: guardianRankResponse.displayProperties.name,
+                num: RankNum,
+            });
+        } catch (error) {
+            console.error('Error al cargar datos del popup del jugador:', error);
         }
     }
+
+    const fetchEmblema = async (emblem) => {
+        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
+        return emblemaResponse.secondaryIcon;
+    }
+
+    const fetchClan = async (id, type) => {
+        try {
+            const userClan = await getClanUser(type, id);
+            if (userClan.results[0].group.name) return userClan.results[0].group.name;
+            else return "No pertenece a ningún clan";
+
+        } catch (error) {
+            console.error('Error al cargar el clan del usuario');
+            return null;
+        }
+    }
+
+    const getWeaponDetails = async (weapons) => {
+        if (!weapons || !Array.isArray(weapons)) {
+            return [];
+        }
+        const weaponD = await Promise.all(weapons.map(async (weapon) => {
+            const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
+            return {
+                name: weaponInfo.displayProperties.name,
+                icon: weaponInfo.displayProperties.icon,
+                archetype: weaponInfo.itemTypeDisplayName,
+                kills: weapon.values.uniqueWeaponKills.basic.value,
+                precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
+                precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
+            };
+        }));
+        return weaponD;
+    }
+
     const fetchActivityDetails = async (activityHash, type) => {
         try {
             const response = await getItemManifest(activityHash, type);
@@ -195,6 +230,30 @@ const ActivityHistory = ({ userId, membershipType }) => {
             return null;
         }
     };
+
+    const handlePlayerClick = (person, personIndex) => {
+        if (jugadorSelected === personIndex) {
+
+            setJugadorSelected(null); // Cerrar si ya está abierto
+        } else {
+            console.log("Jugador seleccionado:", person);
+            setJugadorSelected(personIndex); // Abrir el popup para este jugador
+        }
+    };
+
+    // Cerrar popup al hacer click fuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (popupRef.current && !popupRef.current.contains(event.target)) {
+                setJugadorSelected(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
         <div>
@@ -259,11 +318,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                     </div>
                                 </div>
                             </button>
-                            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
+                            <div className={`transition-all duration-500 ease-in-out overflow-visible ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
                                 {expandedIndex === (uniqueId) && (
                                     <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(/api${activity.pgcrImage})` }}>
                                         {activity.teams.length > 0 ? (
-                                            <div className='justify-between space-y-4 w-full text-black'>
+                                            <div className='justify-between space-y-4 w-full text-black '>
                                                 <div>
                                                     <h3 className='text-lg font-bold flex items-center justify-between'>
                                                         <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 1</p>
@@ -284,24 +343,35 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {team0.map((person, idx) => (
-                                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
-                                                                    <td className='py-2 text-xs w-fit'>
-                                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start '>
-                                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                            <div className='flex flex-col justify-start ml-1'>
-                                                                                <p>{person.name}</p>
-                                                                                <p>{person.class} - {person.power}</p>
-                                                                            </div>
-                                                                        </button>
-                                                                    </td>
-                                                                    {hasPoints && <td className='py-2' >{person.points}</td>}
-                                                                    <td className='py-2'>{person.kills}</td>
-                                                                    <td className='py-2'>{person.deaths}</td>
-                                                                    <td className='py-2'>{person.kd}</td>
-                                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                                </tr>
-                                                            ))}
+                                                            {team0.map((person, idx) => {
+                                                                const personIndex = `team0-${idx}`;
+                                                                return (
+                                                                    <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
+                                                                        <td className='py-2 text-xs w-fit'>
+                                                                            <button onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handlePlayerClick(person, personIndex);
+                                                                            }} className='flex items-center text-start cursor-pointer'>
+                                                                                <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                                <div className='flex flex-col justify-start ml-1'>
+                                                                                    <p>{person.name}</p>
+                                                                                    <p>{person.class} - {person.power}</p>
+                                                                                </div>
+                                                                            </button>
+                                                                            {jugadorSelected === personIndex && (
+                                                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-visible">
+                                                                                    <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        {hasPoints && <td className='py-2' >{person.points}</td>}
+                                                                        <td className='py-2'>{person.kills}</td>
+                                                                        <td className='py-2'>{person.deaths}</td>
+                                                                        <td className='py-2'>{person.kd}</td>
+                                                                        {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -325,24 +395,35 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {team1.map((person, idx) => (
-                                                                <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""}`}>
-                                                                    <td className='py-2 text-xs w-fit'>
-                                                                        <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
-                                                                            <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                            <div className='flex flex-col justify-center ml-1'>
-                                                                                <p>{person.name}</p>
-                                                                                <p>{person.class} - {person.power}</p>
-                                                                            </div>
-                                                                        </button>
-                                                                    </td>
-                                                                    {hasPoints && <td className='py-2'>{person.points}</td>}
-                                                                    <td className='py-2'>{person.kills}</td>
-                                                                    <td className='py-2'>{person.deaths}</td>
-                                                                    <td className='py-2'>{person.kd}</td>
-                                                                    {hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                                </tr>
-                                                            ))}
+                                                            {team1.map((person, idx) => {
+                                                                const personIndex = `team1-${idx}`;
+                                                                return (
+                                                                    <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
+                                                                        <td className='py-2 text-xs w-fit'>
+                                                                            <button onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handlePlayerClick(person, personIndex);
+                                                                            }} className='flex items-center text-start cursor-pointer'>
+                                                                                <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                                <div className='flex flex-col justify-center ml-1'>
+                                                                                    <p>{person.name}</p>
+                                                                                    <p>{person.class} - {person.power}</p>
+                                                                                </div>
+                                                                            </button>
+                                                                            {jugadorSelected === personIndex && (
+                                                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-visible">
+                                                                                    <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                                        <td className='py-2'>{person.kills}</td>
+                                                                        <td className='py-2'>{person.deaths}</td>
+                                                                        <td className='py-2'>{person.kd}</td>
+                                                                        {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -360,33 +441,41 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {activity.people.map((person, idx) => (
-                                                        <tr key={idx} className={`text-start text-sm ${person.membershipId == userId ? "font-bold" : ""}`}>
-                                                            <td className='py-2 text-xs w-fit ' onClick={() => setIsOpen(person)}>
-                                                                <button onClick={() => setIsOpen(person)} className='flex items-center text-start'>
-                                                                    <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                    <div className='flex flex-col justify-center ml-1'>
-                                                                        <p>{person.name}</p>
-                                                                        <p>{person.class} - {person.power}</p>
-                                                                    </div>
-                                                                </button>
-                                                            </td>
-                                                            {hasPoints && <td>{person.points}</td>}
-                                                            <td>{person.kills}</td>
-                                                            <td>{person.deaths}</td>
-                                                            <td>{person.kd}</td>
-                                                            {hasMedals && <td>{person.medals}</td>}
-                                                        </tr>
-                                                    ))}
+                                                    {activity.people.map((person, idx) => {
+                                                        const personIndex = `single-${idx}`;
+                                                        return (
+                                                            <tr key={idx} className={`text-start text-sm ${person.membershipId == userId ? "font-bold" : ""} relative`}>
+                                                                <td className='py-2 text-xs w-fit'>
+                                                                    <button onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handlePlayerClick(person, personIndex);
+                                                                    }} className='flex items-center text-start cursor-pointer'>
+                                                                        <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                        <div className='flex flex-col justify-center ml-1'>
+                                                                            <p>{person.name}</p>
+                                                                            <p>{person.class} - {person.power}</p>
+                                                                        </div>
+                                                                    </button>
+                                                                    {jugadorSelected === personIndex && (
+                                                                        <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                                                            <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                {hasPoints && <td>{person.points}</td>}
+                                                                <td>{person.kills}</td>
+                                                                <td>{person.deaths}</td>
+                                                                <td>{person.kd}</td>
+                                                                {hasMedals && <td>{person.medals}</td>}
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                         )}
                                     </div>
                                 )}
                             </div>
-                            {isOpen && weaponDetails && (
-                                <PopUp isOpen={isOpen} weaponDetails={weaponDetails} setIsOpen={setIsOpen} />
-                            )}
                         </div>
                     );
                 }) : (

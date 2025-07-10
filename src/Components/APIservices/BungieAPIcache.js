@@ -199,6 +199,12 @@ export const useBungieAPI = () => {
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
+    const getClanUser = useCallback(async (membershipType, userId) => {
+        const url = `/api/Platform/GroupV2/User/${membershipType}/${userId}/0/1/`;
+        const response = await apiRequest('clanUser', url, [membershipType, userId]);
+        return response?.Response || null;
+    }, [apiRequest]);
+
     // ---------------- Metodos del lodaut SimpleLodaut.jsx ----------------
 
     const getFullCharacterProfile = useCallback(async (membershipType, userId) => {
@@ -391,6 +397,7 @@ export const useBungieAPI = () => {
         getItemManifest,
         getManifest,
         getManifestData,
+        getClanUser,
         
         // Método genérico
         apiRequest,

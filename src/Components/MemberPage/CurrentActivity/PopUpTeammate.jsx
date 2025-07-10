@@ -49,8 +49,8 @@ export default function PopUpTeammate({ jugador }) {
                 <div className="w-full h-px bg-white opacity-30" />
                 <div className="flex flex-col justify-start items-start w-full px-7">
                     <p className="tracking-[0.4rem] mb-1" style={{ color: '#479ce4' }}>ID DE BUNGIE</p>
-                    <h1 className="items-center">
-                        <img src={bungieLogo} alt="Bungie Logo" className="inline-block w-5 h-5 mr-2" />
+                    <h1 className="items-center flex">
+                        <img src={bungieLogo} alt="Bungie Logo" className="w-4 h-4 mr-1" />
                         {jugador.uniqueName.slice(0, -5)}
                         <span style={{ color: '#479ce4' }}>
                             {jugador.uniqueName.slice(-5)}

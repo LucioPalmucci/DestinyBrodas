@@ -212,7 +212,7 @@ body {
     content: "";
     display: inline-block;
     width: 15px;
-    height: 18px;
+    height: 15px;
     background-image: url('/kill-tracker.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -258,7 +258,7 @@ body {
     content: "";
     display: inline-block;
     width: 15px;
-    height: 25px;
+    height: 15px;
     background-image: url('/clock.png');
     background-size: contain;
     background-repeat: no-repeat;
