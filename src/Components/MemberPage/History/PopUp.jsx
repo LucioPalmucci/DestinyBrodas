@@ -1,6 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
 import bungieLogo from "../../../assets/bungieLogo.png";
+import caretLeft from "../../../assets/caret-left-solid.svg";
+import caretRight from "../../../assets/caret-right-solid.svg";
 import info from "../../../assets/circle-info-solid.svg";
 import destinyLogo from "../../../assets/destinyLogo.png";
 import dungeonLogo from "../../../assets/dungeonLogo.png";
@@ -10,9 +15,39 @@ import raidReportIcon from "../../../assets/raidreport.png";
 import skull from "../../../assets/skull-solid.svg";
 import suitcase from "../../../assets/suitcase-medical-solid.svg";
 import "../../Tab.css";
+const CustomPrevArrow = ({ onClick }) => (
+    <button
+        onClick={onClick}
+        className="absolute -top-3 left-1/2 transform -translate-x-1/2 -translate-y-2 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
+    >
+        <img src={caretLeft} width={9} height={9} alt="Previous" style={{ filter: "brightness(0) saturate(100%) invert(1)", transform: "rotate(90deg)" }} />
+    </button>
+);
+
+const CustomNextArrow = ({ onClick }) => (
+    <button
+        onClick={onClick}
+        className="absolute -bottom-3.5 left-1/2 transform -translate-x-1/2 translate-y-2 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
+    >
+        <img src={caretRight} width={9} height={9} alt="Next" style={{ filter: "brightness(0) saturate(100%) invert(1)", transform: "rotate(90deg)" }} />
+    </button>
+);
 
 const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
     const [activeTab, setActiveTab] = useState("details");
+    const settings = {
+        dots: false,
+        infinite: true,
+        speed: 300,
+        slidesToShow: 2, // Una arma por slide
+        slidesToScroll: 1,
+        autoplay: false,
+        arrows: true,
+        vertical: true, // Horizontal
+        prevArrow: <CustomPrevArrow />,
+        nextArrow: <CustomNextArrow />,
+    };
+
 
     if (!jugador || !jugador.name) return null;
 
@@ -24,11 +59,11 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat'
                 }}
-                className='p-4 pl-20 text-white flex justify-between w-full'
+                className='py-1.5 pr-2 pl-20 text-white flex justify-between w-full'
             >
-                <div className='ml-1 items-center'>
+                <div className='ml-1 items-center mb-0'>
                     <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
-                        {jugador.name}
+                        {jugador.name.length > 12 ? `${jugador.name.substring(0, 12)}...` : jugador.name}
                     </h2>
                     <h1 className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                         <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardinRank?.num || 1}.fw.png`} className='w-4 h-4 mr-1' />
@@ -38,7 +73,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                         {jugador.clan || "Sin clan"}
                     </h1>
                 </div>
-                <div className="absolute right-2 " >
+                <div className="absolute right-2" >
                     <h1 className='text-3xl lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                         <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.8rem', position: 'relative', top: '-0.40rem' }} />
                         {jugador.power}
@@ -126,7 +161,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                     <img src={gun} className="mr-1" width={15} height={15} style={{ filter: "invert(100%)" }} /> Armas
                 </button>
             </div>
-            <div className="relative w-full h-40 overflow-hidden">
+            <div className="w-full h-48 overflow-visible pb-2 items-center">
                 <AnimatePresence mode="wait">
                     {activeTab === "details" && (
                         <motion.div
@@ -135,7 +170,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: -100, opacity: 1 }}
                             transition={{ duration: 0.3 }}
-                            className="absolute items-center w-full "
+                            className="items-center w-full mt-3"
                         >
                             <div className="flex justify-center w-full px-4">
                                 <table className="w-fit text-black text-xs border-collapse border text-black border-black">
@@ -173,38 +208,75 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: 100, opacity: 1 }}
                             transition={{ duration: 0.3 }}
-                            className="absolute w-full items-center"
+                            className="w-full mt-3 items-center"
                         >
-                            <div className="grid grid-cols-1 gap-4 height-auto">
-                                {jugador.weapons.map((weapon, idx) => (
-                                    <div key={idx} className="p-2 rounded flex justify-start pl-13">
-                                        <div className="flex items-center">
-                                            <img
-                                                src={`/api/${weapon.icon}`}
-                                                width={40}
-                                                height={40}
-                                                alt="Weapon Icon"
-                                                className="rounded"
-                                            />
-                                            <div className="ml-4 space-y-1">
-                                                <div>
-                                                    <p className="text-sm">{weapon.name}</p>
-                                                    <p className="text-xs flex space-x-2">
-                                                        <p>{weapon.archetype}</p>
-                                                        <p>
-                                                            <i className="icon-kills" />{weapon.kills}
-                                                        </p>
-                                                        <p title={`${weapon.precisionKills} bajas`}>
-                                                            <i className="icon-precision" style={{ fontStyle: "normal" }} />
-                                                            {weapon.precisionKillsPercentage}
-                                                        </p>
-                                                    </p>
+                            {jugador.weapons && jugador.weapons.length > 2 ? (
+                                <Slider {...settings} className="h-full overflow-visible">
+                                    {jugador.weapons.map((weapon, idx) => (
+                                        <div key={idx}>
+                                            <div className="p-2 rounded w-full">
+                                                <div className="flex items-center justify-start ml-15 w-full">
+                                                    <img
+                                                        src={`/api/${weapon.icon}`}
+                                                        width={40}
+                                                        height={40}
+                                                        alt="Weapon Icon"
+                                                        className="rounded"
+                                                    />
+                                                    <div className="ml-4 space-y-1 flex-1">
+                                                        <div>
+                                                            <p className="text-sm font-semibold">{weapon.name}</p>
+                                                            <p className="text-xs text-gray-300 mb-1">{weapon.archetype}</p>
+                                                            <div className="flex space-x-3 text-xs">
+                                                                <span className="flex items-center">
+                                                                    <i className="icon-kills mr-1" />
+                                                                    {weapon.kills}
+                                                                </span>
+                                                                <span className="flex items-center" title={`${weapon.precisionKills} bajas`}>
+                                                                    <i className="icon-precision mr-1" style={{ fontStyle: "normal" }} />
+                                                                    {weapon.precisionKillsPercentage}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </Slider>
+                            ) : (
+                                <div className="space-y-1 h-full flex flex-col justify-center">
+                                    {jugador.weapons.map((weapon, idx) => (
+                                        <div key={idx} className="p-2 rounded w-full">
+                                            <div className="flex items-center justify-start ml-15 w-full">
+                                                <img
+                                                    src={`/api/${weapon.icon}`}
+                                                    width={40}
+                                                    height={40}
+                                                    alt="Weapon Icon"
+                                                    className="rounded"
+                                                />
+                                                <div className="space-y-1 ml-4">
+                                                    <div>
+                                                        <p className="text-sm font-semibold">{weapon.name}</p>
+                                                        <p className="text-xs text-gray-300 mb-1">{weapon.archetype}</p>
+                                                        <div className="flex space-x-3 text-xs">
+                                                            <span className="flex items-center">
+                                                                <i className="icon-kills mr-1" />
+                                                                {weapon.kills}
+                                                            </span>
+                                                            <span className="flex items-center" title={`${weapon.precisionKills} bajas`}>
+                                                                <i className="icon-precision mr-1" style={{ fontStyle: "normal" }} />
+                                                                {weapon.precisionKillsPercentage}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>
