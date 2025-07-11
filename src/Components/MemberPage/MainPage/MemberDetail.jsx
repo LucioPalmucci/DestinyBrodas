@@ -165,7 +165,7 @@ function MemberDetail() {
                 <div className='w-[65%]'>
                     <div className='flex justify-between items-center'>
                         <div className='w-[47%]'>
-                            <CurrentActivity type={membershipType} id={membershipId} />
+                            <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
                             <Commendations userId={membershipId} membershipType={membershipType} />
                         </div>
                         <div className='w-[47%]'>

@@ -26,7 +26,7 @@ const CustomNextArrow = ({ onClick }) => (
     </button>
 );
 
-export default function CaruselTemmate({ members, onMemberClick }) {
+export default function CaruselTemmate({ members, onMemberClick, mode }) {
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [portalContainer, setPortalContainer] = useState(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
@@ -40,7 +40,7 @@ export default function CaruselTemmate({ members, onMemberClick }) {
         slidesToScroll: 1,
         autoplay: false,
         arrows: true,
-        rows: 2,
+        rows: mode == "PVP" ? 1 : 2,
         slidesPerRow: 1,
         prevArrow: <CustomPrevArrow />,
         nextArrow: <CustomNextArrow />,
@@ -100,7 +100,7 @@ export default function CaruselTemmate({ members, onMemberClick }) {
 
     return (
         <div>
-            <div className="relative min-h-[160px]">
+            <div className="relative min-h-fit">
                 <Slider {...settings}>
                     {members.map((member, idx) => (
                         <div key={member.membershipId} className="px-1 py-1">

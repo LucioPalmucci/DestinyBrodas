@@ -6,13 +6,14 @@ import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 
-export default function CurrentActivity({ type, id }) {
+export default function CurrentActivity({ type, id, isOnline }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
+    const [online, setOnline] = useState(isOnline);
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [numColumns, setColums] = useState(0);
-    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations } = useBungieAPI();
+    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -23,7 +24,7 @@ export default function CurrentActivity({ type, id }) {
                 });
 
                 const activityResponse = await getCompCharsActs(type, id, mostRecentCharacter);
-                console.log("activityResponse", activityResponse);
+                console.log("activityResponse", activityResponse, online);
                 const partyResponse = await getParty(type, id);
 
                 const currentActivityHash = activityResponse.currentActivityHash;
@@ -161,6 +162,7 @@ export default function CurrentActivity({ type, id }) {
                 guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform),
                 honor: await getCommendations(successfulPlatform, member.membershipId),
                 emblemaBig: await fetchEmblema(emblemPath.emblemHash),
+                clan: await fetchClan(member.membershipId, successfulPlatform),
                 emblemPath: emblemPath.emblemPath,
                 clase: emblemPath.clase,
                 light: emblemPath.light,
@@ -248,6 +250,20 @@ export default function CurrentActivity({ type, id }) {
         return emblemaResponse.secondaryIcon;
     }
 
+    const fetchClan = async (id, type) => {
+        try {
+            const userClan = await getClanUser(type, id);
+            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
+                return userClan.results[0].group.name;
+            } else {
+                return "No pertenece a ningún clan";
+            }
+        } catch (error) {
+            console.error('Error al cargar el clan del usuario:', error);
+            return "No pertenece a ningún clan";
+        }
+    }
+
     useEffect(() => {
         if (jugadorSelected === null) return;
         function handleClickOutside(event) {
@@ -264,11 +280,11 @@ export default function CurrentActivity({ type, id }) {
     return (
         <div className="w-full">
             {activity ? (
-                <div className="h-[450px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className="w-full">
+                <div className="h-[450px] text-white p-6 py-1.5 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className="w-full h-full justify-evenly flex flex-col">
                         {activity.name ? (
                             <div className="gap-0">
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center justify-between">
                                     <div className="bg-black/25 p-2 rounded-lg w-fit">
                                         <div className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
                                             Actividad en curso
@@ -285,7 +301,7 @@ export default function CurrentActivity({ type, id }) {
                                         </div>
                                         : null}
                                 </div>
-                                <div className="bg-black/25 p-2 rounded-lg w-fit mt-4">
+                                <div className="bg-black/25 p-2 rounded-lg w-fit">
                                     {activity.PVPoPVE === "PVP" ? (
                                         <>
                                             {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
@@ -328,20 +344,21 @@ export default function CurrentActivity({ type, id }) {
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-4xl font-semibold items-center">En órbita </p>
+                            <p className="text-4xl font-semibold items-center bg-black/25 p-2 rounded-lg w-fit">En órbita </p>
                         )}
-                        <div className="bg-black/25 p-2 rounded-lg w-full mt-4">
+                        <div className="bg-black/25 p-2 rounded-lg w-full">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            {partyMembers.length > 4 ? (
+                            {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
                                 <div className="relative">
                                     <CaruselTemmate
                                         members={partyMembers}
                                         onMemberClick={setJugadorSelected}
                                         selectedMember={jugadorSelected}
+                                        mode={activity?.PVPoPVE}
                                     />
                                 </div>
                             ) : (
-                                <ul className={`space-x-6 grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"}  gap-4`}>
+                                <ul className={`grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"} gap-2`}>
                                     {partyMembers.map((member, idx) => (
                                         <li key={member.membershipId} className="relative">
                                             <a
@@ -382,7 +399,9 @@ export default function CurrentActivity({ type, id }) {
                             </p>
                         </div>
                         <div className="flex-1 flex items-center justify-center">
-                            <p className="text-2xl bg-black/25 p-2 rounded text-center uppercase">No está en línea</p>
+                            <p className="text-2xl bg-black/25 p-2 rounded text-center uppercase">
+                                {online ? "Actividad no registrada" : "No está en línea"}
+                            </p>
                         </div>
                     </div>
                 </div>

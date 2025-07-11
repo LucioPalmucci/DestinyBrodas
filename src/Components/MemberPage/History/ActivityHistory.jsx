@@ -192,12 +192,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const fetchClan = async (id, type) => {
         try {
             const userClan = await getClanUser(type, id);
-            if (userClan.results[0].group.name) return userClan.results[0].group.name;
-            else return "No pertenece a ningún clan";
-
+            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
+                return userClan.results[0].group.name;
+            } else {
+                return "No pertenece a ningún clan";
+            }
         } catch (error) {
-            console.error('Error al cargar el clan del usuario');
-            return null;
+            console.error('Error al cargar el clan del usuario:', error);
+            return "No pertenece a ningún clan";
         }
     }
 

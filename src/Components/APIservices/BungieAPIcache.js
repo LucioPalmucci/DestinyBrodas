@@ -7,16 +7,16 @@ const globalLoading = new Set();
 
 // TTL por tipo de dato (en millisegundos)
 const TTL_CONFIG = 60 * 1000; // 2 minutos
-    /*compChars: 5 * 60 * 1000,        // 5 minutos
-    clanMembers: 10 * 60 * 1000,    // 10 minutos
-    activities: 2 * 60 * 1000,      // 2 minutos
-    commendations: 15 * 60 * 1000,  // 15 minutos
-    emblem: 60 * 60 * 1000,         // 1 hora
-    guardianRank: 30 * 60 * 1000,   // 30 minutos
-    manifest: 60 * 60 * 1000,       // 1 hora
-    carnageReport: 30 * 60 * 1000,  // 30 minutos
-    activityDefinition: 60 * 60 * 1000, // 1 hora
-    default: 5 * 60 * 1000          // Default 5 minutos*/
+/*compChars: 5 * 60 * 1000,        // 5 minutos
+clanMembers: 10 * 60 * 1000,    // 10 minutos
+activities: 2 * 60 * 1000,      // 2 minutos
+commendations: 15 * 60 * 1000,  // 15 minutos
+emblem: 60 * 60 * 1000,         // 1 hora
+guardianRank: 30 * 60 * 1000,   // 30 minutos
+manifest: 60 * 60 * 1000,       // 1 hora
+carnageReport: 30 * 60 * 1000,  // 30 minutos
+activityDefinition: 60 * 60 * 1000, // 1 hora
+default: 5 * 60 * 1000          // Default 5 minutos*/
 
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
 
@@ -24,7 +24,7 @@ export const useBungieAPI = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [cacheStats, setCacheStats] = useState({ size: 0, loading: 0 });
-    
+
     // Para cancelar requests si el componente se desmonta
     const abortControllerRef = useRef(new AbortController());
 
@@ -37,17 +37,17 @@ export const useBungieAPI = () => {
     const isCacheValid = useCallback((cacheKey, type) => {
         const cached = globalCache.get(cacheKey);
         if (!cached) return false;
-        
+
         const now = Date.now();
         const ttl = TTL_CONFIG;
-        
+
         return (now - cached.timestamp) < ttl;
     }, []);
 
     // Función genérica para hacer requests con cache
     const apiRequest = useCallback(async (type, url, params = [], customConfig = {}) => {
         const cacheKey = generateCacheKey(type, url, ...params);
-        
+
         // Verificar cache
         if (isCacheValid(cacheKey, type)) {
             return globalCache.get(cacheKey).data;
@@ -254,24 +254,30 @@ export const useBungieAPI = () => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1400`;
         const response = await apiRequest('commendations', url, [membershipType, userId]);
         const dataHonor = response?.Response?.profileCommendations?.data;
-        
+
         if (!dataHonor) return null;
+        const getPercentage = (hash) => {
+            return dataHonor.commendationNodePercentagesByHash?.[hash] || 0;
+        };
+        const getScore = (hash) => {
+            return dataHonor.commendationNodeScoresByHash?.[hash] || 0;
+        };
 
         return {
-            totalScore: dataHonor.totalScore.toLocaleString('en-US'),
-            recibidas: dataHonor.scoreDetailValues[1],
-            enviadas: dataHonor.scoreDetailValues[0],
-            verdes: dataHonor.commendationNodePercentagesByHash[154475713],
-            rosas: dataHonor.commendationNodePercentagesByHash[1341823550],
-            azules: dataHonor.commendationNodePercentagesByHash[1390663518],
-            naranjas: dataHonor.commendationNodePercentagesByHash[4180748446],
-            verdesPuntos: dataHonor.commendationNodeScoresByHash[154475713],
-            rosasPuntos: dataHonor.commendationNodeScoresByHash[1341823550],
-            azulesPuntos: dataHonor.commendationNodeScoresByHash[1390663518],
-            naranjasPuntos: dataHonor.commendationNodeScoresByHash[4180748446],
+            totalScore: dataHonor.totalScore?.toLocaleString('en-US') || '0',
+            recibidas: (dataHonor.scoreDetailValues?.[1]) || 0,
+            enviadas: (dataHonor.scoreDetailValues?.[0]) || 0,
+            verdes: getPercentage(154475713),
+            rosas: getPercentage(1341823550),
+            azules: getPercentage(1390663518),
+            naranjas: getPercentage(4180748446),
+            verdesPuntos: getScore(154475713),
+            rosasPuntos: getScore(1341823550),
+            azulesPuntos: getScore(1390663518),
+            naranjasPuntos: getScore(4180748446),
         };
     }, [apiRequest]);
-
+    
     // Obtener emblema
     const getEmblem = useCallback(async (emblemHash) => {
         const url = `/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/?lc=es`;
@@ -284,12 +290,12 @@ export const useBungieAPI = () => {
         const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100`;
         const response = await apiRequest('guardianRank', url, [membershipType, userId]);
         const rankNum = response?.Response?.profile?.data?.currentGuardianRank;
-        
+
         if (!rankNum) return null;
-        
+
         const rankUrl = `/api/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${rankNum}/?lc=es`;
         const rankResponse = await apiRequest('guardianRank', rankUrl, [rankNum]);
-        
+
         return {
             title: rankResponse?.Response?.displayProperties?.name,
             num: rankNum,
@@ -370,7 +376,7 @@ export const useBungieAPI = () => {
         loading,
         error,
         cacheStats,
-        
+
         // Métodos de API
         getCompChars,
         getCompCharsActs,
@@ -398,15 +404,15 @@ export const useBungieAPI = () => {
         getManifest,
         getManifestData,
         getClanUser,
-        
+
         // Método genérico
         apiRequest,
-        
+
         // Utilidades
         clearCache,
         getCacheStatsDetailed,
         cleanup,
-        
+
         // Estados del cache
         isCached: (type, ...params) => {
             const cacheKey = generateCacheKey(type, ...params);
@@ -422,7 +428,7 @@ export const useBungieAPI = () => {
 // Hook simplificado para casos básicos
 export const useBungieAPISimple = () => {
     const api = useBungieAPI();
-    
+
     return {
         loading: api.loading,
         error: api.error,
