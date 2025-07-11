@@ -1,7 +1,12 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import gambitBG from "../../../assets/ActivityModes/gambit.png";
+import historyBG from "../../../assets/ActivityModes/history.png";
+import ibBG from "../../../assets/ActivityModes/ib.png";
+import pvpBG from "../../../assets/ActivityModes/pvp.jpg";
+import strikesBG from "../../../assets/ActivityModes/strikes.png";
+import trialsBG from "../../../assets/ActivityModes/trials.png";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
-
 
 export default function FavouriteActivity({ membershipType, userId }) {
     const [mostPlayedActivity, setMostPlayedMode] = useState(null);
@@ -20,16 +25,18 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const estandarte = await activityHashes(2371050408, true);
                 const crisol = await activityHashes(4088006058, true);
                 const Pruebas = await activityHashes(2112637710, true);
+                const gambito = await activityHashes(1848252830, true);
 
                 let modeGroups = {
-                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras" },
-                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Asaltos" },
-                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones" },
-                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 3789021730, name: "Ocasos" },
-                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444, name: "Historia" },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro" },
-                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris" },
-                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol" },
+                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
+                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Asaltos", bgImg: strikesBG },
+                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null },
+                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 3789021730, name: "Ocasos", bgImg: strikesBG },
+                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444, name: "Historia", bgImg: historyBG },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro" , bgImg: ibBG },
+                    Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG },
+                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG },
+                    Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG }
                 };
 
                 const profileRes = await getCompsProfile(membershipType, userId);
@@ -71,6 +78,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 });
 
                 let modoDatos = await fetchActivityDetails(modeGroups[mostPlayedMode].modeHash, "DestinyActivityModeDefinition", "general");
+                const favAct = await fetchActivityDetails(mostPlayedActivity.name, "DestinyActivityDefinition");
                 let characterCompletions = {};
                 for (const characterId of characterIds) {
                     characterCompletions[characterId] = {};
@@ -88,8 +96,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         completions: modeGroups[mostPlayedMode].completions,
                         kills: modeGroups[mostPlayedMode].kills,
                         icon: "/api" + modoDatos?.displayProperties?.icon,
-                        pgcrImg: mostPlayedMode == "Incursiones" ? "https://images.contentstack.io/v3/assets/blte410e3b15535c144/blt25ec3d789f5701d6/664ee84d2dad6500dee525d3/low-res-Pantheon-art---Raid-logo.jpg" : ("/api" + (modoDatos?.pgcrImage ?? "")),
-                        fav: await fetchActivityDetails(mostPlayedActivity.name, "DestinyActivityDefinition"),
+                        pgcrImg: modeGroups[mostPlayedMode].name == "Mazmorras" || modeGroups[mostPlayedMode].name == "Incursiones"  ? "/api"+favAct.pgcrImage : modeGroups[mostPlayedMode].bgImg,
+                        fav: favAct.displayProperties.name,
                     });
                 }
                 setCharCompl(characterCompletions);
@@ -101,14 +109,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
         fetchGeneralStats();
     }, [membershipType, userId]);
 
-    const fetchActivityDetails = async (activityHash, type, Subclase) => {
+    const fetchActivityDetails = async (activityHash, type) => {
         try {
-            const response = await getItemManifest(activityHash, type);
-
-            if (response == null) return null;
-            else if (Subclase === "general") return response;
-            else return response.displayProperties.name;
-
+            return await getItemManifest(activityHash, type);
         } catch (error) {
             console.error(`Error fetching activity details for hash ${activityHash}:`, error);
             return null;
@@ -126,6 +129,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const filteredActivities = Object.values(activityData).filter(
             (activity) => pvp ? activity.activityTypeHash == mode : activity.directActivityModeHash == mode
         );
+
 
         const activityHashes = filteredActivities.map((activity) => activity.hash);
         return activityHashes;
@@ -197,7 +201,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     <div className="p-6 h-full rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity?.pgcrImg})` }}>
                         <div className="space-y-10 flex flex-col">
                             <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
-                                Actividad más jugada
+                                Actividad favorita
                             </div>
                             <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold p-0">
                                 {mostPlayedActivity.mode}
@@ -206,7 +210,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                                 Completiciones: {mostPlayedActivity.completions}<br />
                                 Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
                                 Bajas: {mostPlayedActivity.kills}<br />
-                                Favorita: {mostPlayedActivity.fav}
+                                Más jugada: {mostPlayedActivity.fav}
                             </div>
                             <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
                                 {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (

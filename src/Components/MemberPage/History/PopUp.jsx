@@ -65,10 +65,10 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                     <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                         {jugador.name.length > 12 ? `${jugador.name.substring(0, 12)}...` : jugador.name}
                     </h2>
-                    <h1 className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
+                    <div className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                         <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardinRank?.num || 1}.fw.png`} className='w-4 h-4 mr-1' />
-                        {jugador.guardinRank?.title || "Guardian"}
-                    </h1>
+                        <p className="mt-1">{jugador.guardinRank?.title || "Guardian"}</p>
+                    </div>
                     <h1 className='leading-tight font-extralight tracking-wide text-gray-200 text-lg opacity-50'>
                         {jugador.clan || "Sin clan"}
                     </h1>
