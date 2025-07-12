@@ -13,18 +13,17 @@ export default function CurrentActivity({ type, id, isOnline }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [numColumns, setColums] = useState(0);
-    const { getCompsProfile, getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser } = useBungieAPI();
+    const { getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const characterIds = await getCompsProfile(type, id);
-                const mostRecentCharacter = Object.values(characterIds.profile.data.characterIds).reduce((latest, current) => {
+                const characterIds = await getCompChars(type, id);
+                const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                const activityResponse = await getCompCharsActs(type, id, mostRecentCharacter);
-                console.log("activityResponse", activityResponse, online);
+                const activityResponse = await getCompCharsActs(type, id, mostRecentCharacter.characterId);
                 const partyResponse = await getParty(type, id);
 
                 const currentActivityHash = activityResponse.currentActivityHash;
@@ -142,7 +141,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                         break;
                     }
                 } catch (error) {
-                    //console.error("No es de la plataforma", plataforma);
+                   // console.error("No es de la plataforma", plataforma);
                 }
             }
 
@@ -280,12 +279,12 @@ export default function CurrentActivity({ type, id, isOnline }) {
     return (
         <div className="w-full">
             {activity ? (
-                <div className="h-[450px] text-white p-6 py-1.5 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className="w-full h-full justify-evenly flex flex-col">
+                <div className="h-[450px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className="w-full h-full justify-between flex flex-col">
                         {activity.name ? (
                             <div className="gap-0">
-                                <div className="flex items-center justify-between">
-                                    <div className="bg-black/25 p-2 rounded-lg w-fit">
+                                <div className="flex items-top justify-between">
+                                    <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
                                             Actividad en curso
                                             <div className="relative ml-2">
@@ -297,11 +296,11 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     </div>
                                     {activity.logo && !activity.logo.includes("missing") ?
                                         <div className="opacity-50">
-                                            <img src={`/api${activity.logo}`} width={80} height={80} />
+                                            <img src={`/api${activity.logo}`} className="w-20 h-20" />
                                         </div>
                                         : null}
                                 </div>
-                                <div className="bg-black/25 p-2 rounded-lg w-fit">
+                                <div className="bg-black/25 p-2 rounded-lg w-fit mt-1">
                                     {activity.PVPoPVE === "PVP" ? (
                                         <>
                                             {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
@@ -358,11 +357,11 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     />
                                 </div>
                             ) : (
-                                <ul className={`grid ${numColumns == 3 ? "grid-cols-3 text-sm" : numColumns == 2 ? "grid-cols-2" : "grid-cols-1"} gap-2`}>
+                                <ul className={`grid grid-cols-2 gap-2`}>
                                     {partyMembers.map((member, idx) => (
                                         <li key={member.membershipId} className="relative">
                                             <a
-                                                className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg  clan-member-shimmer-hover"
+                                                className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover"
                                                 onClick={() => setJugadorSelected(idx)}
                                             >
                                                 <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />

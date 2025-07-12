@@ -79,7 +79,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     }, [userId, membershipType]);
 
     return (
-        <div className="p-4 bg-neutral-300 rounded-lg shadow-md mt-6 h-[370px]">
+        <div className="py-4 px-2 bg-neutral-300 rounded-lg shadow-md mt-6 h-fit">
             <h2 className="text-xl font-bold">Armas más usadas</h2>
             <p className="text-xs italic">Últimos 7 días</p>
             <div className="flex justify-center mb-4 mt-1">
@@ -97,16 +97,16 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                         initial={{ opacity: 0, x: page === "pve" ? -10 : 10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 0 }}
-                        className={`space-y-3 mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-4 grid-flow-col ' : ''}`}
+                        className={`mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-4 grid-flow-col gap-3.5' : 'space-y-3'}`}
                     >
                         {weapons[page].map((weapon, index) => (
                             <li
                                 key={index}
-                                className={`flex text-start`}
+                                className="flex text-start"
                             >
-                                <div className="flex items-center">
-                                    <div className="relative flex items-center">
-                                        <p className="font-semibold text-lg mr-2">{index+1}.</p>
+                                <div className="flex items-start w-full">
+                                    <div className="relative flex items-center mr-3 flex-shrink-0">
+                                        <p className="font-semibold text-lg w-6">{index + 1}.</p>
                                         <img
                                             src={weapon.icon}
                                             width={40}
@@ -132,9 +132,11 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                                             />
                                         )}
                                     </div>
-                                    <div className="ml-4 items-center">
-                                        <p className="text-sm">{weapon.name}</p>
-                                        <div className="text-xs flex space-x-2">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm leading-tight break-words">
+                                            {weapon.name}
+                                        </p>
+                                        <div className="text-xs flex space-x-2 mt-1">
                                             <p>
                                                 <i className="icon-kills-black" />{weapon.kills}
                                             </p>

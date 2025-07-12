@@ -108,14 +108,13 @@ export default function MemberCard({ member }) {
             });
 
             const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, mostRecentCharacter.characterId);
-
+            console.log("activityResponse ", characterIds);
             const currentActivityHash = activityResponse.currentActivityHash;
             const currentActivityMode = activityResponse.currentActivityModeHash;
             const currentPlaylist = activityResponse.currentPlaylistActivityHash;
             const responseMode = await getItemManifest(currentActivityMode, "DestinyActivityModeDefinition");
             const responseName = await getItemManifest(currentActivityHash, "DestinyActivityDefinition");
             const responsePlaylist = await getItemManifest(currentPlaylist, "DestinyActivityDefinition");
-            console.log("Response Playlist: ", responseName);
             const name = responseName?.displayProperties?.name;
             const type = responseMode?.displayProperties?.name;
             const playlist = responsePlaylist?.displayProperties?.name;
@@ -180,7 +179,7 @@ export default function MemberCard({ member }) {
                     <td title={member.bungieNetUserInfo.supplementalDisplayName}>
                         <a className='flex items-center' href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
                             <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
-                            {member.destinyUserInfo.displayName}
+                            {member.destinyUserInfo.bungieGlobalDisplayName}
                         </a>
                     </td>
                     <td>
