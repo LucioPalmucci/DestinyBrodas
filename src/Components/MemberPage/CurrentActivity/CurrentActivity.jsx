@@ -93,6 +93,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                     logo: actividadLogo,
                     tieneIcono: tieneIcono,
                 });
+                console.log("Actividad actual:", currentActivityMode);
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
                 setPartyMembers(partyMembersDetails);
@@ -279,10 +280,10 @@ export default function CurrentActivity({ type, id, isOnline }) {
     return (
         <div className="w-full">
             {activity ? (
-                <div className="h-[450px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className="w-full h-full justify-between flex flex-col">
+                <div className="h-[450px] text-white p-6 py-0 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className="w-full h-full justify-evenly flex flex-col">
                         {activity.name ? (
-                            <div className="gap-0">
+                            <div className="space-y-4">
                                 <div className="flex items-top justify-between">
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
@@ -294,11 +295,11 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         </div>
                                         <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                     </div>
-                                    {activity.logo && !activity.logo.includes("missing") ?
+                                    {activity.logo &&
                                         <div className="opacity-50">
                                             <img src={`/api${activity.logo}`} className="w-20 h-20" />
                                         </div>
-                                        : null}
+                                        }
                                 </div>
                                 <div className="bg-black/25 p-2 rounded-lg w-fit mt-1">
                                     {activity.PVPoPVE === "PVP" ? (
