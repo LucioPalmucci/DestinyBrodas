@@ -94,7 +94,6 @@ export default function CurrentActivity({ type, id, isOnline }) {
                     logo: actividadLogo,
                     tieneIcono: tieneIcono,
                 });
-                console.log("Actividad actual:", currentActivityMode);
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
                 setPartyMembers(partyMembersDetails);
@@ -168,8 +167,8 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 clase: emblemPath.clase,
                 light: emblemPath.light,
                 subclass: emblemPath.subclass,
-                iconActivity: activity2?.logo || null,
-                activityName: activity2?.name || null,
+                iconActivity: activity2?.logo || API_CONFIG.BUNGIE_API + "/common/destiny2_content/icons/DestinyActivityModeDefinition_f6de6d95f600f199c9a674c73cbefbcc.png",
+                activityName: activity2?.name || "En órbita",
                 mode: activity2?.type || null,
                 name: displayName,
                 uniqueName: uniqueName,
@@ -297,7 +296,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                     </div>
                                     {activity.logo &&
-                                        <div className="opacity-50 absolute right-0">
+                                        <div className="opacity-50 absolute right-0 -top-4">
                                             <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-20 h-20" />
                                         </div>
                                         }
@@ -386,7 +385,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 </div>
             ) : (
                 <div
-                    className="text-white p-6 rounded-lg content-fit shadow-lg h-[450px] flex flex-col bg-center bg-cover relative"
+                    className="text-white p-6 rounded-lg content-fit shadow-lg h-[375px] flex flex-col bg-center bg-cover relative"
                     style={{ backgroundImage: `url(${orbit})` }}
                 >
                     {/* Overlay de transparencia */}

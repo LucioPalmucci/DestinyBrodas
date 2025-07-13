@@ -200,7 +200,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             <div className="text-white h-[375px]">
                 {mostPlayedActivity && charCompl ? (
                     <div className="p-6 h-full rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity?.pgcrImg})` }}>
-                        <div className="justify-between flex flex-col">
+                        <div className="justify-between flex flex-col relative w-full">
                             <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
                                 Actividad favorita
                             </div>
@@ -220,9 +220,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                        <div>
-                            {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 ml-10" />}
+                            {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 absolute right-0 -top-4" />}
                         </div>
                     </div>
                 ) : (

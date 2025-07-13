@@ -20,13 +20,16 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+    const [isLoading, setIsLoading] = useState(false);
     const [jugadorSelected, setJugadorSelected] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [activitiesPerPage] = useState(10);
     const popupRef = useRef(null);
     const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities, getCommendations, getClanUser } = useBungieAPI();
-
-
     useEffect(() => {
         const fetchActivityHistory = async () => {
+            if (isLoading) return; // Prevenir múltiples ejecuciones
+            setIsLoading(true);
             try {
                 const characterIds = await getCompsProfile(membershipType, userId);
                 const allActivities = [];
@@ -42,7 +45,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 }
 
                 const sortedActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
-                const recentActivities = sortedActivities.slice(0, 10);
+                const recentActivities = sortedActivities.slice(0, 50);
+                console.log("AA")
 
                 const details = await Promise.all(recentActivities.map(async (activity) => {
                     const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
@@ -85,12 +89,18 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     };
                 }));
                 setActivityDetails(details);
-                filterActivities(details, 'Todas');
+                setFilteredActivities(details);
+                setCurrentActivityType('Todas');
+                setCurrentPage(1);
             } catch (error) {
                 console.error('Error fetching activity history:', error);
+            } finally {
+                setIsLoading(false);
             }
         };
-        fetchActivityHistory();
+        if (userId && membershipType) {
+            fetchActivityHistory();
+        }
     }, [userId, membershipType]);
 
     const formatDuration = (seconds) => {
@@ -157,13 +167,15 @@ const ActivityHistory = ({ userId, membershipType }) => {
     };
 
     const filterActivities = (activities, type) => {
+        let filtered;
         if (type === "Todas") {
-            setFilteredActivities(activities);
+            filtered = activities;
         } else {
-            const filtered = activities.filter(activity => activity.activityType === type);
-            setFilteredActivities(filtered);
+            filtered = activities.filter(activity => activity.activityType === type);
         }
+        setFilteredActivities(filtered);
         setCurrentActivityType(type);
+        setCurrentPage(1); // Reset to first page when filtering
     };
 
     const toggleExpand = (index) => {
@@ -257,6 +269,53 @@ const ActivityHistory = ({ userId, membershipType }) => {
         };
     }, []);
 
+    const indexOfLastActivity = currentPage * activitiesPerPage;
+    const indexOfFirstActivity = indexOfLastActivity - activitiesPerPage;
+    const currentActivities = filteredActivities.slice(indexOfFirstActivity, indexOfLastActivity);
+
+    // Calcular número total de páginas
+    const totalPages = Math.ceil(filteredActivities.length / activitiesPerPage);
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        setExpandedIndex(null); // Cerrar actividades expandidas al cambiar página
+    };
+
+    const getPageNumbers = () => {
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
+
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            // Lógica para mostrar ... entre páginas
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) {
+                    pageNumbers.push(i);
+                }
+                pageNumbers.push('...');
+                pageNumbers.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pageNumbers.push(1);
+                pageNumbers.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) {
+                    pageNumbers.push(i);
+                }
+            } else {
+                pageNumbers.push(1);
+                pageNumbers.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pageNumbers.push(i);
+                }
+                pageNumbers.push('...');
+                pageNumbers.push(totalPages);
+            }
+        }
+        return pageNumbers;
+    };
+
     return (
         <div>
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
@@ -266,7 +325,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 <button onClick={() => filterActivities(activityDetails, 'PvP')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 'PvP' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
                 <button onClick={() => filterActivities(activityDetails, 'Gambito')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 'Gambito' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
             </div>
-            {filteredActivities.length > 0 && (
+            {currentActivities.length > 0 && (
                 <div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
                     <p className='w-[15%]'>Fecha/Hora</p>
                     <p className='w-[12%]'>Clase</p>
@@ -276,14 +335,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 </div>
             )}
             <div>
-                {filteredActivities.length > 0 ? filteredActivities.map((activity, index) => {
+                {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
                     const hasPoints = activity.people.some(person => person.points > 0);
                     const hasMedals = activity.people.some(person => person.medals > 0);
 
                     const team0 = activity.people.filter(person => person.standing === 0);
                     const team1 = activity.people.filter(person => person.standing === 1);
 
-                    const uniqueId = activity.instanceId;
+                    const uniqueId = activity.instanceId + index; // Unique ID for each activity
 
                     const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
                     const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
@@ -484,6 +543,47 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     <div className='top-0 text-xl font-bold'>No hay actividades para este filtro</div>
                 )}
             </div>
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center mt-6 space-x-1">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 rounded cursor-pointer ${currentPage === 1
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                    >
+                        {"<"}
+                    </button>
+
+                    {getPageNumbers().map((pageNumber, index) => (
+                        <button
+                            key={index}
+                            onClick={() => typeof pageNumber === 'number' && handlePageChange(pageNumber)}
+                            disabled={pageNumber === '...'}
+                            className={`px-3 py-1 rounded cursor-pointer ${pageNumber === currentPage
+                                ? 'bg-blue-500 text-white'
+                                : pageNumber === '...'
+                                    ? 'bg-white text-gray-400 cursor-default'
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                        >
+                            {pageNumber}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 rounded cursor-pointer ${currentPage === totalPages
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                    >
+                        {">"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
