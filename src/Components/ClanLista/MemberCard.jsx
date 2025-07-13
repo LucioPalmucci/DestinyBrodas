@@ -59,7 +59,6 @@ export default function MemberCard({ member }) {
         if (mode === 'PVE') setKillsPvE(mostKills.basic.value);
         else setKillsPvP(mostKills.basic.value);
         return weaponTranslations[weaponType]
-        //kills: mostKills.basic.value,
     }
 
     //Llamada a la API para obtener la informacion de la cuenta
@@ -84,6 +83,7 @@ export default function MemberCard({ member }) {
 
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchActivity(member));
+                    console.log("activity ", await fetchActivity(member));
                 }
 
             } catch (error) {
@@ -109,14 +109,14 @@ export default function MemberCard({ member }) {
             });
 
             const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, mostRecentCharacter.characterId);
-            console.log("activityResponse ", characterIds);
             const currentActivityHash = activityResponse.currentActivityHash;
             const currentActivityMode = activityResponse.currentActivityModeHash;
             const currentPlaylist = activityResponse.currentPlaylistActivityHash;
             const responseMode = await getItemManifest(currentActivityMode, "DestinyActivityModeDefinition");
             const responseName = await getItemManifest(currentActivityHash, "DestinyActivityDefinition");
             const responsePlaylist = await getItemManifest(currentPlaylist, "DestinyActivityDefinition");
-            const name = responseName?.displayProperties?.name;
+            console.log("activityResponse", responseName);
+            const name = responseName?.displayProperties?.name || 'En órbita';
             const type = responseMode?.displayProperties?.name;
             const playlist = responsePlaylist?.displayProperties?.name;
 
