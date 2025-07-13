@@ -21,7 +21,7 @@ export default function TriumphScore({ membershipType, userId }) {
 
     return (
         triumphs ? (
-            <div className='p-6 bg-gray-300 rounded-lg mt-6'>
+            <div className='p-6 bg-gray-300 rounded-lg'>
                 <p className='font-bold text-2xl'>Triunfo</p>
                 <div className='flex justify-evenly space-x-8 mt-2'>
                     <div>

@@ -197,10 +197,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     return (
         <div className="font-Inter">
-            <div className="text-white h-[450px]">
+            <div className="text-white h-[375px]">
                 {mostPlayedActivity && charCompl ? (
                     <div className="p-6 h-full rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity?.pgcrImg})` }}>
-                        <div className="space-y-10 flex flex-col">
+                        <div className="justify-between flex flex-col">
                             <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
                                 Actividad favorita
                             </div>

@@ -8,7 +8,6 @@ import skull from "../../../assets/skull-solid.svg";
 //import "../../../index.css";
 import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
-import Spinner from '../../Spinner';
 import '../../Tab.css';
 import PopUp from './PopUp';
 
@@ -260,7 +259,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
     return (
         <div>
-            <h2 className='text-2xl font-bold mt-8'>Historial de actividades</h2>
+            <h2 className='text-2xl font-bold'>Historial de actividades</h2>
             <div className="flex mb-4">
                 <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
                 <button onClick={() => filterActivities(activityDetails, 'PvE')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 'PvE' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
@@ -482,7 +481,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         </div>
                     );
                 }) : (
-                    <div className='top-0'><Spinner /></div>
+                    <div className='top-0 text-xl font-bold'>No hay actividades para este filtro</div>
                 )}
             </div>
         </div>

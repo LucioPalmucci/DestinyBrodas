@@ -143,7 +143,7 @@ export default function ClanTeammates({ userId, membershipType }) {
     return (
         <div>
         {playersClan && playersClan.length > 0 ? (
-            <div className="text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('${API_CONFIG.BUNGIE_API}${playersClan[0]?.pgcrImg}')` }}>
+            <div className="text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover" style={{ backgroundImage: `url('${API_CONFIG.BUNGIE_API}${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
                         Actividades con miembros del clan

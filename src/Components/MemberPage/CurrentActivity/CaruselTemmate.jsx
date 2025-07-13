@@ -102,7 +102,7 @@ export default function CaruselTemmate({ members, onMemberClick, mode }) {
     return (
         <div>
             <div className="relative min-h-fit">
-                <Slider {...settings}>
+                <Slider {...settings} className="w-[500px]">
                     {members.map((member, idx) => (
                         <div key={member.membershipId} className="px-1 py-1">
                             <div className="relative">

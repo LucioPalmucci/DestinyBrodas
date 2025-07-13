@@ -136,9 +136,9 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
 
     return (
         <>
-            <div className={`font-Inter h-[475px]`}>
+            <div className={`font-Inter `}>
                 {totalStats && background && items ? (
-                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
+                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
                         <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
                         <div className="justify-evenly flex">
                             <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">

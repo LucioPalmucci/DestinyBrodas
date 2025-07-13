@@ -22,7 +22,7 @@ export default function Commendations({ membershipType, userId }) {
     }, [])
 
     return (
-        <div className="mt-6 bg-gray-300 p-6 font-Lato rounded-lg  h-[162px] py-4 pb-10 space-y-2 items-center">
+        <div className="bg-gray-300 p-6 font-Lato rounded-lg h-[162px] py-4 pb-10 space-y-2 items-center">
             {honor ? (
                 <>
                     <h2 className="text-2xl font-semibold">Elogios</h2>

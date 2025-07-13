@@ -281,13 +281,13 @@ export default function CurrentActivity({ type, id, isOnline }) {
     return (
         <div className="w-full">
             {activity ? (
-                <div className="h-[450px] text-white p-6 py-0 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className="w-full h-full justify-evenly flex flex-col">
+                <div className="h-[375px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className="w-full h-full justify-between flex flex-col">
                         {activity.name ? (
-                            <div className="space-y-4">
-                                <div className="flex items-top justify-between">
+                            <div>
+                                <div className="flex items-top justify-between relative mb-0.5">
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
-                                        <div className="flex items-center text-lg font-semibold mb-0 p-0 leading-tight">
+                                        <div className="flex items-center text-lg font-semibold leading-tight">
                                             Actividad en curso
                                             <div className="relative ml-2">
                                                 <img src={circleSolid} width={16} height={16} className="animate-ping" style={{ filter: 'invert(34%) sepia(100%) saturate(748%) hue-rotate(185deg) brightness(96%) contrast(101%)' }} />
@@ -297,12 +297,12 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                     </div>
                                     {activity.logo &&
-                                        <div className="opacity-50">
+                                        <div className="opacity-50 absolute right-0">
                                             <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-20 h-20" />
                                         </div>
                                         }
                                 </div>
-                                <div className="bg-black/25 p-2 rounded-lg w-fit mt-1">
+                                <div className="bg-black/25 p-2 rounded-lg w-fit">
                                     {activity.PVPoPVE === "PVP" ? (
                                         <>
                                             {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
@@ -321,7 +321,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                             )}
                                         </p>
                                     </>}
-                                    {activity.PVPoPVE === "PVP" ? (
+                                    {activity.PVPoPVE === "PVP" && activity.oponentes != null ? (
                                         <div className="flex justify-evenly">
                                             <div className="flex flex-col text-center items-center">
                                                 {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
@@ -347,10 +347,10 @@ export default function CurrentActivity({ type, id, isOnline }) {
                         ) : (
                             <p className="text-4xl font-semibold items-center bg-black/25 p-2 rounded-lg w-fit">En órbita </p>
                         )}
-                        <div className="bg-black/25 p-2 rounded-lg w-full">
+                        <div className="bg-black/25 p-1 py-0.5 rounded-lg w-fit">
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
                             {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
-                                <div className="relative">
+                                <div className="relative w-full">
                                     <CaruselTemmate
                                         members={partyMembers}
                                         onMemberClick={setJugadorSelected}
@@ -359,7 +359,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     />
                                 </div>
                             ) : (
-                                <ul className={`grid grid-cols-2 gap-2`}>
+                                <ul className={`grid gap-2` + ` grid-cols-${numColumns} text-start`}>
                                     {partyMembers.map((member, idx) => (
                                         <li key={member.membershipId} className="relative">
                                             <a

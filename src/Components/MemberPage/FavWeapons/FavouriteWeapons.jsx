@@ -80,8 +80,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     }, [userId, membershipType]);
 
     return (
-        <div className="py-4 px-2 bg-neutral-300 rounded-lg shadow-md mt-6 h-fit">
-            <h2 className="text-xl font-bold">Armas más usadas</h2>
+        <div className="py-4 p-6 bg-neutral-300 rounded-lg shadow-md h-fit">
+            <h2 className="text-2xl font-bold">Armas más usadas</h2>
             <p className="text-xs italic">Últimos 7 días</p>
             <div className="flex justify-center mb-4 mt-1">
                 <button onClick={() => setPage("pve")} className={`cursor-pointer text-sm p-2 py-1 ${page === "pve" ? "bg-gray-400" : ""} rounded-lg`}>PvE</button>
