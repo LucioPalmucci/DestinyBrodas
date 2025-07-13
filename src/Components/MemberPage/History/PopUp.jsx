@@ -55,7 +55,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
         <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start font-normal flex mt-10 font-Inter items-center flex-col space-y-4 relative">
             <div
                 style={{
-                    backgroundImage: `url(/api${jugador.emblemBig})`,
+                    backgroundImage: `url(${API_CONFIG.BUNGIE_API}${jugador.emblemBig})`,
                     backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat'
                 }}
@@ -217,7 +217,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                                             <div className="p-2 rounded w-full">
                                                 <div className="flex items-center justify-start ml-15 w-full">
                                                     <img
-                                                        src={`/api/${weapon.icon}`}
+                                                        src={`${API_CONFIG.BUNGIE_API}/${weapon.icon}`}
                                                         width={40}
                                                         height={40}
                                                         alt="Weapon Icon"
@@ -250,7 +250,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                                         <div key={idx} className="p-2 rounded w-full">
                                             <div className="flex items-center justify-start ml-15 w-full">
                                                 <img
-                                                    src={`/api/${weapon.icon}`}
+                                                    src={`${API_CONFIG.BUNGIE_API}/${weapon.icon}`}
                                                     width={40}
                                                     height={40}
                                                     alt="Weapon Icon"

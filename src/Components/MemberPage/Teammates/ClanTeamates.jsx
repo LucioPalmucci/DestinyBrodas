@@ -1,9 +1,9 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { API_CONFIG } from "../../../config";
 import "../../../Index.css"; // Importar estilos globales
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import PopUpClanTeammates from "./PopUpClanTeammates";
-
 
 export default function ClanTeammates({ userId, membershipType }) {
     const [playersClan, setJugadoresClan] = useState([]);
@@ -45,7 +45,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                         const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                         const manifest = await getManifest();
                         const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
-                        const metricsData = await axios.get(`/api${manifestUrl}`);
+                        const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
                         const matchingMetric = Object.values(metricsData.data).find(metric =>
                             metric.modeType == act.activityDetails.mode
                         );
@@ -143,7 +143,7 @@ export default function ClanTeammates({ userId, membershipType }) {
     return (
         <div>
         {playersClan && playersClan.length > 0 ? (
-            <div className="text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('/api${playersClan[0]?.pgcrImg}')` }}>
+            <div className="text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover mt-6" style={{ backgroundImage: `url('${API_CONFIG.BUNGIE_API}${playersClan[0]?.pgcrImg}')` }}>
                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                     <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">
                         Actividades con miembros del clan
@@ -159,7 +159,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                                 onClick={() => setJugadorSelected(idx)}
                             >
                                 <p className="text-lg font-semibold min-w-[2ch] text-center">{jugador.numero}.</p>
-                                <img width={40} height={40} alt="Emblem" src={`/api${jugador.icon}`} />
+                                <img width={40} height={40} alt="Emblem" src={`${API_CONFIG.BUNGIE_API}${jugador.icon}`} />
                                 <div className="flex flex-col">
                                     <h1>
                                         {jugador.uniqueName.slice(0, -5)}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import inventory from "../../../assets/inventory.png";
+import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import CurrentLoadout from "./CurrentLoadout";
 
@@ -40,11 +41,6 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                         const statsList = itemD.stats.data?.stats;
                         for (const stat of Object.values(statsList)) {
                             try {
-                                /*const statResponse = await axios.get(`/api/Platform/Destiny2/Manifest/DestinyStatDefinition/${stat.statHash}/?lc=es`, {
-                                    headers: {
-                                        'X-API-Key': 'f83a251bf2274914ab739f4781b5e710',
-                                    },
-                                });*/
                                 totalStats.find((baseStat) => baseStat.statHash === stat.statHash).value += stat.value;
                             } catch (error) {
                                 console.error(`Error fetching stat definition for ${stat.statHash}:`, error);
@@ -142,7 +138,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
         <>
             <div className={`font-Inter h-[475px]`}>
                 {totalStats && background && items ? (
-                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4" style={{ backgroundImage: `url(/api${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
+                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white mt-4" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
                         <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
                         <div className="justify-evenly flex">
                             <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
@@ -150,12 +146,12 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                     items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
                                         index != 11 ? (
                                             <div key={index} className="flex items-center space-x-2">
-                                                <img src={`/api${items[index].icon}`} width={50} height={50} alt={items[index].name} />
+                                                <img src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`} width={50} height={50} alt={items[index].name} />
                                                 <p className="font-semibold">{items[index].name}</p>
                                             </div>
                                         ) : (
                                             <div key={index} className="flex items-center space-x-2">
-                                                <img src={`/api${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
+                                                <img src={`${API_CONFIG.BUNGIE_API}${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
                                                 <p className="font-semibold">{superAbility?.name}</p>
                                             </div>
                                         )
@@ -166,7 +162,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                 {totalStats.map((stat) => (
                                     stat.iconPath && (
                                         <p key={stat.statHash} className="flex items-center space-x-4 font-semibold text-xl">
-                                            <img src={`/api${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
+                                            <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
                                             {stat.value}
                                         </p>
                                     )

@@ -3,11 +3,12 @@ import destinyLogo from '../../../assets/destinyLogo.png';
 import dungeonLogo from '../../../assets/dungeonLogo.png';
 import elogio from "../../../assets/elogio.png";
 import raidReportIcon from '../../../assets/raidreport.png';
+import { API_CONFIG } from '../../../config';
 
 export default function PopUpTeammate({ jugador }) {
     return (
             <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start flex mt-10 font-Inter items-center flex-col space-y-4 relative">
-                <div style={{ backgroundImage: `url(/api${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full'>
+                <div style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full'>
                     <div className='ml-1 items-center'>
                         <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.name}</h2>
                         <h1 className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
@@ -40,7 +41,7 @@ export default function PopUpTeammate({ jugador }) {
                 </div>
                 <div className="w-full h-px bg-white opacity-30" />
                 <div className="flex items-center w-full px-6 space-x-4">
-                    <img className="w-12 h-12" src={`/api${jugador.iconActivity}`} />
+                    <img className="w-12 h-12" src={`${API_CONFIG.BUNGIE_API}${jugador.iconActivity}`} />
                     <div className="flex flex-col items-start">
                         <p className="text-lg font-semibold leading-tight">{jugador.activityName}</p>
                         <p className="italic">{jugador.mode}</p>

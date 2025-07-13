@@ -6,6 +6,7 @@ import ibBG from "../../../assets/ActivityModes/ib.png";
 import pvpBG from "../../../assets/ActivityModes/pvp.jpg";
 import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
+import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 
 export default function FavouriteActivity({ membershipType, userId }) {
@@ -95,8 +96,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         timePlayed: (modeGroups[mostPlayedMode].timePlayed / 3600).toFixed(0),
                         completions: modeGroups[mostPlayedMode].completions,
                         kills: modeGroups[mostPlayedMode].kills,
-                        icon: "/api" + modoDatos?.displayProperties?.icon,
-                        pgcrImg: modeGroups[mostPlayedMode].name == "Mazmorras" || modeGroups[mostPlayedMode].name == "Incursiones"  ? "/api"+favAct.pgcrImage : modeGroups[mostPlayedMode].bgImg,
+                        icon: API_CONFIG.BUNGIE_API + modoDatos?.displayProperties?.icon,
+                        pgcrImg: modeGroups[mostPlayedMode].name == "Mazmorras" || modeGroups[mostPlayedMode].name == "Incursiones"  ? API_CONFIG.BUNGIE_API + favAct.pgcrImage : modeGroups[mostPlayedMode].bgImg,
                         fav: favAct.displayProperties.name,
                     });
                 }
@@ -180,15 +181,15 @@ export default function FavouriteActivity({ membershipType, userId }) {
     function charImg(character) {
         switch (character) {
             case "Hechicero": return ({
-                link: "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
                 colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
             })
             case "Titán": return ({
-                link: "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
                 colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
             })
             case "Cazador": return ({
-                link: "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
+                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
                 colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
             })
         }

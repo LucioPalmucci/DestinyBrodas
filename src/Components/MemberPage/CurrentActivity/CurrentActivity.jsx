@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
+import { API_CONFIG } from "../../../config";
 import "../../../Index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import CaruselTemmate from "./CaruselTemmate";
@@ -89,7 +90,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                     puntosOponentes: puntosOponentes,
                     slots: slots,
                     mapaDePVP: mapaDePVP,
-                    imagen: actividadImg && actividadImg.includes(orbit) ? actividadImg : "/api" + actividadImg,
+                    imagen: actividadImg && actividadImg.includes(orbit) ? actividadImg : API_CONFIG.BUNGIE_API + actividadImg,
                     logo: actividadLogo,
                     tieneIcono: tieneIcono,
                 });
@@ -297,7 +298,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     </div>
                                     {activity.logo &&
                                         <div className="opacity-50">
-                                            <img src={`/api${activity.logo}`} className="w-20 h-20" />
+                                            <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-20 h-20" />
                                         </div>
                                         }
                                 </div>
@@ -365,7 +366,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                                 className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover"
                                                 onClick={() => setJugadorSelected(idx)}
                                             >
-                                                <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
+                                                <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                                 <div className="flex flex-col">
                                                     <span>{member.name}</span>
                                                     <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>

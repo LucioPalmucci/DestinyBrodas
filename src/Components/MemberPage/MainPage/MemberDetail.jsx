@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import arrowLeft from '../../../assets/arrow-left-solid.svg';
 import copy from '../../../assets/copiar-archivo.png';
+import { API_CONFIG } from '../../../config';
 import '../../../index.css';
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../../LastConexion';
@@ -15,7 +16,6 @@ import ActivityHistory from '../History/ActivityHistory';
 import SimpleLoadout from '../Lodaut/SimpleLodaut';
 import ClanTeammates from '../Teammates/ClanTeamates';
 import TriumphScore from '../TriumphScore/TriumphScore';
-import ReputationStatus from '../VendorReputation/ReputationStatus';
 import ReportLinks from './ReportLinks';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -75,17 +75,17 @@ function MemberDetail() {
 
                 switch (clase) {
                     case 2: setClassImg({
-                        link: "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
+                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
                         colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
                     })
                         break;
                     case 0: setClassImg({
-                        link: "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
+                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
                         colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
                     })
                         break;
                     case 1: setClassImg({
-                        link: "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
+                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
                         colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
                     })
                         break;
@@ -147,7 +147,7 @@ function MemberDetail() {
                         </div>
                     </div>
                     {memberDetail && userMemberships && (
-                        <div style={{ backgroundImage: `url(/api${emblemBackgroundPath})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between'>
+                        <div style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${emblemBackgroundPath})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-24 text-white flex justify-between'>
                             <div className='ml-1 items-center'>
                                 <h2 className='text-2xl font-large tracking-wide' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{userMemberships.bungieNetUser.displayName}</h2>
                                 <h1 className='text-xl text-neutral-100 opacity-75 flex items-center' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
@@ -163,20 +163,19 @@ function MemberDetail() {
                             </div>
                         </div>
                     )}
-                    <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
-                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
-                    <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                     <TriumphScore userId={membershipId} membershipType={membershipType} />
+                    <Commendations userId={membershipId} membershipType={membershipType} />
+                    <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
+                    <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                 </div>
                 <div className='w-[65%]'>
                     <div className='flex justify-between items-center'>
                         <div className='w-[47%]'>
                             <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
-                            <Commendations userId={membershipId} membershipType={membershipType} />
+                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
                         </div>
                         <div className='w-[47%]'>
                             <FavouriteActivity userId={membershipId} membershipType={membershipType} />
-                            <ReputationStatus userId={membershipId} membershipType={membershipType} />
                         </div>
                     </div>
                     <ActivityHistory userId={membershipId} membershipType={membershipType} />

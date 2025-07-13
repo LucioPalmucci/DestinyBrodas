@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_CONFIG } from '../../config';
 import { useBungieAPI } from '../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../LastConexion';
 import '../Tabla.css';
@@ -178,7 +179,7 @@ export default function MemberCard({ member }) {
                 <tr className='font-Inter'>
                     <td title={member.bungieNetUserInfo.supplementalDisplayName}>
                         <a className='flex items-center' href={`/DestinyBrodas/member/${member.destinyUserInfo.membershipType}/${member.destinyUserInfo.membershipId}`} target='_blank' rel='noreferrer noopener'>
-                            <img src={"/api/" + equippedEmblem} width={40} height={40} className='mr-2' />
+                            <img src={API_CONFIG.BUNGIE_API + "/" + equippedEmblem} width={40} height={40} className='mr-2' />
                             {member.destinyUserInfo.bungieGlobalDisplayName}
                         </a>
                     </td>

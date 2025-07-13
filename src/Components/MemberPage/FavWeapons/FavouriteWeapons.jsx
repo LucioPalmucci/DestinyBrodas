@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import crownIcon from "../../../assets/crown-solid.svg";
+import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Spinner from "../../Spinner";
 
@@ -52,7 +53,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                             const itemRes = await getItemManifest(weaponId, "DestinyInventoryItemDefinition");
                             return {
                                 name: itemRes.displayProperties.name,
-                                icon: `/api${itemRes.displayProperties.icon}`,
+                                icon: `${API_CONFIG.BUNGIE_API}${itemRes.displayProperties.icon}`,
                                 kills: weaponKills[mode][weaponId],
                                 precisionKills: precisionKills[mode][weaponId],
                                 precisionPro: (precisionPro[mode][weaponId] * 100).toFixed(0),

@@ -5,6 +5,7 @@ import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import caretLeft from "../../../assets/caret-left-solid.svg";
 import caretRight from "../../../assets/caret-right-solid.svg";
+import { API_CONFIG } from "../../../config";
 import "../../../index.css";
 import PopUpTeammate from "./PopUpTeammate";
 
@@ -109,7 +110,7 @@ export default function CaruselTemmate({ members, onMemberClick, mode }) {
                                     className={`flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200  clan-member-shimmer-hover`}
                                     onClick={(e) => handleMemberClick(idx, e)}
                                 >
-                                    <img src={`/api${member.emblemPath}`} width={40} height={40} alt="Emblem" />
+                                    <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                     <div className="flex flex-col">
                                         <span>{member.name}</span>
                                         <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>

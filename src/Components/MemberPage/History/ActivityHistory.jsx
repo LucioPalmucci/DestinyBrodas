@@ -6,6 +6,7 @@ import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
 //import "../../../index.css";
+import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import Spinner from '../../Spinner';
 import '../../Tab.css';
@@ -24,6 +25,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const popupRef = useRef(null);
     const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities, getCommendations, getClanUser } = useBungieAPI();
 
+
     useEffect(() => {
         const fetchActivityHistory = async () => {
             try {
@@ -41,8 +43,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 }
 
                 const sortedActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
-                const recentActivities = sortedActivities.slice(0, 25);
-
+                const recentActivities = sortedActivities.slice(0, 10);
 
                 const details = await Promise.all(recentActivities.map(async (activity) => {
                     const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
@@ -106,12 +107,12 @@ const ActivityHistory = ({ userId, membershipType }) => {
         if (!user) return null;
 
         const classIcons = {
-            "Hechicero": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
-            "Hechicera": "/api/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png",
-            "Titán": "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
-            "Titan": "/api/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png",
-            "Cazador": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png",
-            "Cazadora": "/api/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png"
+            "Hechicero": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
+            "Hechicera": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
+            "Titán": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
+            "Titan": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
+            "Cazador": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
+            "Cazadora": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`
         };
 
         return {
@@ -310,7 +311,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                         <p>{activity.clase.name}</p>
                                     </div>
                                     <div className='w-[30%] flex items-center'>
-                                        {activity.activityIcon && <img src={`/api${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                        {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                         <div className='w-1.5'></div>
                                         {activity.activityName}
                                     </div>
@@ -322,7 +323,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             </button>
                             <div className={`transition-all duration-500 ease-in-out overflow-visible ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
                                 {expandedIndex === (uniqueId) && (
-                                    <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(/api${activity.pgcrImage})` }}>
+                                    <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}>
                                         {activity.teams.length > 0 ? (
                                             <div className='justify-between space-y-4 w-full text-black '>
                                                 <div>
@@ -354,7 +355,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                                                 e.stopPropagation();
                                                                                 handlePlayerClick(person, personIndex);
                                                                             }} className='flex items-center text-start cursor-pointer'>
-                                                                                <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                                <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
                                                                                 <div className='flex flex-col justify-start ml-1'>
                                                                                     <p>{person.name}</p>
                                                                                     <p>{person.class} - {person.power}</p>
@@ -406,7 +407,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                                                 e.stopPropagation();
                                                                                 handlePlayerClick(person, personIndex);
                                                                             }} className='flex items-center text-start cursor-pointer'>
-                                                                                <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                                <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
                                                                                 <div className='flex flex-col justify-center ml-1'>
                                                                                     <p>{person.name}</p>
                                                                                     <p>{person.class} - {person.power}</p>
@@ -452,7 +453,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                                         e.stopPropagation();
                                                                         handlePlayerClick(person, personIndex);
                                                                     }} className='flex items-center text-start cursor-pointer'>
-                                                                        <img src={`/api/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
+                                                                        <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
                                                                         <div className='flex flex-col justify-center ml-1'>
                                                                             <p>{person.name}</p>
                                                                             <p>{person.class} - {person.power}</p>

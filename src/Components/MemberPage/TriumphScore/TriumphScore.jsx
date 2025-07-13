@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcache';
-
 
 export default function TriumphScore({ membershipType, userId }) {
     const [triumphs, setTriumphs] = useState(null);
@@ -27,14 +27,14 @@ export default function TriumphScore({ membershipType, userId }) {
                     <div>
                         <p className='font-semibold'>Puntaje total</p>
                         <div className='font-semibold flex space-x-1 items-center'>
-                            <img src='/api/common/destiny2_content/icons/3fc55af09fc887e17e1fcf41553619c4.png' className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
+                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/3fc55af09fc887e17e1fcf41553619c4.png`} className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
                             {triumphs.Total}
                         </div>
                     </div>
                     <div>
                         <p className='font-semibold'>Puntaje activo</p>
                         <div className='font-semibold flex space-x-1 items-center'>
-                            <img src='/api/common/destiny2_content/icons/319084f745e5b3cd9e6c767b92808918.png' className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
+                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/319084f745e5b3cd9e6c767b92808918.png`} className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
                             <p>{triumphs.Active} <span className='text-xs'>/27,536</span></p>
                         </div>
                     </div>

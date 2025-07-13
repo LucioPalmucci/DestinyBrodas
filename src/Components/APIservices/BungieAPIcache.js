@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useCallback, useRef, useState } from 'react';
+import { API_CONFIG } from '../../config'; // Asegúrate de que esta ruta sea correcta
 
 // Cache global para compartir entre todos los componentes
 const globalCache = new Map();
@@ -7,16 +8,6 @@ const globalLoading = new Set();
 
 // TTL por tipo de dato (en millisegundos)
 const TTL_CONFIG = 60 * 1000; // 2 minutos
-/*compChars: 5 * 60 * 1000,        // 5 minutos
-clanMembers: 10 * 60 * 1000,    // 10 minutos
-activities: 2 * 60 * 1000,      // 2 minutos
-commendations: 15 * 60 * 1000,  // 15 minutos
-emblem: 60 * 60 * 1000,         // 1 hora
-guardianRank: 30 * 60 * 1000,   // 30 minutos
-manifest: 60 * 60 * 1000,       // 1 hora
-carnageReport: 30 * 60 * 1000,  // 30 minutos
-activityDefinition: 60 * 60 * 1000, // 1 hora
-default: 5 * 60 * 1000          // Default 5 minutos*/
 
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
 
@@ -118,89 +109,89 @@ export const useBungieAPI = () => {
 
     // Obtener datos del usuario
     const getCompChars = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters&lc=es`;
         const response = await apiRequest('compChars', url, [membershipType, userId]);
         return response?.Response?.characters?.data;
     }, [apiRequest]);
 
     // Obtener actividades de un personaje
     const getCompCharsActs = useCallback(async (membershipType, userId, charId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charId}/?components=CharacterActivities`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charId}/?components=CharacterActivities`;
         const response = await apiRequest('CompCharsActs', url, [membershipType, userId, charId]);
         return response?.Response?.activities?.data;
     }, [apiRequest]);
 
     // Obtener inventario de un personaje
     const getProfileChars = useCallback(async (membershipType, userId, characterId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${characterId}/?components=200`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${characterId}/?components=200`;
         const response = await apiRequest('characterInventory', url, [membershipType, userId, characterId]);
         return response?.Response?.character?.data;
     }, [apiRequest]);
 
     // Obtener datos de fireteam/party
     const getParty = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1000`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1000`;
         const response = await apiRequest('party', url, [membershipType, userId]);
         return response?.Response?.profileTransitoryData?.data;
     }, [apiRequest]);
 
     // Obtener personajes y su equipamiento
     const getCharsAndEquipment = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,CharacterEquipment&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,CharacterEquipment&lc=es`;
         const response = await apiRequest('charsAndEquipment', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener miembros del clan
     const getClanMembers = useCallback(async (groupId = '3942032') => {
-        const url = `/api/Platform/GroupV2/${groupId}/Members/`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/GroupV2/${groupId}/Members/`;
         const response = await apiRequest('clanMembers', url, [groupId]);
         return response?.Response?.results;
     }, [apiRequest]);
 
     // Obtener perfil de un usuario con componentes específicos
     const getCompsProfile = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100,104`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100,104`;
         const response = await apiRequest('charsIDs', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener membresías de usuario por ID y plataforma
     const getUserMembershipsById = useCallback(async (membershipId, membershipType) => {
-        const url = `/api/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/User/GetMembershipsById/${membershipId}/${membershipType}/`;
         const response = await apiRequest('userMembershipsById', url, [membershipId, membershipType]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener estadísticas generales de un usuario
     const getGeneralStats = useCallback(async (membershipType, membershipId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Account/${membershipId}/Stats/`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${membershipId}/Stats/`;
         const response = await apiRequest('generalStats', url, [membershipType, membershipId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener actividades de un personaje
     const getCharacterActivities = useCallback(async (membershipType, userId, characterId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?lc=es`;
         const response = await apiRequest('activities', url, [membershipType, userId, characterId]);
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
     const getAggregateActivityStats = useCallback(async (membershipType, userId, characterId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`;
         const response = await apiRequest('aggregateActivityStats', url, [membershipType, userId, characterId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener las últimas actividades de un personaje (limitadas por count)
     const getRecentActivities = useCallback(async (membershipType, userId, characterId, count) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}`;
         const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count]);
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
     const getClanUser = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/GroupV2/User/${membershipType}/${userId}/0/1/`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/GroupV2/User/${membershipType}/${userId}/0/1/`;
         const response = await apiRequest('clanUser', url, [membershipType, userId]);
         return response?.Response || null;
     }, [apiRequest]);
@@ -208,19 +199,19 @@ export const useBungieAPI = () => {
     // ---------------- Metodos del lodaut SimpleLodaut.jsx ----------------
 
     const getFullCharacterProfile = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
         const response = await apiRequest('fullCharacterProfile', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);
 
     const getCharacterSimpleInventoryAndEquipment = useCallback(async (membershipType, userId, charID) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Character/${charID}/?components=205,202,201`;
         const response = await apiRequest('characterSimpleInventoryAndEquipment', url, [membershipType, userId, charID]);
         return response?.Response;
     }, [apiRequest]);
 
     const getItemInstance = useCallback(async (membershipType, userId, itemInstanceId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=305,304`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=305,304`;
         const response = await apiRequest('itemInstance', url, [membershipType, userId, itemInstanceId]);
         return response?.Response;
     }, [apiRequest]);
@@ -229,20 +220,20 @@ export const useBungieAPI = () => {
 
     // Obtener artefacto, triunfos, personajes, pase
     const getProfileGeneralProgressions = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
         const response = await apiRequest('characterProfileWithComponents', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener detalles completos de un item por instanceId
     const getFullItemDetails = useCallback(async (membershipType, userId, itemInstanceId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=300,301,304,305,309,302,303,306,307,308,310`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=300,301,304,305,309,302,303,306,307,308,310`;
         const response = await apiRequest('fullItemDetails', url, [membershipType, userId, itemInstanceId]);
         return response?.Response;
     }, [apiRequest]);
 
     const getAllSeals = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=900`;
         const response = await apiRequest('allSeals', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);
@@ -251,7 +242,7 @@ export const useBungieAPI = () => {
 
     // Obtener commendaciones/honor
     const getCommendations = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1400`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=1400`;
         const response = await apiRequest('commendations', url, [membershipType, userId]);
         const dataHonor = response?.Response?.profileCommendations?.data;
 
@@ -280,20 +271,20 @@ export const useBungieAPI = () => {
     
     // Obtener emblema
     const getEmblem = useCallback(async (emblemHash) => {
-        const url = `/api/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/?lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/${emblemHash}/?lc=es`;
         const response = await apiRequest('emblem', url, [emblemHash]);
         return response?.Response?.secondaryIcon;
     }, [apiRequest]);
 
     // Obtener rango de guardián
     const getGuardianRank = useCallback(async (membershipType, userId) => {
-        const url = `/api/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=100`;
         const response = await apiRequest('guardianRank', url, [membershipType, userId]);
         const rankNum = response?.Response?.profile?.data?.currentGuardianRank;
 
         if (!rankNum) return null;
 
-        const rankUrl = `/api/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${rankNum}/?lc=es`;
+        const rankUrl = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/Manifest/DestinyGuardianRankDefinition/${rankNum}/?lc=es`;
         const rankResponse = await apiRequest('guardianRank', rankUrl, [rankNum]);
 
         return {
@@ -304,28 +295,28 @@ export const useBungieAPI = () => {
 
     // Obtener reporte de carnage
     const getCarnageReport = useCallback(async (instanceId) => {
-        const url = `/reporte/Platform/Destiny2/Stats/PostGameCarnageReport/${instanceId}/?lc=es`;
+        const url = `${API_CONFIG.BUNGIE_STATS}/Platform/Destiny2/Stats/PostGameCarnageReport/${instanceId}/?lc=es`;
         const response = await apiRequest('carnageReport', url, [instanceId]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener definición de un item en el manifest
     const getItemManifest = useCallback(async (hash, type) => {
-        const url = `/api/Platform/Destiny2/Manifest/${type}/${hash}/?lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/Manifest/${type}/${hash}/?lc=es`;
         const response = await apiRequest('activityDefinition', url, [hash, type]);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener manifest
     const getManifest = useCallback(async () => {
-        const url = '/api/Platform/Destiny2/Manifest/';
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/Manifest/`;
         const response = await apiRequest('manifest', url);
         return response?.Response;
     }, [apiRequest]);
 
     // Obtener datos de manifest
     const getManifestData = useCallback(async (manifestUrl) => {
-        const url = `/api${manifestUrl}`;
+        const url = `${API_CONFIG.BUNGIE_API}${manifestUrl}`;
         const response = await apiRequest('manifest', url, [manifestUrl]);
         return response;
     }, [apiRequest]);
