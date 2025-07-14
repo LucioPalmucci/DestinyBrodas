@@ -10,6 +10,7 @@ import bgSolar from "../../../assets/subClassBg/subclass-solar.png";
 import bgStasis from "../../../assets/subClassBg/subclass-stasis.png";
 import bgStrand from "../../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../../assets/subClassBg/subclass-void.png";
+import { API_CONFIG } from "../../../config";
 import "../../../index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import Spinner from "../../Spinner";
@@ -82,7 +83,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 return {
                                     ...perk,
                                     name: perkResponse.displayProperties.name,
-                                    iconPath: "/api" + perkResponse.displayProperties.icon,
+                                    iconPath: API_CONFIG.BUNGIE_API + perkResponse.displayProperties.icon,
                                     desc: sanbox.displayProperties.description,
                                 };
                             })) || [];
@@ -991,7 +992,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const allseals = await getAllSeals(membershipType, userId);
 
         const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyPresentationNodeDefinition;
-        const metricsData = await axios.get(`/api${manifestUrl}`);
+        const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
 
         // Buscar el parentNodeHash que coincida con el hash del título
         const matchingNode = Object.values(metricsData.data).find(node => node.completionRecordHash === char.titleRecordHash);
@@ -1025,7 +1026,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     async function getCurrentSeason(seasonHash, manifest) {
         const seasonResponse = await getItemManifest(seasonHash, "DestinySeasonDefinition");
         const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
-        const metricsData = await axios.get(`/api${manifestUrl}`);
+        const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
 
         // Buscar la métrica que coincida con el nombre de la temporada
         const matchingMetric = Object.values(metricsData.data).find(metric =>
@@ -1072,7 +1073,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 const statMwResponse = await getItemManifest(statMw.statTypeHash, "DestinyStatDefinition");
                 const statName = statMwResponse.displayProperties.name;
                 const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyInventoryItemDefinition;
-                const metricsData = await axios.get(`/api${manifestUrl}`);
+                const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
 
                 const matchingMetric = Object.values(metricsData.data).find(metric =>
                     metric.displayProperties.name.toLowerCase() === "obra maestra: " + statName.toLowerCase()
@@ -1149,7 +1150,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     async function getElementalColor(elementindex, manifest) {
         const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyDamageTypeDefinition;
-        const metricsData = await axios.get(`/api${manifestUrl}`);
+        const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
 
         // Buscar la métrica que coincida con el elemento
         const matchingMetric = Object.values(metricsData.data).find(metric =>
@@ -1297,9 +1298,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     return (
         !loading ? (
             <div className="flex flex-col items-center justify-center h-full ">
-                <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(/api${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
+                <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(${API_CONFIG.BUNGIE_API}${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
                     <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
-                        <img src={`/api${emblemElements.icon}`} style={{ width: "16%" }} />
+                        <img src={`${API_CONFIG.BUNGIE_API}${emblemElements.icon}`} style={{ width: "16%" }} />
                         <div className="flex flex-col items-top ml-4 mt-1.5">
                             <div style={{ width: "2%", height: "2px", backgroundColor: "white", margin: "0" }} />
                             <h2 className="text-2xl font-bold tracking-[0.11em] items-bottom">{name}</h2>
@@ -1365,13 +1366,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div className="flex rtl">
                                                 {items[11].perks.slice(1, 5).map((perk, perkIndex) => (
                                                     <div className="group relative">
-                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                        <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                             <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
                                                                 <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                 <p className="font-[300] opacity-75">{perk.type}</p>
                                                             </div>
-                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.gameplayImg}`} className="w-auto h-[70px]" />
                                                             <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
                                                                 __html: reemplazarCorchetesYColorear(perk.desc ?? "")
                                                             }} />
@@ -1385,7 +1386,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                 <div className="group relative">
                                                     <div className="realtive">
                                                         <img src={items[11].secondaryBgImg} className="absolute z-10" />
-                                                        <img src={`/api${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
+                                                        <img src={`${API_CONFIG.BUNGIE_API}${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
                                                         {items[11].name.includes("prismático") && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="absolute z-30">
                                                             <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" stroke-width="1" stroke="#bdbdbd" fill="transparent"></rect>
                                                         </svg>}
@@ -1395,7 +1396,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             <p className="font-semibold text-xl uppercase leading-6">{items[11].perks[0].name}</p>
                                                             <p className="font-[300] opacity-75">{items[11].perks[0].type}</p>
                                                         </div>
-                                                        <img src={`/api${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
+                                                        <img src={`${API_CONFIG.BUNGIE_API}${items[11].perks[0].gameplayImg}`} className="w-auto h-[70px]" />
                                                         <p className={`whitespace-pre-line w-fit p-1 px-2 bg-black/80`} dangerouslySetInnerHTML={{
                                                             __html: reemplazarCorchetesYColorear(items[11].perks[0].desc ?? "")
                                                         }} />
@@ -1407,13 +1408,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div className="flex mb-2">
                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
                                                     <div className="group relative">
-                                                        <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                        <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                             <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
                                                                 <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                 <p className="font-[300] opacity-75">{perk.type}</p>
                                                             </div>
-                                                            <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.gameplayImg}`} className="w-auto h-[70px]" />
                                                             <p
                                                                 className="whitespace-pre-line w-fit p-1 px-2 bg-black/80"
                                                                 dangerouslySetInnerHTML={{
@@ -1428,13 +1429,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                 {items[11].perks.slice(7).map((perk, perkIndex) => (
                                                     perk.name != "Ranura de fragmento vacía" ? (
                                                         <div className="group relative">
-                                                            <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                            <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                             <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                 <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
                                                                     <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
                                                                     <p className="font-[300] opacity-75">{perk.type}</p>
                                                                 </div>
-                                                                <img src={`/api${perk.gameplayImg}`} className="w-auto h-[70px]" />
+                                                                <img src={`${API_CONFIG.BUNGIE_API}${perk.gameplayImg}`} className="w-auto h-[70px]" />
                                                                 <div className="w-fit p-1 px-2 bg-black/80">
                                                                     <p className={`whitespace-pre-line`} dangerouslySetInnerHTML={{
                                                                         __html: (perk.desc ?? "").replace(
@@ -1445,13 +1446,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                     {perk.fragmentsStats?.map((stat) => (
                                                                         <div key={stat.statHash} className="flex space-x-0.5 mt-1 items-center opacity-80" style={{ color: stat.color }}>
                                                                             <p>&nbsp;&nbsp;{stat.value}</p>
-                                                                            <img src={`/api${stat.iconPath}`} className="w-[15px] h-[15px] my-0.5" style={{ filter: stat.value < 0 ? "brightness(0) saturate(100%) invert(14%) sepia(90%) saturate(7248%) hue-rotate(356deg) brightness(92%) contrast(121%)" : "" }} alt={stat.name} />
+                                                                            <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} className="w-[15px] h-[15px] my-0.5" style={{ filter: stat.value < 0 ? "brightness(0) saturate(100%) invert(14%) sepia(90%) saturate(7248%) hue-rotate(356deg) brightness(92%) contrast(121%)" : "" }} alt={stat.name} />
                                                                             <p>{stat.name}</p>
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                        </div>) : <img key={perkIndex} src={`/api${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
+                                                        </div>) : <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} title={perk.name} />
                                                 ))}
                                             </div>
                                         </div>
@@ -1468,7 +1469,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 items[index].perks?.map((perk) => (
                                                                     perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && perk.perkType !== "shader" && perk.perkType !== "hologram" && (
                                                                         <div className="group relative">
-                                                                            <img src={`/api${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
+                                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
                                                                             {perk.investmentStats?.[0]?.value && (
                                                                                 <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
                                                                                     {perk.investmentStats[0].value}
@@ -1512,7 +1513,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                                 <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
                                                                                             </>
                                                                                         )}
-                                                                                        <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                                        <image href={API_CONFIG.BUNGIE_API + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
                                                                                         <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
                                                                                     </svg>
                                                                                     <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
@@ -1525,7 +1526,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                     </div>
                                                                                 </div>) : (
                                                                                     <div key={perk.perkHash} className="relative group ">
-                                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
+                                                                                        <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} />
                                                                                         <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                                             <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
                                                                                             {perk?.statDescripton?.map((stat) => (
@@ -1553,11 +1554,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 <div className="flex items-center justify-between text-sm ">
                                                                                     <div className="flex items-center">
                                                                                         <p className="opacity-[0.7]">{selectedWeapon.weaponType}</p>
-                                                                                        <img src={"/api" + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
-                                                                                        <img src={"/api" + selectedWeapon.dmgType.iconPath} className="w-[14px] h-[14px]" title={selectedWeapon.dmgType.name} />
+                                                                                        <img src={API_CONFIG.BUNGIE_API + selectedWeapon.ammo.iconPath} className="w-[25px] h-[25px] ml-0.5 mr-0.5" title={selectedWeapon.ammo.name} />
+                                                                                        <img src={API_CONFIG.BUNGIE_API + selectedWeapon.dmgType.iconPath} className="w-[14px] h-[14px]" title={selectedWeapon.dmgType.name} />
                                                                                         {selectedWeapon.champmod && (
                                                                                             <div style={{ backgroundColor: selectedWeapon.champmod.backgroundColor, display: "inline-block", borderRadius: "2px" }} className="ml-1 px-0">
-                                                                                                <img src={"/api" + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
+                                                                                                <img src={API_CONFIG.BUNGIE_API + selectedWeapon.champmod.iconPath} className="w-[17px] h-[17px]" title={selectedWeapon.champmod.name} />
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
@@ -1618,7 +1619,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex items-center space-x-2 w-fit">
                                                                                             {selectedWeapon.perks.cosmeticPerks.archetype.map((perk) => (
                                                                                                 <div key={index} className="relative w-fit group">
-                                                                                                    <img src={`/api${perk.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={perk.name} />
+                                                                                                    <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={perk.name} />
                                                                                                     <div className="absolute left-8 -top-12 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                                                                                                         <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
                                                                                                         {perk?.statDescripton?.map((stat) => (
@@ -1637,7 +1638,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex flex-wrap space-x-1.5 w-fit mt-1">
                                                                                             {selectedWeapon.perks.cosmeticPerks.design.map((perk) => (
                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                    <img src={`/api${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
+                                                                                                    <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"max-w-[25px] max-h-[25px]"} alt={perk.name} title={perk.name} />
                                                                                                 )
                                                                                             ))}
                                                                                         </div>
@@ -1648,7 +1649,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex space-x-1 items-center">
                                                                                             {selectedWeapon.perks.cosmeticPerks.tracker.map((perk) => (
                                                                                                 perk.name && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
+                                                                                                    <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[30px] h-[30px]"} alt={perk.name} title={perk.name} />
                                                                                                 )
                                                                                             ))}
                                                                                             {selectedWeapon.tracker && (
@@ -1764,7 +1765,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex space-x-2 items-center mt-1.5">
                                                                                             {items[8].perks.slice(0, 2).map((perk) => (
                                                                                                 perk && perk.iconPath && (
-                                                                                                    <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />)
+                                                                                                    <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />)
                                                                                             ))}
                                                                                         </div>
                                                                                     </div>
@@ -1778,7 +1779,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     </div>
                                                     <div className={`relative ${items[index].masterwork === 8 || items[index].masterwork === 9 || items[index].masterwork === 5 || items[index].masterwork === 4 ? "masterwork item-wrapper" : ""}`}>
                                                         <img
-                                                            src={`/api${items[index].icon}`}
+                                                            src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`}
                                                             width={60}
                                                             height={60}
                                                             alt={items[index].name}
@@ -1795,7 +1796,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         )}
                                                         {items[index].watermark && (
                                                             <img
-                                                                src={`/api${items[index].watermark}`}
+                                                                src={`${API_CONFIG.BUNGIE_API}${items[index].watermark}`}
                                                                 className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
                                                             />
                                                         )}
@@ -1823,7 +1824,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                 <div key={index} className="flex items-center justify-start">
                                                     <div className={`relative ${items[index].masterwork == 4 || items[index].masterwork === 5 ? "masterwork item-wrapper" : ""}`}>
                                                         <img
-                                                            src={`/api${items[index].icon}`}
+                                                            src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`}
                                                             width={60}
                                                             height={60}
                                                             alt={items[index].name}
@@ -1839,7 +1840,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         )}
                                                         {items[index].watermark && (
                                                             <img
-                                                                src={`/api${items[index].watermark}`}
+                                                                src={`${API_CONFIG.BUNGIE_API}${items[index].watermark}`}
                                                                 className="absolute bottom-0 right-0 w-[60px] h-[60px] z-40 pointer-events-none"
                                                             />
                                                         )}
@@ -1850,7 +1851,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 perk && perk.isVisible && perk.name !== "Mejorar armadura" && perk.perkType != "intrinsics" && (
                                                                     <div className="relative w-[40px] h-[40px] group">
                                                                         <img
-                                                                            src={`/api${perk.iconPath}`}
+                                                                            src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`}
                                                                             width={40}
                                                                             height={40}
                                                                             alt={perk.name}
@@ -1902,7 +1903,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
                                                                                         <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
                                                                                         {stat.iconPath ? (
-                                                                                            <img src={`/api${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
+                                                                                            <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
                                                                                         ) : (
                                                                                             <div style={{ width: "3.5%" }} />
                                                                                         )
@@ -1945,7 +1946,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="flex flex space-x-2">
                                                                                             {selectedArmor.armorIntrinsic?.map((intrinsic, index) => (
                                                                                                 <div key={index} className="relative w-fit group">
-                                                                                                    <img src={`/api${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
+                                                                                                    <img src={`${API_CONFIG.BUNGIE_API}${intrinsic.iconPath}`} className="w-[30.5px] h-[30.5px] group" alt={intrinsic.name} />
                                                                                                     <div className="absolute left-8 -top-14 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                                                                                                         <strong>{intrinsic.name}</strong><br />{intrinsic.desc}
                                                                                                     </div>
@@ -1961,7 +1962,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 <div className="space-x-2 flex flex ">
                                                                                     {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
                                                                                         perk.name && perk?.iconPath && (
-                                                                                            <img src={`/api${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
+                                                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
                                                                                         )
                                                                                     ))}
                                                                                 </div>
@@ -1982,7 +1983,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                         {totalStats && totalStats.map((stat) => (
                                             stat.iconPath && (
                                                 <p key={stat.statHash} className="flex items-center">
-                                                    <img src={`/api${stat.iconPath}`} className="mr-0.5" width={23} height={23} alt={stat.name} title={stat.name} />
+                                                    <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} className="mr-0.5" width={23} height={23} alt={stat.name} title={stat.name} />
                                                     {stat.value}
                                                 </p>
                                             )
@@ -2010,11 +2011,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div key={index} className="flex mb-4 space-x-4 mr-0">
                                                 <div className={`relative`}>
                                                     <a href={`https://www.light.gg/db/es/items/${items[index].itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
-                                                        <img src={`/api${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
+                                                        <img src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`} className="w-[50px] h-[50px]" alt={items[index].name} title={items[index].name} />
                                                     </a>
                                                     {items[index].watermark && (
                                                         <img
-                                                            src={`/api${items[index].watermark}`}
+                                                            src={`${API_CONFIG.BUNGIE_API}${items[index].watermark}`}
                                                             className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none"
                                                         />
                                                     )}
@@ -2044,14 +2045,14 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                     <path d="M5,50 l0,-24 l-6,0 l9,-16 l9,16 l-6,0 l0,24 z" fill="#eade8b"></path>
                                                                                 </>
                                                                             )}
-                                                                            <image href={"/api" + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
+                                                                            <image href={API_CONFIG.BUNGIE_API + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
                                                                             <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
                                                                         </svg>
                                                                     </div>) : (
-                                                                        <img src={`/api${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
+                                                                        <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
                                                                     )}
                                                                 {perk.watermark && (
-                                                                    <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[40px] h-[40px] z-50 pointer-events-none" />
+                                                                    <img src={`${API_CONFIG.BUNGIE_API}${perk.watermark}`} className="absolute bottom-0 right-0 w-[40px] h-[40px] z-50 pointer-events-none" />
                                                                 )}
                                                             </div>
                                                         )
@@ -2066,7 +2067,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                     <div className="justify-center items-center flex w-full">
                                         {seal && (
                                             <div className="flex flex-col justify-center items-center mb-4 w-4/5 cursor-pointer relative group" onClick={() => window.open(`https://bray.tech/triumphs/seal/${seal.sealHash}`, '_blank')}>
-                                                <img src={`/api${seal.iconPath}`} className="w-[70px] h-[70px]" />
+                                                <img src={`${API_CONFIG.BUNGIE_API}${seal.iconPath}`} className="w-[70px] h-[70px]" />
                                                 <div
                                                     className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px]"
                                                     style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
@@ -2095,7 +2096,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <div className="relative">
                                                         <a href={`https://www.light.gg/db/es/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
                                                             <div className="relative group">
-                                                                <img src={`/api${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} />
+                                                                <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[50px] h-[50px]" alt={perk.name} />
                                                                 <div className="absolute left-12 top-10 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                     <strong>{perk.name}</strong><br />
                                                                     <p className="w-fit whitespace-pre-line text-xs">{perk.desc?.description ?? perk.desc ?? ""}</p>
@@ -2103,7 +2104,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                             </div>
                                                         </a>
                                                         {perk.watermark && (
-                                                            <img src={`/api${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
+                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.watermark}`} className="absolute bottom-0 right-0 w-[50px] h-[50px] z-40 pointer-events-none" />
                                                         )}
                                                     </div>
                                                 )}
@@ -2121,7 +2122,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <div className={`${emblem.currentClass === true ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>
                                                         <a href={`https://destinyemblemcollector.com/emblem?id=${emblem.hash}`} target="_blank" rel="noopener noreferrer">
                                                             <div className="relative group">
-                                                                <img src={`/api${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} />
+                                                                <img src={`${API_CONFIG.BUNGIE_API}${emblem.iconPath}`} className="w-[50px] h-[50px]" alt={emblem.name} />
                                                                 <div className="absolute left-13 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                     <strong>{emblem.name}</strong><br />
                                                                     <p className="w-fit whitespace-pre-line text-xs">{emblem.desc?.description ?? emblem.desc ?? ""}</p>
