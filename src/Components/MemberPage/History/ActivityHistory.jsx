@@ -118,10 +118,12 @@ const ActivityHistory = ({ userId, membershipType }) => {
         const classIcons = {
             "Hechicero": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
             "Hechicera": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
+            "Warlock": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`, 
             "Titán": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
             "Titan": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
             "Cazador": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-            "Cazadora": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`
+            "Cazadora": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
+            "Hunter": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
         };
 
         return {
@@ -133,7 +135,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const fetchCarnageReport = async (instanceId) => {
         try {
             const carnageReportResponse = await getCarnageReport(instanceId);
-            const people = await Promise.all(carnageReportResponse.entries.map(async (entry) => ({
+            const filteredEntries = carnageReportResponse.entries.filter(entry =>
+                entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
+            );
+            const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
                 deaths: entry.values.deaths.basic.value,

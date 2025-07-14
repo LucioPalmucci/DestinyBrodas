@@ -112,7 +112,7 @@ export default function CaruselTemmate({ members, onMemberClick, mode }) {
                                 >
                                     <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                     <div className="flex flex-col">
-                                        <span>{member.name}</span>
+                                        <span>{member.uniqueName}</span>
                                         <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
                                     </div>
                                 </a>

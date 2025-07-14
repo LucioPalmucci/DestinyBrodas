@@ -98,7 +98,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
                 setPartyMembers(partyMembersDetails);
 
-                if (partyMembers.length > 2) {
+                if (partyMembers.length > 1) {
                     setColums(2)
                 } else setColums(1);
 
@@ -130,7 +130,8 @@ export default function CurrentActivity({ type, id, isOnline }) {
     };
 
     const fetchPartyMembersDetails = async (partyMembersData, activity2) => {
-        return await Promise.all(partyMembersData.map(async member => {
+        const filteredMembers = partyMembersData.filter(member => member.membershipId !== id); //Filtra el usuario de la pagina
+        return await Promise.all(filteredMembers.map(async member => {
             const plataformas = [3, 1, 2, 10, 6];
             let profileResponse;
             let successfulPlatform = null;
@@ -142,7 +143,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                         break;
                     }
                 } catch (error) {
-                   // console.error("No es de la plataforma", plataforma);
+                    // console.error("No es de la plataforma", plataforma);
                 }
             }
 
@@ -151,9 +152,9 @@ export default function CurrentActivity({ type, id, isOnline }) {
             }
 
             // Obtener el uniqueName usando el endpoint adecuado
-            const userResponse = await getUserMembershipsById(member.membershipId, successfulPlatform);
             const displayName = profileResponse.profile.data.userInfo.displayName;
-            const uniqueName = userResponse.bungieNetUser.uniqueName;
+            const uniqueName = profileResponse.profile.data.userInfo.bungieGlobalDisplayName;
+            const nameNums = profileResponse.profile.data.userInfo.bungieGlobalDisplayNameCode;
             const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
 
             return {
@@ -172,6 +173,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 mode: activity2?.type || null,
                 name: displayName,
                 uniqueName: uniqueName,
+                nameNums: nameNums,
                 platform: successfulPlatform, // Agregar la plataforma exitosa al objeto de miembro
             };
         }));
@@ -299,7 +301,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         <div className="opacity-50 absolute right-0 -top-4">
                                             <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-20 h-20" />
                                         </div>
-                                        }
+                                    }
                                 </div>
                                 <div className="bg-black/25 p-2 rounded-lg w-fit">
                                     {activity.PVPoPVE === "PVP" ? (
@@ -346,7 +348,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                         ) : (
                             <p className="text-4xl font-semibold items-center bg-black/25 p-2 rounded-lg w-fit">En órbita </p>
                         )}
-                        <div className="bg-black/25 p-1 py-0.5 rounded-lg w-fit">
+                        {partyMembers.length > 0 && <div className={`bg-black/25 p-1 py-0.5 rounded-lg w-full px-1.5 ${partyMembers.length > 1 ? "w-full" : "w-fit"}`}>
                             <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
                             {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
                                 <div className="relative w-full">
@@ -358,7 +360,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     />
                                 </div>
                             ) : (
-                                <ul className={`grid gap-2` + ` grid-cols-${numColumns} text-start`}>
+                                <ul className={`grid gap-2 text-start w-full ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                                     {partyMembers.map((member, idx) => (
                                         <li key={member.membershipId} className="relative">
                                             <a
@@ -367,7 +369,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                             >
                                                 <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
                                                 <div className="flex flex-col">
-                                                    <span>{member.name}</span>
+                                                    <span>{member.uniqueName}</span>
                                                     <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
                                                 </div>
                                             </a>
@@ -380,7 +382,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     ))}
                                 </ul>
                             )}
-                        </div>
+                        </div>}
                     </div>
                 </div>
             ) : (

@@ -51,7 +51,8 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                         setBackground(itemResponse.screenshot);
                         await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
                             const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
-                            if (perkResponse.itemTypeDisplayName.includes("Súper")) {
+                            console.log("Perk Response:", perkResponse.itemTypeDisplayName);
+                            if (perkResponse.itemTypeDisplayName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("super")) {
                                 setSuperAbility({
                                     name: perkResponse.displayProperties.name,
                                     iconPath: perkResponse.displayProperties.icon,
@@ -61,13 +62,19 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                 if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
                                     switch (classType) {
                                         case 0: //Titan resto resistencia
-                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
+                                            if (perkResponse.investmentStats[3]) {
+                                                totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
+                                            }
                                             break;
                                         case 1: //Cazador resto movilidad
-                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
+                                            if (perkResponse.investmentStats[2]) {
+                                                totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
+                                            }
                                             break;
                                         case 2: //Hechicero resto recuperacion
-                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
+                                            if (perkResponse.investmentStats[1]) {
+                                                totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
+                                            }
                                             break;
                                     }
                                 }
@@ -90,6 +97,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 }))
                 setTotalStats(totalStats);
                 setItems(itemDetails);
+                console.log("Super Ability:", superAbility);
 
             } catch (error) {
                 console.error("Error loading loadout:", error);
@@ -124,7 +132,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === "Escape") {
-                setshowFull(false);
+                setShowFull(false);
             }
         };
         window.addEventListener("keydown", handleKeyDown);

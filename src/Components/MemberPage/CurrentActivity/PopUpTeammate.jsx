@@ -10,7 +10,7 @@ export default function PopUpTeammate({ jugador }) {
             <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start flex mt-10 font-Inter items-center flex-col space-y-4 relative">
                 <div style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full'>
                     <div className='ml-1 items-center'>
-                        <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.name}</h2>
+                        <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.uniqueName}</h2>
                         <h1 className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                             <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardianRank.num}.fw.png`} className='w-4 h-4 mr-1' />{jugador.guardianRank.title}
                         </h1>
@@ -52,9 +52,9 @@ export default function PopUpTeammate({ jugador }) {
                     <p className="tracking-[0.4rem] mb-1" style={{ color: '#479ce4' }}>ID DE BUNGIE</p>
                     <h1 className="items-center flex">
                         <img src={bungieLogo} alt="Bungie Logo" className="w-4 h-4 mr-1" />
-                        {jugador.uniqueName.slice(0, -5)}
+                        {jugador.uniqueName}
                         <span style={{ color: '#479ce4' }}>
-                            {jugador.uniqueName.slice(-5)}
+                            #{jugador.nameNums}
                         </span>
                     </h1>
                 </div>
