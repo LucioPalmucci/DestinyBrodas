@@ -216,7 +216,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                                     {jugador.weapons.map((weapon, idx) => (
                                         <div key={idx}>
                                             <div className="p-2 rounded w-full">
-                                                <div className="flex items-center justify-start ml-15 w-full">
+                                                <div className="flex items-center justify-start px-12 w-full">
                                                     <img
                                                         src={`${API_CONFIG.BUNGIE_API}/${weapon.icon}`}
                                                         width={40}
@@ -246,10 +246,10 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                                     ))}
                                 </Slider>
                             ) : (
-                                <div className="space-y-1 h-full flex flex-col justify-center">
+                                <div className="space-y-1 h-full flex flex-col justify-center px-12">
                                     {jugador.weapons.map((weapon, idx) => (
                                         <div key={idx} className="p-2 rounded w-full">
-                                            <div className="flex items-center justify-start ml-15 w-full">
+                                            <div className="flex items-center justify-start w-full">
                                                 <img
                                                     src={`${API_CONFIG.BUNGIE_API}/${weapon.icon}`}
                                                     width={40}

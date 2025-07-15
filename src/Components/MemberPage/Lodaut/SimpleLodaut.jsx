@@ -51,7 +51,6 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                         setBackground(itemResponse.screenshot);
                         await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
                             const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
-                            console.log("Perk Response:", perkResponse.itemTypeDisplayName);
                             if (perkResponse.itemTypeDisplayName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("super")) {
                                 setSuperAbility({
                                     name: perkResponse.displayProperties.name,
@@ -97,7 +96,6 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 }))
                 setTotalStats(totalStats);
                 setItems(itemDetails);
-                console.log("Super Ability:", superAbility);
 
             } catch (error) {
                 console.error("Error loading loadout:", error);
@@ -144,7 +142,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
 
     return (
         <>
-            <div className={`font-Inter `}>
+            <div className={`font-Inter h-[450px]`}>
                 {totalStats && background && items ? (
                     <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
                         <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>

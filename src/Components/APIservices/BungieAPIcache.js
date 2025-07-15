@@ -177,17 +177,17 @@ export const useBungieAPI = () => {
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
-    const getAggregateActivityStats = useCallback(async (membershipType, userId, characterId) => {
-        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`;
-        const response = await apiRequest('aggregateActivityStats', url, [membershipType, userId, characterId]);
-        return response?.Response;
-    }, [apiRequest]);
-
     // Obtener las últimas actividades de un personaje (limitadas por count)
     const getRecentActivities = useCallback(async (membershipType, userId, characterId, count) => {
         const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}`;
         const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count]);
         return response?.Response?.activities || [];
+    }, [apiRequest]);
+
+    const getAggregateActivityStats = useCallback(async (membershipType, userId, characterId) => {
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/AggregateActivityStats/`;
+        const response = await apiRequest('aggregateActivityStats', url, [membershipType, userId, characterId]);
+        return response?.Response;
     }, [apiRequest]);
 
     const getClanUser = useCallback(async (membershipType, userId) => {

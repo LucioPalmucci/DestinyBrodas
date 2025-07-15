@@ -283,10 +283,10 @@ export default function CurrentActivity({ type, id, isOnline }) {
         <div className="w-full">
             {activity ? (
                 <div className="h-[375px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className="w-full h-full justify-between flex flex-col">
+                    <div className={`w-full h-full flex flex-col justify-between`}>
                         {activity.name ? (
-                            <div>
-                                <div className="flex items-top justify-between relative mb-0.5">
+                            <div className="justify-between h-full">
+                                <div className={`flex items-top justify-between relative mb-0.5 ${partyMembers.length === 0 ? "mb-2" : "mb-0.5"}`}>
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold leading-tight">
                                             Actividad en curso
