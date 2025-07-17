@@ -111,8 +111,6 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
     const getUserClass = (carnageReport) => {
         const user = carnageReport.people.find(person => person.membershipId == userId);
-        console.log("User class:", user);
-
         if (!user) return null;
 
         const classIcons = {

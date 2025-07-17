@@ -69,7 +69,7 @@ function CaruselArtefacto({ elements }) {
 
                     const handleMouseEnter = (e) => {
                         const rect = e.target.getBoundingClientRect();
-                        setTooltipPos({ top: rect.top - 60, left: rect.left });
+                        setTooltipPos({ top: rect.top -10 , left: rect.left });
                         setShowTooltip(true);
                     };
                     const handleMouseLeave = () => setShowTooltip(false);

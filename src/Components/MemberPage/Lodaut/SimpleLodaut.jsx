@@ -167,10 +167,10 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                             {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
                                 {totalStats.map((stat) => (
                                     stat.iconPath && (
-                                        <p key={stat.statHash} className="flex items-center space-x-4 font-semibold text-xl">
+                                        <div key={stat.statHash} className="flex items-center font-semibold text-xl">
                                             <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} width={30} height={30} alt={stat.name} title={stat.name} />
-                                            {stat.value}
-                                        </p>
+                                            <p className="ml-[2px]">{stat.value}</p>
+                                        </div>
                                     )
                                 ))}
                             </div>}
@@ -190,7 +190,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 )}
             </div>
             {showFull && (
-                <div className="fixed inset-0 flex items-center justify-center w-full z-40 bg-black/50" onClick={() => setShowFull(false)}>
+                <div className="fixed inset-0 flex items-center justify-center w-full h-full z-40 bg-black/50" onClick={() => setShowFull(false)}>
                     <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
                         <CurrentLoadout
                             membershipType={membershipType}

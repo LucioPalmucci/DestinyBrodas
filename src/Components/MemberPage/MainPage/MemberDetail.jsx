@@ -67,6 +67,7 @@ function MemberDetail() {
                 });
 
                 setMemberDetail(responseProfile);
+                console.log("Member Detail:", responseProfile);
                 setUserMemberships(membershipsResponse);
                 setGuardianRank(guardianRankResponse);
                 setCurrentLight(mostRecentCharacter.light);

@@ -298,7 +298,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         secondaryBgImg: secondaryBgImg,
                     };
                 }));
-
                 setPassLevel(responseChar.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
                 setTriumphRecord(responseChar.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
@@ -627,6 +626,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         if (index > 1) {
             const [element] = weaponStats.splice(index, 1); // Elimina el elemento del arreglo
             weaponStats.splice(index - 2, 0, element); // Inserta el elemento dos índices atrás
+        }
+
+        // Mover Generación de munición detrás de "Asistencia de apuntado"
+        const generacionMuni = weaponStats.findIndex(stat => stat.statHash === 1931675084);
+        if (generacionMuni > 1) {
+            const [element] = weaponStats.splice(generacionMuni, 1); // Elimina el elemento del arreglo
+            weaponStats.splice(generacionMuni - 3, 0, element); // Inserta el elemento tres índices atrás
         }
 
         // Orden secundario para colocar Velocidad de golpe al principio
@@ -1033,7 +1039,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             metric.displayProperties.name.toLowerCase().includes(seasonResponse.displayProperties.name.toLowerCase())
         );
         setSeason(seasonResponse.seasonNumber);
-        return matchingMetric.hash;
+        return matchingMetric?.hash || seasonResponse.hash;
     }
 
     function getArtifactDetails(artifact) {
@@ -1066,7 +1072,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getMwEnchancedWeapons(item, perks, manifest) {
-        const enchancedPerk = perks.find(perk => perk.isEnhanced == "Intrínseco mejorado");
+        const enchancedPerk = perks.find(perk => perk.isEnhanced && perk.isEnhanced.toLowerCase().includes("intrínseco"));
         if (enchancedPerk) {
             const statMw = enchancedPerk.investmentStats.find(invStat => invStat.value == 10)
             if (statMw) {
@@ -1074,7 +1080,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 const statName = statMwResponse.displayProperties.name;
                 const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyInventoryItemDefinition;
                 const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
-
                 const matchingMetric = Object.values(metricsData.data).find(metric =>
                     metric.displayProperties.name.toLowerCase() === "obra maestra: " + statName.toLowerCase()
                 );
@@ -1297,7 +1302,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     return (
         !loading ? (
-            <div className="flex flex-col items-center justify-center h-full ">
+            <div className="flex flex-col items-center justify-center h-full">
                 <div className="flex justify-between items-center w-full " style={{ height: "11%", backgroundImage: `url(${API_CONFIG.BUNGIE_API}${emblemElements.bg})`, backgroundRepeat: "no-repeat", backgroundSize: 'cover', backgroundPosition: "bottom" }}>
                     <div className="flex ml-12" style={{ transform: "translateY(20%)" }}>
                         <img src={`${API_CONFIG.BUNGIE_API}${emblemElements.icon}`} style={{ width: "16%" }} />
@@ -1365,7 +1370,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                         <div className="flex flex-col items-end justify-center" style={{ width: "26%" }}>
                                             <div className="flex rtl">
                                                 {items[11].perks.slice(1, 5).map((perk, perkIndex) => (
-                                                    <div className="group relative">
+                                                    <div className="group relative" key={perkIndex + perk.name}>
                                                         <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                             <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
@@ -1388,7 +1393,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                         <img src={items[11].secondaryBgImg} className="absolute z-10" />
                                                         <img src={`${API_CONFIG.BUNGIE_API}${items[11].perks[0].iconPath}`} alt={items[11].perks[0].name} className="absolute z-20" />
                                                         {items[11].name.includes("prismático") && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="absolute z-30">
-                                                            <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" stroke-width="1" stroke="#bdbdbd" fill="transparent"></rect>
+                                                            <rect x="7.74" y="7.74" width="32.53" height="32.53" transform="translate(-9.94 24) rotate(-45)" strokeWidth="1" stroke="#bdbdbd" fill="transparent"></rect>
                                                         </svg>}
                                                     </div>
                                                     <div className="absolute left-18 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
@@ -1408,7 +1413,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div className="flex mb-2">
                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
                                                     <div className="group relative">
-                                                        <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                        <img key={perkIndex + perk.name} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                             <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
                                                                 <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
@@ -1429,7 +1434,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                 {items[11].perks.slice(7).map((perk, perkIndex) => (
                                                     perk.name != "Ranura de fragmento vacía" ? (
                                                         <div className="group relative">
-                                                            <img key={perkIndex} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
+                                                            <img key={perkIndex + perk.name} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                             <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                 <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
                                                                     <p className="font-semibold text-xl uppercase leading-6">{perk.name}</p>
@@ -1497,8 +1502,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                     <svg viewBox="0 0 100 100" width="40" height="40" className="group">
                                                                                         <defs>
                                                                                             <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
-                                                                                                <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
-                                                                                                <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                                <stop stopColor="#eade8b" offset="50%" stopOpacity="0"></stop>
+                                                                                                <stop stopColor="#eade8b" offset="100%" stopOpacity="1"></stop>
                                                                                             </linearGradient>
                                                                                         </defs>
                                                                                         <mask id="mask">
@@ -1514,7 +1519,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                             </>
                                                                                         )}
                                                                                         <image href={API_CONFIG.BUNGIE_API + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
-                                                                                        <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                                        <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" strokeWidth="2" className="od45Ah47"></circle>
                                                                                     </svg>
                                                                                     <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                                         <strong>{perk.name}</strong><br /> <p className={`whitespace-pre-line w-fit`}>{perk.desc?.description ?? perk.desc ?? ""}</p>
@@ -1900,7 +1905,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="absolute left-70 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                                             <p>{stat.desc}</p>
                                                                                         </div>
-                                                                                        <p style={{ width: "25%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                        <p style={{ width: "31%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
                                                                                         <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
                                                                                         {stat.iconPath ? (
                                                                                             <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
@@ -2029,8 +2034,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         <svg viewBox="0 0 100 100" width="40" height="40" >
                                                                             <defs>
                                                                                 <linearGradient id="mw" x1="0" x2="0" y1="0" y2="1">
-                                                                                    <stop stop-color="#eade8b" offset="50%" stop-opacity="0"></stop>
-                                                                                    <stop stop-color="#eade8b" offset="100%" stop-opacity="1"></stop>
+                                                                                    <stop stopColor="#eade8b" offset="50%" stopOpacity="0"></stop>
+                                                                                    <stop stopColor="#eade8b" offset="100%" stopOpacity="1"></stop>
                                                                                 </linearGradient>
                                                                             </defs>
                                                                             <mask id="mask">
@@ -2046,7 +2051,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 </>
                                                                             )}
                                                                             <image href={API_CONFIG.BUNGIE_API + perk.iconPath} x="10" y="10" width="80" height="80" mask="url(#mask)"></image>
-                                                                            <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" stroke-width="2" class="od45Ah47"></circle>
+                                                                            <circle cx="50" cy="50" r="46" stroke="white" fill="transparent" strokeWidth="2" className="od45Ah47"></circle>
                                                                         </svg>
                                                                     </div>) : (
                                                                         <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[40px] h-[40px]"} alt={perk.name} title={perk.name} />
