@@ -360,7 +360,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                     />
                                 </div>
                             ) : (
-                                <ul className={`grid gap-2 text-start w-full ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                                <ul className={`grid gap-2 text-start w-full mb-5 ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                                     {partyMembers.map((member, idx) => (
                                         <li key={member.membershipId} className="relative">
                                             <a

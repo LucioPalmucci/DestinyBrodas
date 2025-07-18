@@ -30,7 +30,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
 
                 const response = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, charID);
 
-                let totalStats = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218];
+                let totalStats = [392767087, 4244567218, 1735777505, 144602215, 1943323491, 2996146975];
                 await getTotalStats(totalStats);
 
                 const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
