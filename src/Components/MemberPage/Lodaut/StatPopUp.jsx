@@ -5,7 +5,7 @@ export default function StatPopup({ stat, position, onClose }) {
 
     return createPortal(
         <div
-            className="text-white text-xs pointer-events-none max-w-[16%]"
+            className="text-white text-xs pointer-events-none w-[16%]"
             style={{
                 position: "fixed",
                 top: `${position.top}px`,
