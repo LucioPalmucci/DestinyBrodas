@@ -188,7 +188,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         for (const stat of Object.values(statsList)) {
                             try {
                                 const statResponse = await getItemManifest(stat.statHash, "DestinyStatDefinition");
-                                totalStats.find((baseStat) => baseStat.statHash === stat.statHash).value += stat.value;
                                 armorStats.push({
                                     ...stat,
                                     name: statResponse.displayProperties.name,
@@ -221,8 +220,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             investmentStats: perk.investmentStats,
                             name: perk.name,
                             hash: perk.plugHash,
+                            type: perk.perkType,
                         }));
                         armorStats = getArmorStats(itemResponse, investmentStats, armorStats);
+                        totalStats = getTotalStatsValues(totalStats, armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -349,8 +350,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const handleStatHover = (stat, event) => {
         const rect = event.target.getBoundingClientRect();
         setStatPopupPosition({
-            top: rect.top - 230,
-            left: rect.left + 60
+            top: rect.top - 210,
+            left: rect.left + 50
         });
         setSelectedStat(stat);
     };
@@ -383,11 +384,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     valb1 = "+" + (stat.value > 100 ? 70 : stat.value * 0.7).toFixed(1);
                     valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
                     txtMejora = "Tus escudos se recargan mas rápido y tienen salud adicional al enfrentar combatientes.";
-                    textM1 = "Salud por orbe";
-                    textM2 = "Resistencia al temblor";
+                    textM1 = "Velocidad de recarga de escudo";
+                    textM2 = "Salud de escudo";
                     textM3 = null
-                    valM1 = stat.value > 100 ? "+" + (stat.value * 0.157).toFixed(1) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + (stat.value * 0.068).toFixed(1) + " %" : null;
+                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + " %" : null;
+                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 20 : ((stat.value - 100) * 0.2).toFixed(1)) : null;
                     valM3 = null;
                     break;
                 case 2996146975: //armas
@@ -399,9 +400,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     textM1 = "Oportunidad de caja de munición grande";
                     textM2 = "Daño principal/especial";
                     textM3 = "Daño de armas de munición pesada";
-                    valM1 = stat.value > 100 ? (stat.value * 0.223).toFixed(1) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + ((stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + ((stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                    valM3 = stat.value > 100 ? "+" + ((stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + ((stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
+                    valM1 = stat.value > 100 ? (stat.value * 0.22).toFixed(1) + " %" : null;
+                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 :(stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
+                    valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6: (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
                     break;
                 case 1943323491: //clase
                     txtb1 = "Recuperación de habilidad de clase";
@@ -412,7 +413,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     textM1 = "Salud de sobreescudo";
                     textM2 = null;
                     textM3 = null;
-                    valM1 = stat.value > 100 ? ((stat.value - 100) * 0.4).toFixed(1) : null;
+                    valM1 = stat.value > 100 ? (stat.value > 200 ? 40.0 :(stat.value - 100) * 0.4).toFixed(1) : null;
                     valM2 = null;
                     valM3 = null;
                     break;
@@ -425,7 +426,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     textM1 = "Daño";
                     textM2 = null;
                     textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + ((stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + ((stat.value - 100) * 0.197).toFixed(1) + " % PVP" : null;
+                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
                     valM2 = null;
                     valM3 = null;
                     break;
@@ -436,7 +437,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     textM1 = "Daño";
                     textM2 = null;
                     textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + ((stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + ((stat.value - 100) * 0.148).toFixed(1) + " % PVP" : null;
+                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + " % PVP" : null;
                     valM2 = null;
                     valM3 = null;
                     break;
@@ -449,7 +450,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     textM1 = "Daño";
                     textM2 = null; // Solo hay un beneficio mejorado en la imagen
                     textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + ((stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + ((stat.value - 100) * 0.192).toFixed(1) + " % PVP" : null;
+                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 20 :(stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
                     valM2 = null;
                     valM3 = null;
                     break;
@@ -522,13 +523,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     function getArmorStats(item, investmentStats, stats) {
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
+        if (item.displayProperties.name == "Chaleco Techsec") console.log("item", stats);
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
+                if(perksinvestmentStat.type == "v460.plugs.armor.masterworks" && ![5,10,15].includes(stat.value)) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
+                    if(stat.name == "Total") stat.value = stat.value - 15;
+                    else stat.value = stat.value - 5;
+                    console.log("dsad")
+                }
                 const matchingStat = perksinvestmentStat.investmentStats.find(
                     (invStat) => invStat.statTypeHash === stat.statHash
                 );
                 if (matchingStat) {
+                    //if (item.displayProperties.name == "Chaleco Techsec" || item.displayProperties.name == "Relativismo")console.log("matchingStat", perksinvestmentStat.type, matchingStat.value);
                     switch (matchingStat.value) {
                         case 2: //Si es 2 por la obra maestra
                             amarillo += matchingStat.value || 0;
@@ -542,8 +550,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             azul68a0b7 += matchingStat.value || 0;
                             perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             break;
-                        case 5: //Si es 5 por el mod insertado
-                            if (perksinvestmentStat.name != "") {
+                        case 5: //Si es 5 por el mod insertado o por mejorar armadura
+                            if(perksinvestmentStat.type == "v460.plugs.armor.masterworks" && stat.value == 5) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
+                                amarillo += matchingStat.value || 0;
+                                perkAmarillo = "+" + matchingStat.value + " " + perksinvestmentStat.name
+                            }
+                            if (perksinvestmentStat.name != "" != perksinvestmentStat.type == "v460.plugs.armor.masterworks") {
                                 azul68a0b7 += matchingStat.value || 0;
                                 perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             }
@@ -594,8 +606,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 delete stat.secciones.azul68a0b7_op8;
             }
         }))
-
+        if (item.displayProperties.name == "Chaleco Techsec") console.log("stats finales: ", stats);
         return stats;
+    }
+
+    function getTotalStatsValues(totalStats, armorStats) {
+        totalStats.forEach((stat) => {
+            armorStats.forEach((armorStat) => {
+                if (stat.statHash === armorStat.statHash) {
+                    stat.value += armorStat.value;
+                }
+            });
+        });
+        return totalStats;
     }
 
     async function getArmorIntrinsicDetails(perks) {
@@ -716,7 +739,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias de obra maestra
                     else {
                         modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
-                        //if (item.itemTypeDisplayName == "Cañón de mano") console.log("Se sumo", perksinvestmentStat.name, "a", statResponse.displayProperties.name, ":", matchingStat.value);
                     }
 
                     if (perksinvestmentStats.indexOf(perksinvestmentStat) == 0 && matchingStat.value == 2) { //Obra mestra stats secundarias
@@ -890,7 +912,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (valorAbsolutoRojo >= aux + blancoFFFFFF1F) {
                         aux += blancoFFFFFF1F;
                         blancoFFFFFF1F = 0;
-                        //if (item.itemTypeDisplayName == "Cañón de mano" && stat.name == "Manejo") console.log("LLego aca",  aux + blancoFFFFFF3D, valorAbsolutoRojo)
                         if (valorAbsolutoRojo >= aux + blancoFFFFFF3D) {
                             aux += blancoFFFFFF3D;
                             blancoFFFFFF3D = 0;
@@ -1278,7 +1299,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         });
                     }
                 }
-                //console.log("descrip", perk.statDescripton, perk.name, perk.investmentStats);
             })
         })
         return perks;
@@ -2028,7 +2048,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         <div className="flex flex-col pt-1">
                                                                             {selectedArmor.stats
                                                                                 ?.sort((a, b) => {
-                                                                                    const order = [2996146975, 392767087, 1943323491, 1735777505, 144602215, 4244567218, 1];
+                                                                                    const order = [392767087, 4244567218, 1735777505, 144602215, 1943323491, 2996146975, 1];
                                                                                     return order.indexOf(a.statHash) - order.indexOf(b.statHash);
                                                                                 })
                                                                                 .map((stat) => (

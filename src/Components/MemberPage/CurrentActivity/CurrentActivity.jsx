@@ -157,6 +157,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
             const nameNums = profileResponse.profile.data.userInfo.bungieGlobalDisplayNameCode;
             const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
 
+            console.log("Emblema del jugador:", activity2?.logo);
             return {
                 membershipId: member.membershipId,
                 membershipType: successfulPlatform,
@@ -168,7 +169,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 clase: emblemPath.clase,
                 light: emblemPath.light,
                 subclass: emblemPath.subclass,
-                iconActivity: activity2?.logo || API_CONFIG.BUNGIE_API + "/common/destiny2_content/icons/DestinyActivityModeDefinition_f6de6d95f600f199c9a674c73cbefbcc.png",
+                iconActivity: activity2?.logo || "/common/destiny2_content/icons/DestinyActivityModeDefinition_f6de6d95f600f199c9a674c73cbefbcc.png",
                 activityName: activity2?.name || "En órbita",
                 mode: activity2?.type || null,
                 name: displayName,

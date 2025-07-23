@@ -370,9 +370,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                         <div key={uniqueId} className={`px-10 text-sm text-start justify-between flex items-center`}>
                                             <p className='w-[15%]'>{activity.date}</p>
                                             <div className='w-[11%] flex items-center'>
-                                                <img className='w-6 h-6' src={activity.clase.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
+                                                <img className='w-6 h-6' src={activity.clase?.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
                                                 <div className='w-1'></div>
-                                                <p>{activity.clase.name}</p>
+                                                <p>{activity.clase?.name}</p>
                                             </div>
                                             <div className='w-[30%] flex items-center'>
                                                 {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
