@@ -50,7 +50,6 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                     return socket.type === "v460.plugs.armor.masterworks";
                                 });
                                 if (hasMasterwork && ![5, 10, 15].includes(stat.value)) {
-                                    if (itemResponse.displayProperties.name == "Relativismo") console.log("itemResponse", stat);
                                     baseStat.value = baseStat.value - 5;
                                 }
                             } catch (error) {
