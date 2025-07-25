@@ -11,7 +11,7 @@ export default function ClanTeammates({ userId, membershipType }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const popupRef = useRef(null);
-    const { getCompChars, getClanMembers, getRecentActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
+    const { getCompChars, getClanMembers, getCharacterActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
@@ -22,6 +22,7 @@ export default function ClanTeammates({ userId, membershipType }) {
 
                 const clan = await getClanMembers();
 
+
                 clan.forEach(member => {
                     if (member.destinyUserInfo.membershipId === userId) return;
                     clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
@@ -29,7 +30,7 @@ export default function ClanTeammates({ userId, membershipType }) {
 
                 let activity = [];
                 for (const character of Object.values(userData)) {
-                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 10);
+                    let activityChar = await getCharacterActivities(membershipType, userId, character.characterId);
                     activity = activity.concat(activityChar || []);
                 }
 
@@ -39,13 +40,10 @@ export default function ClanTeammates({ userId, membershipType }) {
                 for (const act of activity) {
                     if (jugadoresClan.length >= peopleLimit) break;
                     const carnageReportResponse = await getCarnageReport(act.activityDetails.instanceId);
-
                     for (const entry of carnageReportResponse.entries) {
                         if (
                             clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId)
                         ) {
-                            // Obtener detalles de la actividad para este jugador
-                            //act.activityDetails.directorActivityHash DestinyActivityDefinition
                             const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                             const manifest = await getManifest();
                             const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;

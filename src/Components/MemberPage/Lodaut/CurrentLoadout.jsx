@@ -182,6 +182,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     }
 
                     const statsList = itemD.stats.data?.stats;
+                    //if(itemResponse.displayProperties.name == "Máscara Renovación de AIÓN") console.log(itemResponse.displayProperties.name, statsList, itemD); //Stats del item
                     let armorStats = []; //Stats de armadura
                     if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
                         let totalStatValue = 0;
@@ -221,7 +222,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             hash: perk.plugHash,
                             type: perk.perkType,
                         }));
-                        armorStats = getArmorStats(itemResponse, investmentStats, armorStats);
+                        armorStats = getArmorStats(itemResponse, investmentStats, armorStats, itemD.instance?.data?.gearTier);
                         totalStats = getTotalStatsValues(totalStats, armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
@@ -520,11 +521,24 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         };
     }
 
-    function getArmorStats(item, investmentStats, stats) {
+    function getArmorStats(item, investmentStats, stats, gearTier) {
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
+        if(item.displayProperties.name == "Borceguíes Adaptador de AIÓN" || item.displayProperties.name == "Chaleco Renovación de AIÓN") console.log(stats, investmentStats); //Stats del item
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
+                if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3) {
+                    switch (stat.statHash) {
+                        case 392767087: if(perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
+                        case 4244567218: if(perksinvestmentStat.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
+                        //case 1943323491: if(perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
+                        case 2996146975: if(perksinvestmentStat.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
+                        case 1735777505: if(perksinvestmentStat.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
+                        case 144602215: if(perksinvestmentStat.hash == 4227065942) stat.value += 3; break; //Super con Paragon
+                        default: break;
+                    }
+                    if (stat.name == "Total" && stat.statHash != 1943323491) stat.value += 3;
+                }
                 if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && ![5, 10, 15].includes(stat.value)) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
                     if (stat.name == "Total") stat.value = stat.value - 15;
                     else stat.value = stat.value - 5;
@@ -633,8 +647,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function sortWeaponPerks(perks) {
-
-        console.log(perks);
 
         const excludedModifiers = [
             "plugs.weapons.masterworks",
@@ -1727,7 +1739,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         backgroundPosition: "-1.413px -1.413px",
                                                                                         height: "67.82px",
                                                                                         width: "17px",
-                                                                                        paddingTop: "19.7px",
+                                                                                        paddingTop: "22px",
                                                                                         pointerEvents: "none",
                                                                                     }}
                                                                                     className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-1 flex-col absolute items-center">
@@ -2068,7 +2080,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 backgroundPosition: "-1.413px -1.413px",
                                                                                 height: "67.82px",
                                                                                 width: "16.951px",
-                                                                                paddingTop: "19.7px",
+                                                                                paddingTop: "22px",
                                                                                 pointerEvents: "none",
                                                                             }}
                                                                             className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-1 flex-col absolute items-center">
@@ -2112,7 +2124,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         ) : (
                                                                                             <div className="bg-[#333] h-3 overflow-hidden flex" style={{ width: "38%" }}>
                                                                                                 {Object.entries(stat.secciones || {}).map(([key, section]) => (
-                                                                                                    <div key={key} className="h-full" style={{ width: `${(section.value / 40) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
+                                                                                                    <div key={key} className="h-full" style={{ width: `${(section.value / 42) * 100}%`, backgroundColor: section.color }} title={section.name || null} />
                                                                                                 ))}
                                                                                             </div>
                                                                                         )}

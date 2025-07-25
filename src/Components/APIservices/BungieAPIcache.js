@@ -211,7 +211,7 @@ export const useBungieAPI = () => {
     }, [apiRequest]);
 
     const getItemInstance = useCallback(async (membershipType, userId, itemInstanceId) => {
-        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=305,304`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/Item/${itemInstanceId}/?components=305,304,300`;
         const response = await apiRequest('itemInstance', url, [membershipType, userId, itemInstanceId]);
         return response?.Response;
     }, [apiRequest]);

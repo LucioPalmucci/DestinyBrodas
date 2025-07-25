@@ -47,322 +47,338 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                 baseStat.value += stat.value;
                                 const sockets = await getPerks(itemD.sockets.data?.sockets);
                                 const hasMasterwork = sockets.some(socket => {
-                                    return socket.type === "v460.plugs.armor.masterworks";
+                                    return socket?.type === "v460.plugs.armor.masterworks";
                                 });
                                 if (hasMasterwork && ![5, 10, 15].includes(stat.value)) {
                                     baseStat.value = baseStat.value - 5;
                                 }
+                                const tier = itemD.instance?.data?.gearTier;
+                                for (const perk of sockets) {
+                                    if (perk?.type == "armor_archetypes" && tier == 3) {
+                                        console.log(stat.statHash, perk.hash)
+                                        switch (stat.statHash) {
+                                            case 392767087: if (perk.hash == 549468645) stat.value += 3; break; //Salud con bulwark
+                                            case 4244567218: if (perk.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
+                                            //case 1943323491: if(perk.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
+                                            case 2996146975: if (perk.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
+                                            case 1735777505: if (perk.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
+                                            case 144602215: if (perk.hash == 4227065942) stat.value += 3; break; //Super con Paragon
+                                            default: break;
+                                        }
+                                    }
+                                }
                             } catch (error) {
-                                console.error(`Error fetching stat definition for ${stat.statHash}:`, error);
-                            }
+                            console.error(`Error fetching stat definition for ${stat.statHash}:`, error);
                         }
                     }
-                    if ([11].includes(response.equipment.data.items.indexOf(item))) { //Sublcase
-                        setBackground(itemResponse.screenshot);
-                        await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
-                            const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
-                            if (perkResponse.itemTypeDisplayName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("super")) {
-                                setSuperAbility({
-                                    name: perkResponse.displayProperties.name,
-                                    iconPath: perkResponse.displayProperties.icon,
-                                });
-                            }
-                            if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
-                                    switch (classType) {
-                                        case 0: //Titan resto resistencia
-                                            if (perkResponse.investmentStats[3]) {
-                                                totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
-                                            }
-                                            break;
-                                        case 1: //Cazador resto movilidad
-                                            if (perkResponse.investmentStats[2]) {
-                                                totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
-                                            }
-                                            break;
-                                        case 2: //Hechicero resto recuperacion
-                                            if (perkResponse.investmentStats[1]) {
-                                                totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
-                                            }
-                                            break;
-                                    }
-                                }
-                                else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
-                                    const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
-                                    if (stat.value < 0) {
-                                        baseStat.value -= Math.abs(stat.value);
-                                    } else {
-                                        baseStat.value += stat.value;
-                                    }
-                                }
-                            }
-                        }) || []);
-                    }
-                    return {
-                        name: itemResponse.displayProperties.name,
-                        icon: itemResponse.displayProperties.icon,
-                        rarity: itemResponse.inventory.tierType,
-                    };
-                }))
-                setTotalStats(getDetailsTotalStats(totalStats));
-                setItems(itemDetails);
-
-            } catch (error) {
-                console.error("Error loading loadout:", error);
-            }
-        }
-        fetchSimpleLoadout();
-    }, []);
-
-    const handleStatHover = (stat, event) => {
-        const rect = event.target.getBoundingClientRect();
-        setStatPopupPosition({
-            top: rect.top - 120,
-            left: rect.left + 65
-        });
-        setSelectedStat(stat);
-    };
-
-    const handleStatLeave = () => {
-        setSelectedStat(null);
-    };
-
-    async function getPerks(sockets) {
-        const perks = await Promise.all(sockets.map(async (socket) => {
-            if (!socket.plugHash) return null;
-            const perkResponse = await getItemManifest(socket.plugHash, "DestinyInventoryItemDefinition");
-            return {
-                name: perkResponse.displayProperties.name,
-                iconPath: API_CONFIG.BUNGIE_API + perkResponse.displayProperties.icon,
-                desc: perkResponse.displayProperties.description,
-                type: perkResponse.plug.plugCategoryIdentifier,
-            };
-        }));
-        return perks;
-    }
-
-    async function getTotalStats(totalStats) {
-        const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
-            const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
-            return {
-                statHash,
-                name: statResponse.displayProperties.name,
-                iconPath: statResponse.displayProperties.icon,
-                value: 0,
-            };
-        }));
-        totalStats.splice(0, totalStats.length, ...updatedStats);
-    }
-
-    function getDetailsTotalStats(totalStats) {
-        totalStats.forEach((stat) => {
-            let txtb1, txtb2, valb1, valb2, txtMejora, textM1, textM2, textM3, valM1, valM2, valM3;
-            switch (stat.statHash) {
-                case 392767087: //salud
-                    txtb1 = "Salud por orbe";
-                    txtb2 = "Resistencia al temblor";
-                    valb1 = "+" + (stat.value > 100 ? 70 : stat.value * 0.7).toFixed(1);
-                    valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
-                    txtMejora = "Tus escudos se recargan mas rápido y tienen salud adicional al enfrentar combatientes.";
-                    textM1 = "Velocidad de recarga de escudo";
-                    textM2 = "Salud de escudo";
-                    textM3 = null
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 20 : ((stat.value - 100) * 0.2).toFixed(1)) : null;
-                    valM3 = null;
-                    break;
-                case 2996146975: //armas
-                    txtb1 = "Recarga y manejo";
-                    txtb2 = "Daño";
-                    valb1 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
-                    valb2 = "+" + (stat.value > 100 ? 15 : stat.value * 0.15).toFixed(1) + " %";
-                    txtMejora = "Hay una probabilidad de que las cajas de munición de los objetivos derrotados contengan rondas adicionales. Aumenta el daño con arma contra jefes y guardianes rivales.";
-                    textM1 = "Oportunidad de caja de munición grande";
-                    textM2 = "Daño principal/especial";
-                    textM3 = "Daño de armas de munición pesada";
-                    valM1 = stat.value > 100 ? (stat.value * 0.22).toFixed(1) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 :(stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                    valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6: (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                    break;
-                case 1943323491: //clase
-                    txtb1 = "Recuperación de habilidad de clase";
-                    txtb2 = "Energía de habilidad de clase";
-                    valb1 = "0:" + (stat.value > 100 ? 14 : stat.value * 0.14).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %"; // Energía de habilidad
-                    txtMejora = "Obtienes un sobreescudo al usar tu habilidad de clase.";
-                    textM1 = "Salud de sobreescudo";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? (stat.value > 200 ? 40.0 :(stat.value - 100) * 0.4).toFixed(1) : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 1735777505: //granada
-                    txtb1 = "Recuperación de habilidad de granada";
-                    txtb2 = "Energía de granada";
-                    valb1 = "0:" + (stat.value > 100 ? 41 : stat.value * 0.41).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que infligen tus granadas.";
-                    textM1 = "Daño";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 144602215: //super
-                    txtb1 = "Energía de súper";
-                    valb1 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que inflige tu súper.";
-                    textM1 = "Daño";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 4244567218: //cuerpo a cuerpo
-                    txtb1 = "Recuperación de cuerpo a cuerpo";
-                    txtb2 = "Energía cuerpo a cuerpo";
-                    valb1 = "0:" + (stat.value > 100 ? 50 : stat.value * 0.5).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que infligen tus ataques cuerpo a cuerpo.";
-                    textM1 = "Daño";
-                    textM2 = null; // Solo hay un beneficio mejorado en la imagen
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 20 :(stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-            }
-            stat.popUps = {
-                beneficios: {
-                    b1: {
-                        text: txtb1,
-                        value: valb1,
-                    },
-                    b2: {
-                        text: txtb2,
-                        value: valb2,
-                    },
-                },
-                mejora: {
-                    text: txtMejora,
-                    beneficiosMejora: {
-                        m1: {
-                            text: textM1,
-                            value: valM1,
-                        },
-                        m2: {
-                            text: textM2,
-                            value: valM2,
-                        },
-                        m3: {
-                            text: textM3,
-                            value: valM3,
-                        }
-                    },
                 }
-            }
-        })
-        return totalStats;
-    }
+                    if ([11].includes(response.equipment.data.items.indexOf(item))) { //Sublcase
+                    setBackground(itemResponse.screenshot);
+                    await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
+                        const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
+                        if (perkResponse.itemTypeDisplayName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("super")) {
+                            setSuperAbility({
+                                name: perkResponse.displayProperties.name,
+                                iconPath: perkResponse.displayProperties.icon,
+                            });
+                        }
+                        if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
+                            if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
+                                switch (classType) {
+                                    case 0: //Titan resto resistencia
+                                        if (perkResponse.investmentStats[3]) {
+                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
+                                        }
+                                        break;
+                                    case 1: //Cazador resto movilidad
+                                        if (perkResponse.investmentStats[2]) {
+                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
+                                        }
+                                        break;
+                                    case 2: //Hechicero resto recuperacion
+                                        if (perkResponse.investmentStats[1]) {
+                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
+                                        }
+                                        break;
+                                }
+                            }
+                            else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
+                                const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
+                                if (stat.value < 0) {
+                                    baseStat.value -= Math.abs(stat.value);
+                                } else {
+                                    baseStat.value += stat.value;
+                                }
+                            }
+                        }
+                    }) || []);
+                }
+                return {
+                    name: itemResponse.displayProperties.name,
+                    icon: itemResponse.displayProperties.icon,
+                    rarity: itemResponse.inventory.tierType,
+                };
+            }))
+    setTotalStats(getDetailsTotalStats(totalStats));
+    setItems(itemDetails);
 
-    useEffect(() => {
-        if (showFull) {
-            setIsVisible(true);
-            setTimeout(() => setAnimatePopup(true), 100);
-        } else {
-            setAnimatePopup(false);
-            setTimeout(() => setIsVisible(false), 200);
+} catch (error) {
+    console.error("Error loading loadout:", error);
+}
         }
-    }, [showFull]);
-
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.key === "Escape") {
-                setShowFull(false);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
+fetchSimpleLoadout();
     }, []);
 
+const handleStatHover = (stat, event) => {
+    const rect = event.target.getBoundingClientRect();
+    setStatPopupPosition({
+        top: rect.top - 120,
+        left: rect.left + 65
+    });
+    setSelectedStat(stat);
+};
 
-    return (
-        <>
-            <div className={`font-Inter h-[450px]`}>
-                {totalStats && background && items ? (
-                    <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
-                        <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
-                        <div className="justify-evenly flex">
-                            <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
-                                {[11, 3, 4, 5, 6, 7, 0, 1, 2].map((index) => (
-                                    items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
-                                        index != 11 ? (
-                                            <div key={index} className="flex items-center space-x-2">
-                                                <img src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`} width={50} height={50} alt={items[index].name} />
-                                                <p className="font-semibold">{items[index].name}</p>
-                                            </div>
-                                        ) : (
-                                            <div key={index} className="flex items-center space-x-2">
-                                                <img src={`${API_CONFIG.BUNGIE_API}${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
-                                                <p className="font-semibold">{superAbility?.name}</p>
-                                            </div>
-                                        )
-                                    )
-                                ))}
-                            </div>
-                            {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
-                                {totalStats.map((stat) => (
-                                    stat.iconPath && (
-                                        <div key={stat.statHash} className="flex items-center font-semibold text-xl" onMouseEnter={(e) => handleStatHover(stat, e)} onMouseLeave={() => handleStatLeave()}>
-                                            <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} width={30} height={30} alt={stat.name}/>
-                                            <p className="ml-[2px]">{stat.value}</p>
+const handleStatLeave = () => {
+    setSelectedStat(null);
+};
+
+async function getPerks(sockets) {
+    const perks = await Promise.all(sockets.map(async (socket) => {
+        if (!socket.plugHash) return null;
+        const perkResponse = await getItemManifest(socket.plugHash, "DestinyInventoryItemDefinition");
+        return {
+            name: perkResponse.displayProperties.name,
+            iconPath: API_CONFIG.BUNGIE_API + perkResponse.displayProperties.icon,
+            desc: perkResponse.displayProperties.description,
+            type: perkResponse.plug.plugCategoryIdentifier,
+            hash: perkResponse.hash,
+        };
+    }));
+    return perks;
+}
+
+async function getTotalStats(totalStats) {
+    const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
+        const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
+        return {
+            statHash,
+            name: statResponse.displayProperties.name,
+            iconPath: statResponse.displayProperties.icon,
+            value: 0,
+        };
+    }));
+    totalStats.splice(0, totalStats.length, ...updatedStats);
+}
+
+function getDetailsTotalStats(totalStats) {
+    totalStats.forEach((stat) => {
+        let txtb1, txtb2, valb1, valb2, txtMejora, textM1, textM2, textM3, valM1, valM2, valM3;
+        switch (stat.statHash) {
+            case 392767087: //salud
+                txtb1 = "Salud por orbe";
+                txtb2 = "Resistencia al temblor";
+                valb1 = "+" + (stat.value > 100 ? 70 : stat.value * 0.7).toFixed(1);
+                valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
+                txtMejora = "Tus escudos se recargan mas rápido y tienen salud adicional al enfrentar combatientes.";
+                textM1 = "Velocidad de recarga de escudo";
+                textM2 = "Salud de escudo";
+                textM3 = null
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + " %" : null;
+                valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 20 : ((stat.value - 100) * 0.2).toFixed(1)) : null;
+                valM3 = null;
+                break;
+            case 2996146975: //armas
+                txtb1 = "Recarga y manejo";
+                txtb2 = "Daño";
+                valb1 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
+                valb2 = "+" + (stat.value > 100 ? 15 : stat.value * 0.15).toFixed(1) + " %";
+                txtMejora = "Hay una probabilidad de que las cajas de munición de los objetivos derrotados contengan rondas adicionales. Aumenta el daño con arma contra jefes y guardianes rivales.";
+                textM1 = "Oportunidad de caja de munición grande";
+                textM2 = "Daño principal/especial";
+                textM3 = "Daño de armas de munición pesada";
+                valM1 = stat.value > 100 ? (stat.value * 0.22).toFixed(1) + " %" : null;
+                valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
+                valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
+                break;
+            case 1943323491: //clase
+                txtb1 = "Recuperación de habilidad de clase";
+                txtb2 = "Energía de habilidad de clase";
+                valb1 = "0:" + (stat.value > 100 ? 14 : stat.value * 0.14).toFixed(0);
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %"; // Energía de habilidad
+                txtMejora = "Obtienes un sobreescudo al usar tu habilidad de clase.";
+                textM1 = "Salud de sobreescudo";
+                textM2 = null;
+                textM3 = null;
+                valM1 = stat.value > 100 ? (stat.value > 200 ? 40.0 : (stat.value - 100) * 0.4).toFixed(1) : null;
+                valM2 = null;
+                valM3 = null;
+                break;
+            case 1735777505: //granada
+                txtb1 = "Recuperación de habilidad de granada";
+                txtb2 = "Energía de granada";
+                valb1 = "0:" + (stat.value > 100 ? 41 : stat.value * 0.41).toFixed(0);
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                txtMejora = "Aumenta el daño que infligen tus granadas.";
+                textM1 = "Daño";
+                textM2 = null;
+                textM3 = null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
+                valM2 = null;
+                valM3 = null;
+                break;
+            case 144602215: //super
+                txtb1 = "Energía de súper";
+                valb1 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                txtMejora = "Aumenta el daño que inflige tu súper.";
+                textM1 = "Daño";
+                textM2 = null;
+                textM3 = null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + " % PVP" : null;
+                valM2 = null;
+                valM3 = null;
+                break;
+            case 4244567218: //cuerpo a cuerpo
+                txtb1 = "Recuperación de cuerpo a cuerpo";
+                txtb2 = "Energía cuerpo a cuerpo";
+                valb1 = "0:" + (stat.value > 100 ? 50 : stat.value * 0.5).toFixed(0);
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                txtMejora = "Aumenta el daño que infligen tus ataques cuerpo a cuerpo.";
+                textM1 = "Daño";
+                textM2 = null; // Solo hay un beneficio mejorado en la imagen
+                textM3 = null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
+                valM2 = null;
+                valM3 = null;
+                break;
+        }
+        stat.popUps = {
+            beneficios: {
+                b1: {
+                    text: txtb1,
+                    value: valb1,
+                },
+                b2: {
+                    text: txtb2,
+                    value: valb2,
+                },
+            },
+            mejora: {
+                text: txtMejora,
+                beneficiosMejora: {
+                    m1: {
+                        text: textM1,
+                        value: valM1,
+                    },
+                    m2: {
+                        text: textM2,
+                        value: valM2,
+                    },
+                    m3: {
+                        text: textM3,
+                        value: valM3,
+                    }
+                },
+            }
+        }
+    })
+    return totalStats;
+}
+
+useEffect(() => {
+    if (showFull) {
+        setIsVisible(true);
+        setTimeout(() => setAnimatePopup(true), 100);
+    } else {
+        setAnimatePopup(false);
+        setTimeout(() => setIsVisible(false), 200);
+    }
+}, [showFull]);
+
+useEffect(() => {
+    const handleKeyDown = (event) => {
+        if (event.key === "Escape") {
+            setShowFull(false);
+        }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+    };
+}, []);
+
+
+return (
+    <>
+        <div className={`font-Inter h-[450px]`}>
+            {totalStats && background && items ? (
+                <div className="bg-gray-300 p-4 py-4 font-Lato rounded-lg space-y-4 text-white" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${background})`, backgroundSize: "cover", backgroundPosition: "calc(50% - 30px) center" }}>
+                    <h2 className="bg-black/25 p-2 rounded-lg w-fit font-semibold text-2xl">LOADOUT</h2>
+                    <div className="justify-evenly flex">
+                        <div className="bg-black/25 p-2 rounded-lg w-fit space-y-2 font-Lato">
+                            {[11, 3, 4, 5, 6, 7, 0, 1, 2].map((index) => (
+                                items[index] && (index < 3 || index === 11 || items[index]?.rarity == 6) && (
+                                    index != 11 ? (
+                                        <div key={index} className="flex items-center space-x-2">
+                                            <img src={`${API_CONFIG.BUNGIE_API}${items[index].icon}`} width={50} height={50} alt={items[index].name} />
+                                            <p className="font-semibold">{items[index].name}</p>
+                                        </div>
+                                    ) : (
+                                        <div key={index} className="flex items-center space-x-2">
+                                            <img src={`${API_CONFIG.BUNGIE_API}${superAbility?.iconPath}`} width={50} height={50} alt={superAbility?.name} />
+                                            <p className="font-semibold">{superAbility?.name}</p>
                                         </div>
                                     )
-                                ))}
-                                {selectedStat && (
-                                    <StatPopup
-                                        stat={selectedStat}
-                                        position={statPopupPosition}
-                                        onClose={() => setSelectedStat(null)}
-                                    />
-                                )}
-                            </div>
-                            }
+                                )
+                            ))}
                         </div>
-                        <div className="flex justify-center">
-                            <a onClick={() => setShowFull(true)} className="-translate-x-8 cristal transform transition-transform duration-200 hover:scale-105">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                                Ver Más
-                            </a>
+                        {totalStats && <div className="bg-black/25 p-2 rounded-lg w-fit flex flex-col space-y-5 h-fit font-Lato" >
+                            {totalStats.map((stat) => (
+                                stat.iconPath && (
+                                    <div key={stat.statHash} className="flex items-center font-semibold text-xl" onMouseEnter={(e) => handleStatHover(stat, e)} onMouseLeave={() => handleStatLeave()}>
+                                        <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} width={30} height={30} alt={stat.name} />
+                                        <p className="ml-[2px]">{stat.value}</p>
+                                    </div>
+                                )
+                            ))}
+                            {selectedStat && (
+                                <StatPopup
+                                    stat={selectedStat}
+                                    position={statPopupPosition}
+                                    onClose={() => setSelectedStat(null)}
+                                />
+                            )}
                         </div>
+                        }
                     </div>
-                ) : (
-                    <div className="bg-gray-300 items-center flex text-2xl mt-4 text-black h-full justify-center rounded-lg font-semibold animate-pulse"></div>
-                )}
-            </div>
-            {showFull && (
-                <div className="fixed inset-0 flex items-center justify-center w-full h-full z-40 bg-black/50" onClick={() => setShowFull(false)}>
-                    <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
-                        <CurrentLoadout
-                            membershipType={membershipType}
-                            userId={userId}
-                            name={name}
-                            seasonHash={seasonHash}
-                            rank={rank}
-                            light={light}
-                        />
+                    <div className="flex justify-center">
+                        <a onClick={() => setShowFull(true)} className="-translate-x-8 cristal transform transition-transform duration-200 hover:scale-105">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            Ver Más
+                        </a>
                     </div>
-                    <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowFull(false); }}>✕</button>
                 </div>
+            ) : (
+                <div className="bg-gray-300 items-center flex text-2xl mt-4 text-black h-full justify-center rounded-lg font-semibold animate-pulse"></div>
             )}
-        </>
-    );
+        </div>
+        {showFull && (
+            <div className="fixed inset-0 flex items-center justify-center w-full h-full z-40 bg-black/50" onClick={() => setShowFull(false)}>
+                <div className={`rounded-lg relative bg-neutral-600 text-white overflow-hidden transition-all duration-200 transform ${animatePopup ? "opacity-100 scale-100" : "opacity-0 scale-90"}`} style={{ width: '65.28%', height: '77.25%', backgroundImage: `url(${inventory})`, backgroundSize: "cover", backgroundPosition: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <CurrentLoadout
+                        membershipType={membershipType}
+                        userId={userId}
+                        name={name}
+                        seasonHash={seasonHash}
+                        rank={rank}
+                        light={light}
+                    />
+                </div>
+                <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowFull(false); }}>✕</button>
+            </div>
+        )}
+    </>
+);
 }

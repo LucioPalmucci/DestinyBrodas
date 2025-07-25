@@ -75,8 +75,9 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else if (activity.activityDetails.modes.includes(63)) {
                         activityType = "Gambito";
                     } else activityType = "PvE";
+
                     return {
-                        activityName: activityMode?.displayProperties?.name || null,
+                        activityName: activityMain?.displayProperties?.name || null,
                         activityIcon: !activityMode?.displayProperties?.icon.includes("missing_icon") ? activityMode?.displayProperties?.icon : datosDelModo?.displayProperties?.icon,
                         clase: clase || null,
                         pgcrImage: activityMain?.pgcrImage || null,
