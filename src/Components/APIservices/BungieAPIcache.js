@@ -220,7 +220,7 @@ export const useBungieAPI = () => {
 
     // Obtener artefacto, triunfos, personajes, pase
     const getProfileGeneralProgressions = useCallback(async (membershipType, userId) => {
-        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,102,104,202,900,1100&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Profile/${userId}/?components=Characters,100,102,104,202,900,1100&lc=es`;
         const response = await apiRequest('characterProfileWithComponents', url, [membershipType, userId]);
         return response?.Response;
     }, [apiRequest]);

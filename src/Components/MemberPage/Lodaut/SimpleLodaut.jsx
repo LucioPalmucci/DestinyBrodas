@@ -33,45 +33,12 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 const response = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, charID);
 
                 let totalStats = [392767087, 4244567218, 1735777505, 144602215, 1943323491, 2996146975];
-                await getTotalStats(totalStats);
+                totalStats = await getTotalStats(totalStats, mostRecentCharacter.stats);
 
                 const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
                     const itemResponse = await getItemManifest(item.itemHash, "DestinyInventoryItemDefinition");
                     const itemD = await getItemInstance(membershipType, userId, item.itemInstanceId);
 
-                    if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
-                        const statsList = itemD.stats.data?.stats;
-                        for (const stat of Object.values(statsList)) {
-                            try {
-                                const baseStat = totalStats.find((baseStat) => baseStat.statHash === stat.statHash);
-                                baseStat.value += stat.value;
-                                const sockets = await getPerks(itemD.sockets.data?.sockets);
-                                const hasMasterwork = sockets.some(socket => {
-                                    return socket?.type === "v460.plugs.armor.masterworks";
-                                });
-                                if (hasMasterwork && ![5, 10, 15].includes(stat.value)) {
-                                    baseStat.value = baseStat.value - 5;
-                                }
-                                const tier = itemD.instance?.data?.gearTier;
-                                for (const perk of sockets) {
-                                    if (perk?.type == "armor_archetypes" && tier == 3) {
-                                        console.log(stat.statHash, perk.hash)
-                                        switch (stat.statHash) {
-                                            case 392767087: if (perk.hash == 549468645) stat.value += 3; break; //Salud con bulwark
-                                            case 4244567218: if (perk.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
-                                            //case 1943323491: if(perk.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
-                                            case 2996146975: if (perk.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
-                                            case 1735777505: if (perk.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
-                                            case 144602215: if (perk.hash == 4227065942) stat.value += 3; break; //Super con Paragon
-                                            default: break;
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                            console.error(`Error fetching stat definition for ${stat.statHash}:`, error);
-                        }
-                    }
-                }
                     if ([11].includes(response.equipment.data.items.indexOf(item))) { //Sublcase
                     setBackground(itemResponse.screenshot);
                     await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
@@ -81,35 +48,6 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                                 name: perkResponse.displayProperties.name,
                                 iconPath: perkResponse.displayProperties.icon,
                             });
-                        }
-                        if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                            if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
-                                switch (classType) {
-                                    case 0: //Titan resto resistencia
-                                        if (perkResponse.investmentStats[3]) {
-                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
-                                        }
-                                        break;
-                                    case 1: //Cazador resto movilidad
-                                        if (perkResponse.investmentStats[2]) {
-                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
-                                        }
-                                        break;
-                                    case 2: //Hechicero resto recuperacion
-                                        if (perkResponse.investmentStats[1]) {
-                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
-                                        }
-                                        break;
-                                }
-                            }
-                            else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
-                                const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
-                                if (stat.value < 0) {
-                                    baseStat.value -= Math.abs(stat.value);
-                                } else {
-                                    baseStat.value += stat.value;
-                                }
-                            }
                         }
                     }) || []);
                 }
@@ -157,17 +95,18 @@ async function getPerks(sockets) {
     return perks;
 }
 
-async function getTotalStats(totalStats) {
+async function getTotalStats(totalStats, mostRecentCharacterStats) {
     const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
         const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
         return {
             statHash,
             name: statResponse.displayProperties.name,
             iconPath: statResponse.displayProperties.icon,
-            value: 0,
+            description: statResponse.displayProperties.description,
+            value: mostRecentCharacterStats[statHash] || 0,
         };
     }));
-    totalStats.splice(0, totalStats.length, ...updatedStats);
+    return updatedStats;
 }
 
 function getDetailsTotalStats(totalStats) {
@@ -178,33 +117,33 @@ function getDetailsTotalStats(totalStats) {
                 txtb1 = "Salud por orbe";
                 txtb2 = "Resistencia al temblor";
                 valb1 = "+" + (stat.value > 100 ? 70 : stat.value * 0.7).toFixed(1);
-                valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
+                valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + "%";
                 txtMejora = "Tus escudos se recargan mas rápido y tienen salud adicional al enfrentar combatientes.";
                 textM1 = "Velocidad de recarga de escudo";
                 textM2 = "Salud de escudo";
                 textM3 = null
-                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + " %" : null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + "%" : null;
                 valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 20 : ((stat.value - 100) * 0.2).toFixed(1)) : null;
                 valM3 = null;
                 break;
             case 2996146975: //armas
                 txtb1 = "Recarga y manejo";
                 txtb2 = "Daño";
-                valb1 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
-                valb2 = "+" + (stat.value > 100 ? 15 : stat.value * 0.15).toFixed(1) + " %";
+                valb1 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + "%";
+                valb2 = "+" + (stat.value > 100 ? 15 : stat.value * 0.15).toFixed(1) + "%";
                 txtMejora = "Hay una probabilidad de que las cajas de munición de los objetivos derrotados contengan rondas adicionales. Aumenta el daño con arma contra jefes y guardianes rivales.";
                 textM1 = "Oportunidad de caja de munición grande";
                 textM2 = "Daño principal/especial";
                 textM3 = "Daño de armas de munición pesada";
                 valM1 = stat.value > 100 ? (stat.value * 0.22).toFixed(1) + " %" : null;
-                valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
+                valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + "% PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + "% PVP" : null;
+                valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + "% PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + "% PVP" : null;
                 break;
             case 1943323491: //clase
                 txtb1 = "Recuperación de habilidad de clase";
                 txtb2 = "Energía de habilidad de clase";
                 valb1 = "0:" + (stat.value > 100 ? 14 : stat.value * 0.14).toFixed(0);
-                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %"; // Energía de habilidad
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + "%"; // Energía de habilidad
                 txtMejora = "Obtienes un sobreescudo al usar tu habilidad de clase.";
                 textM1 = "Salud de sobreescudo";
                 textM2 = null;
@@ -217,23 +156,23 @@ function getDetailsTotalStats(totalStats) {
                 txtb1 = "Recuperación de habilidad de granada";
                 txtb2 = "Energía de granada";
                 valb1 = "0:" + (stat.value > 100 ? 41 : stat.value * 0.41).toFixed(0);
-                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + "%";
                 txtMejora = "Aumenta el daño que infligen tus granadas.";
                 textM1 = "Daño";
                 textM2 = null;
                 textM3 = null;
-                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + "% PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + "% PVP" : null;
                 valM2 = null;
                 valM3 = null;
                 break;
             case 144602215: //super
                 txtb1 = "Energía de súper";
-                valb1 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                valb1 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + "%";
                 txtMejora = "Aumenta el daño que inflige tu súper.";
                 textM1 = "Daño";
                 textM2 = null;
                 textM3 = null;
-                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + " % PVP" : null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + "% PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + "% PVP" : null;
                 valM2 = null;
                 valM3 = null;
                 break;
@@ -241,12 +180,12 @@ function getDetailsTotalStats(totalStats) {
                 txtb1 = "Recuperación de cuerpo a cuerpo";
                 txtb2 = "Energía cuerpo a cuerpo";
                 valb1 = "0:" + (stat.value > 100 ? 50 : stat.value * 0.5).toFixed(0);
-                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
+                valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + "%";
                 txtMejora = "Aumenta el daño que infligen tus ataques cuerpo a cuerpo.";
                 textM1 = "Daño";
                 textM2 = null; // Solo hay un beneficio mejorado en la imagen
                 textM3 = null;
-                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
+                valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + "% PVE\n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + "% PVP" : null;
                 valM2 = null;
                 valM3 = null;
                 break;
@@ -374,6 +313,7 @@ return (
                         seasonHash={seasonHash}
                         rank={rank}
                         light={light}
+                        charStats={totalStats}
                     />
                 </div>
                 <button className="bg-neutral-700 text-white rounded-full w-7 h-7 flex items-center self-start justify-center hover:bg-neutral-800 cursor-pointer" style={{ marginTop: "4%" }} onClick={(e) => { e.stopPropagation(); setShowFull(false); }}>✕</button>

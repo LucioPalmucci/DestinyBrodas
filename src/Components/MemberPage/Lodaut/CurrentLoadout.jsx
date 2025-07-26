@@ -20,7 +20,7 @@ import RecoilStat from "./RecoliStat";
 import StatPopup from './StatPopup';
 
 
-export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
+export default function CurrentLoadout({ membershipType, userId, name, seasonHash, rank, light, charStats }) {
     const [items, setItems] = useState([]);
     const [totalStats, setTotalStats] = useState([]);
     const [isVisible, setIsVisible] = useState(false);
@@ -41,7 +41,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [loading, setLoading] = useState(true);
     const [selectedStat, setSelectedStat] = useState(null);
     const [statPopupPosition, setStatPopupPosition] = useState({ top: 0, left: 0 });
-    const { getProfileGeneralProgressions, getCharacterSimpleInventoryAndEquipment, getManifest, getItemManifest, getFullItemDetails, getAllSeals } = useBungieAPI();
+    const { getProfileGeneralProgressions, getCharacterSimpleInventoryAndEquipment, getManifest, getItemManifest, getFullItemDetails, getAllSeals, getProfileChars } = useBungieAPI();
     useEffect(() => {
         const fetchCurrentLoadout = async () => {
             setLoading(true);
@@ -60,13 +60,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 const response = await getCharacterSimpleInventoryAndEquipment(membershipType, userId, charID);
                 const manifest = await getManifest();
 
-                let totalStats = [392767087, 4244567218, 1735777505, 144602215, 1943323491, 2996146975];
-                await getTotalStats(totalStats);
                 await getOtherEmblems(characters, mostRecentCharacter);
                 await getSeal(mostRecentCharacter, manifest);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 getArtifactDetails(responseChar.profileProgression?.data?.seasonalArtifact);
-                const seasonProgress = await getCurrentSeason(seasonHash, manifest);
 
                 const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
                     const itemResponse = await getItemManifest(item.itemHash, "DestinyInventoryItemDefinition");
@@ -106,29 +103,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     } else if ([11, 15, 14].includes(response.equipment.data.items.indexOf(item))) { //Sublcase, gestos y remates
                         perks = await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
                             const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
-                            if (perkResponse.investmentStats.length > 0) { //Si el fragmento tiene algun bonus o penalizacion de stats
-                                if (perkResponse.hash == 2272984671 || perkResponse.hash == 1727069360) { //Si es un fragmento de clase
-                                    switch (classType) {
-                                        case 0: //Titan resto resistencia
-                                            totalStats[1].value -= Math.abs(perkResponse.investmentStats[3].value);
-                                            break;
-                                        case 1: //Cazador resto movilidad
-                                            totalStats[4].value -= Math.abs(perkResponse.investmentStats[2].value);
-                                            break;
-                                        case 2: //Hechicero resto recuperacion
-                                            totalStats[3].value -= Math.abs(perkResponse.investmentStats[1].value);
-                                            break;
-                                    }
-                                }
-                                else for (const stat of Object.values(perkResponse.investmentStats).slice(1)) {
-                                    const baseStat = totalStats.find((baseStat) => baseStat.statHash == stat.statTypeHash);
-                                    if (stat.value < 0) {
-                                        baseStat.value -= Math.abs(stat.value);
-                                    } else {
-                                        baseStat.value += stat.value;
-                                    }
-                                }
-                            }
                             if (perkResponse.displayProperties?.description == "") {
                                 const sandboxHash = perkResponse.perks[0]?.perkHash;
                                 if (sandboxHash) {
@@ -182,7 +156,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     }
 
                     const statsList = itemD.stats.data?.stats;
-                    //if(itemResponse.displayProperties.name == "Máscara Renovación de AIÓN") console.log(itemResponse.displayProperties.name, statsList, itemD); //Stats del item
                     let armorStats = []; //Stats de armadura
                     if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
                         let totalStatValue = 0;
@@ -213,7 +186,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (item.overrideStyleItemHash != null) {
                         cosmetic = await getCosmetic(item.overrideStyleItemHash);
                     }
-                    totalStats = getDetailsTotalStats(totalStats);
                     let tracker, dmgType, ammo, bgColor, bgMasterwork, champmod, weaponLevel, weaponStats, investmentStats, armorCategory, armorIntrinsic, elementalColor, secondaryBgImg, ghostEnergy;
                     if ([3, 4, 5, 6, 7].includes(response.equipment.data.items.indexOf(item))) {
                         investmentStats = perks.filter(perk => perk != null).map(perk => ({
@@ -223,7 +195,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             type: perk.perkType,
                         }));
                         armorStats = getArmorStats(itemResponse, investmentStats, armorStats, itemD.instance?.data?.gearTier);
-                        totalStats = getTotalStatsValues(totalStats, armorStats);
                         const { modifierPerks, designPerks } = sortByArtificePerk(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -302,10 +273,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         secondaryBgImg: secondaryBgImg,
                     };
                 }));
-                setPassLevel(responseChar.metrics.data?.metrics?.[seasonProgress]?.objectiveProgress?.progress);
+                setPassLevel(response.progressions.data.progressions[3733477714]?.level || 0);
                 setTriumphRecord(responseChar.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
-                setTotalStats(totalStats);
+                setTotalStats(charStats);
 
             } catch (error) {
                 console.error(error);
@@ -360,134 +331,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         setSelectedStat(null);
     };
 
-    async function getTotalStats(totalStats) {
-        const updatedStats = await Promise.all(totalStats.map(async (statHash) => {
-            const statResponse = await getItemManifest(statHash, "DestinyStatDefinition");
-            return {
-                statHash,
-                name: statResponse.displayProperties.name,
-                description: statResponse.displayProperties.description,
-                iconPath: statResponse.displayProperties.icon,
-                value: 0,
-            };
-        }));
-        totalStats.splice(0, totalStats.length, ...updatedStats);
-    }
-
-    function getDetailsTotalStats(totalStats) {
-        totalStats.forEach((stat) => {
-            let txtb1, txtb2, valb1, valb2, txtMejora, textM1, textM2, textM3, valM1, valM2, valM3;
-            switch (stat.statHash) {
-                case 392767087: //salud
-                    txtb1 = "Salud por orbe";
-                    txtb2 = "Resistencia al temblor";
-                    valb1 = "+" + (stat.value > 100 ? 70 : stat.value * 0.7).toFixed(1);
-                    valb2 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
-                    txtMejora = "Tus escudos se recargan mas rápido y tienen salud adicional al enfrentar combatientes.";
-                    textM1 = "Velocidad de recarga de escudo";
-                    textM2 = "Salud de escudo";
-                    textM3 = null
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : ((stat.value - 100) * 0.45).toFixed(1)) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 20 : ((stat.value - 100) * 0.2).toFixed(1)) : null;
-                    valM3 = null;
-                    break;
-                case 2996146975: //armas
-                    txtb1 = "Recarga y manejo";
-                    txtb2 = "Daño";
-                    valb1 = "+" + (stat.value > 100 ? 10 : stat.value * 0.1).toFixed(1) + " %";
-                    valb2 = "+" + (stat.value > 100 ? 15 : stat.value * 0.15).toFixed(1) + " %";
-                    txtMejora = "Hay una probabilidad de que las cajas de munición de los objetivos derrotados contengan rondas adicionales. Aumenta el daño con arma contra jefes y guardianes rivales.";
-                    textM1 = "Oportunidad de caja de munición grande";
-                    textM2 = "Daño principal/especial";
-                    textM3 = "Daño de armas de munición pesada";
-                    valM1 = stat.value > 100 ? (stat.value * 0.22).toFixed(1) + " %" : null;
-                    valM2 = stat.value > 100 ? "+" + (stat.value > 200 ? 15.0 : (stat.value - 100) * 0.15).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                    valM3 = stat.value > 100 ? "+" + (stat.value > 200 ? 10.0 : (stat.value - 100) * 0.1).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 6 : (stat.value - 100) * 0.06).toFixed(1) + " % PVP" : null;
-                    break;
-                case 1943323491: //clase
-                    txtb1 = "Recuperación de habilidad de clase";
-                    txtb2 = "Energía de habilidad de clase";
-                    valb1 = "0:" + (stat.value > 100 ? 14 : stat.value * 0.14).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %"; // Energía de habilidad
-                    txtMejora = "Obtienes un sobreescudo al usar tu habilidad de clase.";
-                    textM1 = "Salud de sobreescudo";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? (stat.value > 200 ? 40.0 : (stat.value - 100) * 0.4).toFixed(1) : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 1735777505: //granada
-                    txtb1 = "Recuperación de habilidad de granada";
-                    txtb2 = "Energía de granada";
-                    valb1 = "0:" + (stat.value > 100 ? 41 : stat.value * 0.41).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que infligen tus granadas.";
-                    textM1 = "Daño";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 65.0 : (stat.value - 100) * 0.65).toFixed(1) + " % PVE \n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 144602215: //super
-                    txtb1 = "Energía de súper";
-                    valb1 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que inflige tu súper.";
-                    textM1 = "Daño";
-                    textM2 = null;
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 45.0 : (stat.value - 100) * 0.45).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 15 : (stat.value - 100) * 0.15).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-                case 4244567218: //cuerpo a cuerpo
-                    txtb1 = "Recuperación de cuerpo a cuerpo";
-                    txtb2 = "Energía cuerpo a cuerpo";
-                    valb1 = "0:" + (stat.value > 100 ? 50 : stat.value * 0.5).toFixed(0);
-                    valb2 = "+" + (stat.value > 100 ? 190 : stat.value * 1.9).toFixed(0) + " %";
-                    txtMejora = "Aumenta el daño que infligen tus ataques cuerpo a cuerpo.";
-                    textM1 = "Daño";
-                    textM2 = null; // Solo hay un beneficio mejorado en la imagen
-                    textM3 = null;
-                    valM1 = stat.value > 100 ? "+" + (stat.value > 200 ? 30 : (stat.value - 100) * 0.30).toFixed(1) + " % PVE\n" + "+" + (stat.value > 200 ? 20 : (stat.value - 100) * 0.2).toFixed(1) + " % PVP" : null;
-                    valM2 = null;
-                    valM3 = null;
-                    break;
-            }
-            stat.popUps = {
-                beneficios: {
-                    b1: {
-                        text: txtb1,
-                        value: valb1,
-                    },
-                    b2: {
-                        text: txtb2,
-                        value: valb2,
-                    },
-                },
-                mejora: {
-                    text: txtMejora,
-                    beneficiosMejora: {
-                        m1: {
-                            text: textM1,
-                            value: valM1,
-                        },
-                        m2: {
-                            text: textM2,
-                            value: valM2,
-                        },
-                        m3: {
-                            text: textM3,
-                            value: valM3,
-                        }
-                    },
-                }
-            }
-        })
-        return totalStats;
-    }
-
     async function getCosmetic(overrideStyleItemHash) {
         const cosmetic = await getItemManifest(overrideStyleItemHash, "DestinyInventoryItemDefinition");
         return cosmetic.displayProperties.icon;
@@ -523,18 +366,17 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     function getArmorStats(item, investmentStats, stats, gearTier) {
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
-        if(item.displayProperties.name == "Borceguíes Adaptador de AIÓN" || item.displayProperties.name == "Chaleco Renovación de AIÓN") console.log(stats, investmentStats); //Stats del item
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
                 if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3) {
                     switch (stat.statHash) {
-                        case 392767087: if(perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
-                        case 4244567218: if(perksinvestmentStat.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
+                        case 392767087: if (perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
+                        case 4244567218: if (perksinvestmentStat.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
                         //case 1943323491: if(perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
-                        case 2996146975: if(perksinvestmentStat.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
-                        case 1735777505: if(perksinvestmentStat.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
-                        case 144602215: if(perksinvestmentStat.hash == 4227065942) stat.value += 3; break; //Super con Paragon
+                        case 2996146975: if (perksinvestmentStat.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
+                        case 1735777505: if (perksinvestmentStat.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
+                        case 144602215: if (perksinvestmentStat.hash == 4227065942) stat.value += 3; break; //Super con Paragon
                         default: break;
                     }
                     if (stat.name == "Total" && stat.statHash != 1943323491) stat.value += 3;
@@ -617,17 +459,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             }
         }))
         return stats;
-    }
-
-    function getTotalStatsValues(totalStats, armorStats) {
-        totalStats.forEach((stat) => {
-            armorStats.forEach((armorStat) => {
-                if (stat.statHash === armorStat.statHash) {
-                    stat.value += armorStat.value;
-                }
-            });
-        });
-        return totalStats;
     }
 
     async function getArmorIntrinsicDetails(perks) {
@@ -1191,20 +1022,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             bg: emblemResponse.secondarySpecial,
         });
     }
-
-    async function getCurrentSeason(seasonHash, manifest) {
-        const seasonResponse = await getItemManifest(seasonHash, "DestinySeasonDefinition");
-        const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyMetricDefinition;
-        const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
-
-        // Buscar la métrica que coincida con el nombre de la temporada
-        const matchingMetric = Object.values(metricsData.data).find(metric =>
-            metric.displayProperties.name.toLowerCase().includes(seasonResponse.displayProperties.name.toLowerCase())
-        );
-        setSeason(seasonResponse.seasonNumber);
-        return matchingMetric?.hash || seasonResponse.hash;
-    }
-
+    
     function getArtifactDetails(artifact) {
         if (!artifact) return;
         setArtifact({
@@ -1572,7 +1390,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                         <div className="flex flex-col right-0 mt-1" style={{ width: "26%" }}>
                                             <div className="flex mb-2">
                                                 {items[11].perks.slice(5, 7).map((perk, perkIndex) => (
-                                                    <div className="group relative">
+                                                    <div key={perkIndex} className="group relative">
                                                         <img key={perkIndex + perk.name} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                         <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                             <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
@@ -2065,8 +1883,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                     <div className="py-1 px-2.5 rounded-t-lg" style={{ backgroundColor: selectedArmor.bgColor.rgb, backgroundImage: `url(${selectedArmor.mwHeader})`, backgroundPosition: "top", backgroundSize: "contain", backgroundRepeat: "no-repeat" }}>
                                                                         <div className="flex flex-col">
                                                                             <div className={`text-xl font-semibold flex items-center translate-y-1 ${selectedArmor.tier > 0 ? "pr-4" : ""}`}>
-                                                                                    <a href={`https://www.light.gg/db/es/items/${selectedArmor.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedArmor.name}</a>
-                                                                                </div>
+                                                                                <a href={`https://www.light.gg/db/es/items/${selectedArmor.itemHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 uppercase" >{selectedArmor.name}</a>
+                                                                            </div>
                                                                             <div className={`flex justify-between items-center text-sm ${selectedArmor.tier > 0 ? "pr-4" : ""}`}>
                                                                                 <p className="opacity-75">{selectedArmor.armorCategory}</p>
                                                                                 <p className='lightlevel text-sm flex items-center' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
