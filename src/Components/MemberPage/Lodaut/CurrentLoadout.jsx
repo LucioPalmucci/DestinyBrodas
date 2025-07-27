@@ -33,12 +33,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     const [emblems, setEmblems] = useState(null);
     const [seal, setSeal] = useState(null);
     const [emblemElements, setEmblemElements] = useState(null);
-    const [season, setSeason] = useState(null);
     const [Passlevel, setPassLevel] = useState(null);
     const [triumphRecord, setTriumphRecord] = useState(null);
     const [artifact, setArtifact] = useState(null);
     const [slidesArtifact, setslidesArtifact] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [season, setSeason] = useState(null);
     const [selectedStat, setSelectedStat] = useState(null);
     const [statPopupPosition, setStatPopupPosition] = useState({ top: 0, left: 0 });
     const { getProfileGeneralProgressions, getCharacterSimpleInventoryAndEquipment, getManifest, getItemManifest, getFullItemDetails, getAllSeals, getProfileChars } = useBungieAPI();
@@ -64,6 +64,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                 await getSeal(mostRecentCharacter, manifest);
                 await getEmblemElements(mostRecentCharacter.emblemHash);
                 getArtifactDetails(responseChar.profileProgression?.data?.seasonalArtifact);
+                const seasonRank = await getSeasonProgress(seasonHash);
 
                 const itemDetails = await Promise.all(response.equipment.data.items.map(async (item) => {
                     const itemResponse = await getItemManifest(item.itemHash, "DestinyInventoryItemDefinition");
@@ -273,7 +274,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         secondaryBgImg: secondaryBgImg,
                     };
                 }));
-                setPassLevel(response.progressions.data.progressions[3733477714]?.level || 0);
+                setPassLevel(response.progressions.data.progressions[seasonRank]?.level || 0);
                 setTriumphRecord(responseChar.profileRecords.data?.activeScore?.toLocaleString('en-US'));
                 setItems(itemDetails);
                 setTotalStats(charStats);
@@ -336,6 +337,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         return cosmetic.displayProperties.icon;
     }
 
+    async function getSeasonProgress(hash) {
+        const season = await getItemManifest(hash, "DestinySeasonDefinition");
+        const pass = await getItemManifest(season?.seasonPassList?.[0]?.seasonPassHash, "DestinySeasonPassDefinition");
+        return pass?.rewardProgressionHash;
+    }
+
     function sortByArtificePerk(perks) {
         const modifiers = [
             "enhancements",
@@ -365,21 +372,23 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArmorStats(item, investmentStats, stats, gearTier) {
+        console.log(item.displayProperties.name, stats);
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
-                if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3) {
+                //console.log(stat.name, perksinvestmentStat.type);
+                if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3 && stat.value == 37) {
                     switch (stat.statHash) {
                         case 392767087: if (perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
                         case 4244567218: if (perksinvestmentStat.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
-                        //case 1943323491: if(perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
+                        case 1943323491: if(perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
                         case 2996146975: if (perksinvestmentStat.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
                         case 1735777505: if (perksinvestmentStat.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
                         case 144602215: if (perksinvestmentStat.hash == 4227065942) stat.value += 3; break; //Super con Paragon
                         default: break;
                     }
-                    if (stat.name == "Total" && stat.statHash != 1943323491) stat.value += 3;
+                    stats[6].value += 3;
                 }
                 if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && ![5, 10, 15].includes(stat.value)) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
                     if (stat.name == "Total") stat.value = stat.value - 15;
@@ -403,7 +412,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             break;
                         case 5: //Si es 5 por el mod insertado o por mejorar armadura
-                            if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && stat.value == 5) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
+                        console.log(stat);
+                            if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && (stat.value == 5 || (stat.value == 15 || stat.value == 10 && stat.secciones["azul68a0b7"].value > 0))) {
                                 amarillo += matchingStat.value || 0;
                                 perkAmarillo = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             }
@@ -1022,7 +1032,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             bg: emblemResponse.secondarySpecial,
         });
     }
-    
+
     function getArtifactDetails(artifact) {
         if (!artifact) return;
         setArtifact({
