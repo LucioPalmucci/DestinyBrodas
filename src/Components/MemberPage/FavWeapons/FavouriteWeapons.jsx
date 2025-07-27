@@ -10,7 +10,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     const [weapons, setWeapons] = useState({ pve: [], pvp: [] });
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState("pve");
-    const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities } = useBungieAPI();
+    const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities } = useBungieAPI();
 
     useEffect(() => {
         const fetchTopWeapons = async () => {
@@ -25,7 +25,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 let precisionPro = { pve: {}, pvp: {} };
 
                 for (const characterId of characterIds) {
-                    const activitiesRes = await getCharacterActivities(membershipType, userId, characterId);
+                    const activitiesRes = await getRecentActivities(membershipType, userId, characterId, 50);
 
                     for (const activity of activitiesRes) {
                         const pgcrRes = await getCarnageReport(activity.activityDetails.instanceId);

@@ -25,7 +25,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [activitiesPerPage] = useState(10);
     const popupRef = useRef(null);
-    const { getCompsProfile, getCarnageReport, getItemManifest, getCharacterActivities, getCommendations, getClanUser } = useBungieAPI();
+    const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser } = useBungieAPI();
     useEffect(() => {
         const fetchActivityHistory = async () => {
             if (isLoading) return; // Prevenir múltiples ejecuciones
@@ -37,7 +37,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 //Todos los personajes del usuario
                 for (const characterId of characterIds.profile.data.characterIds) {
                     try {
-                        const responseActs = await getCharacterActivities(membershipType, userId, characterId);
+                        const responseActs = await getRecentActivities(membershipType, userId, characterId, 50);
                         allActivities.push(...responseActs);
                     } catch (error) {
                         console.error(`Error fetching activities for character ${characterId}:`, error);

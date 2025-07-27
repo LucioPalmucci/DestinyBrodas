@@ -8,16 +8,16 @@ import { API_CONFIG } from '../../../config';
 export default function PopUpClanTeammates({ jugador }) {
     return (
             <div className="font-Inter w-[350px] bg-black/75 text-start justify-start flex mt-10 font-Inter items-center flex-col space-y-4">
-                <div style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full'>
+                <div style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${jugador.emblemaBig})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' }} className='p-2 pl-20 text-white flex justify-between w-full relative'>
                     <div className='ml-1 items-center'>
-                        <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.name}</h2>
+                        <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>{jugador.uniqueName}</h2>
                         <h1 className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                             <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardianRank.num}.fw.png`} className='w-4 h-4 mr-1' />{jugador.guardianRank.title}
                         </h1>
                         <h1 className='leading-tight font-extralight tracking-wide text-gray-200 text-lg opacity-50'>BRODAS</h1>
                     </div>
                     <div>
-                        <h1 className='text-3xl lightlevel' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
+                        <h1 className='text-3xl lightlevel absolute right-1 top-1' style={{ color: "#E5D163", textShadow: "0px 3px 3px rgba(37, 37, 37, 0.4)" }}>
                             <i className="icon-light mr-1" style={{ fontStyle: 'normal', fontSize: '1.8rem', position: 'relative', top: '-0.40rem' }} />{jugador.light}
                         </h1>
                     </div>
@@ -52,9 +52,9 @@ export default function PopUpClanTeammates({ jugador }) {
                     <p className="tracking-[0.4rem] mb-1" style={{ color: '#479ce4' }}>ID DE BUNGIE</p>
                     <h1 className="items-center flex">
                         <img src={bungieLogo} alt="Bungie Logo" className="w-4 h-4 mr-1" />
-                        {jugador.uniqueName.slice(0, -5)}
+                        {jugador.uniqueName}
                         <span style={{ color: '#479ce4' }}>
-                            {jugador.uniqueName.slice(-5)}
+                            {jugador.uniqueNameCode}
                         </span>
                     </h1>
                 </div>

@@ -372,12 +372,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function getArmorStats(item, investmentStats, stats, gearTier) {
-        console.log(item.displayProperties.name, stats);
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
-                //console.log(stat.name, perksinvestmentStat.type);
                 if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3 && stat.value == 37) {
                     switch (stat.statHash) {
                         case 392767087: if (perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
@@ -412,7 +410,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             break;
                         case 5: //Si es 5 por el mod insertado o por mejorar armadura
-                        console.log(stat);
                             if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && (stat.value == 5 || (stat.value == 15 || stat.value == 10 && stat.secciones["azul68a0b7"].value > 0))) {
                                 amarillo += matchingStat.value || 0;
                                 perkAmarillo = "+" + matchingStat.value + " " + perksinvestmentStat.name

@@ -11,7 +11,7 @@ export default function ClanTeammates({ userId, membershipType }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const popupRef = useRef(null);
-    const { getCompChars, getClanMembers, getCharacterActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
+    const { getCompChars, getClanMembers, getRecentActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
 
     useEffect(() => {
         const fectchClanTeammates = async () => {
@@ -30,11 +30,12 @@ export default function ClanTeammates({ userId, membershipType }) {
 
                 let activity = [];
                 for (const character of Object.values(userData)) {
-                    let activityChar = await getCharacterActivities(membershipType, userId, character.characterId);
+                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 50);
                     activity = activity.concat(activityChar || []);
                 }
 
                 activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
+                console.log("Actividades recientes:", activity);
                 let jugadoresClan = [], peopleLimit = 8;
 
                 for (const act of activity) {
@@ -53,7 +54,8 @@ export default function ClanTeammates({ userId, membershipType }) {
                             );
                             jugadoresClan.push({
                                 name: entry.player.destinyUserInfo.displayName,
-                                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
+                                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
+                                uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                                 icon: entry.player.destinyUserInfo.iconPath,
                                 emblemHash: entry.player.emblemHash,
                                 membershipId: entry.player.destinyUserInfo.membershipId,
@@ -170,12 +172,12 @@ export default function ClanTeammates({ userId, membershipType }) {
                                     <img width={40} height={40} alt="Emblem" src={`${API_CONFIG.BUNGIE_API}${jugador.icon}`} />
                                     <div className="flex flex-col">
                                         <h1>
-                                            {jugador.uniqueName.slice(0, -5).length > 12
-                                                ? jugador.uniqueName.slice(0, -5).slice(0, 12) + "..."
-                                                : jugador.uniqueName.slice(0, -5)
+                                            {jugador.uniqueName.length > 12
+                                                ? jugador.uniqueName.slice(0, 12) + "..."
+                                                : jugador.uniqueName
                                             }
                                             <span style={{ color: '#479ce4' }}>
-                                                {jugador.uniqueName.slice(-5)}
+                                                {jugador.uniqueNameCode}
                                             </span>
                                         </h1>
                                         <span className="text-xs italic">{jugador.date}</span>
