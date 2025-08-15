@@ -30,12 +30,11 @@ export default function ClanTeammates({ userId, membershipType }) {
 
                 let activity = [];
                 for (const character of Object.values(userData)) {
-                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 50);
+                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 30);
                     activity = activity.concat(activityChar || []);
                 }
 
                 activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
-                console.log("Actividades recientes:", activity);
                 let jugadoresClan = [], peopleLimit = 8;
 
                 for (const act of activity) {

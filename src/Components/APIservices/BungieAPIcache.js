@@ -179,7 +179,7 @@ export const useBungieAPI = () => {
 
     // Obtener las últimas actividades de un personaje (limitadas por count)
     const getRecentActivities = useCallback(async (membershipType, userId, characterId, count) => {
-        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}&lc=es`;
         const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count]);
         return response?.Response?.activities || [];
     }, [apiRequest]);

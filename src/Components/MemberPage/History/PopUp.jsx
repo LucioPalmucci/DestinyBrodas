@@ -109,13 +109,13 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
             {/* ID de Bungie */}
             <div className="flex flex-col justify-start items-start w-full px-4">
                 <p className="tracking-[0.4rem] mb-1" style={{ color: '#479ce4' }}>ID DE BUNGIE</p>
-                <h1 className="items-center flex text-base">
+                <div className="items-center flex text-base w-full">
                     <img src={bungieLogo} alt="Bungie Logo" className="w-4 h-4 mr-1" />
-                    {jugador.uniqueName?.slice(0, -5) || jugador.name}
+                    {jugador.uniqueName|| jugador.name}
                     <span style={{ color: '#479ce4' }}>
-                        {jugador.uniqueName?.slice(-5) || ""}
+                        {jugador.uniqueNameCode || ""}
                     </span>
-                    <div className='flex w-full space-x-4 ml-2'>
+                    <div className='flex space-x-4 ml-2'>
                         <button className="p-0 pb-1 rounded-lg text-white m-1 ml-0 transform transition-transform duration-200 hover:scale-105" style={{ backgroundColor: '#4DB6AC' }}>
                             <a href={`https://raid.report/${jugador.membershipType}/${jugador.membershipId}`} target="_blank" rel="noreferrer noopener" className='flex' title='Raid Report'>
                                 <img src={raidReportIcon} alt="Raid Report Icon" className="w-4 h-4 mx-1 mt-1" />
@@ -137,7 +137,7 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
                             </a>
                         </button>
                     </div>
-                </h1>
+                </div>
             </div>
 
             <div className="w-full h-px bg-white opacity-30" />

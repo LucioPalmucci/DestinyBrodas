@@ -77,7 +77,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     } else activityType = "PvE";
 
                     return {
-                        activityName: activityMain?.displayProperties?.name || null,
+                        activityName: activityType == "PvE" ? activityMain?.displayProperties?.name : activityMode?.displayProperties?.name,
                         activityIcon: !activityMode?.displayProperties?.icon.includes("missing_icon") ? activityMode?.displayProperties?.icon : datosDelModo?.displayProperties?.icon,
                         clase: clase || null,
                         pgcrImage: activityMain?.pgcrImage || null,
@@ -149,7 +149,8 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 power: entry.player.lightLevel,
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 membershipType: entry.player.destinyUserInfo.membershipType,
-                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
+                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
+                uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                 honor: await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId),
                 guardinRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
                 emblemBig: await fetchEmblema(entry.player.emblemHash),

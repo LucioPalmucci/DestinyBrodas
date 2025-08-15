@@ -25,7 +25,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 let precisionPro = { pve: {}, pvp: {} };
 
                 for (const characterId of characterIds) {
-                    const activitiesRes = await getRecentActivities(membershipType, userId, characterId, 50);
+                    const activitiesRes = await getRecentActivities(membershipType, userId, characterId, 20);
 
                     for (const activity of activitiesRes) {
                         const pgcrRes = await getCarnageReport(activity.activityDetails.instanceId);

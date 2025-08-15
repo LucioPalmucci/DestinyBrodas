@@ -21,21 +21,21 @@ export default function TriumphScore({ membershipType, userId }) {
 
     return (
         triumphs ? (
-            <div className='p-6 bg-gray-300 rounded-lg'>
-                <p className='font-bold text-2xl'>Triunfo</p>
+            <div className='p-6 bg-gray-300 rounded-lg py-4 h-[162px]'>
+                <p className='text-2xl font-semibold'>Triunfos</p>
                 <div className='flex justify-evenly space-x-8 mt-2'>
                     <div>
-                        <p className='font-semibold'>Puntaje total</p>
-                        <div className='font-semibold flex space-x-1 items-center'>
-                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/3fc55af09fc887e17e1fcf41553619c4.png`} className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
+                        <p className='font-semibold text-lg'>Puntaje total</p>
+                        <div className='font-semibold flex space-x-1 items-center text-lg'>
+                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/3fc55af09fc887e17e1fcf41553619c4.png`} className={`w-10 h-10 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
                             {triumphs.Total}
                         </div>
                     </div>
                     <div>
-                        <p className='font-semibold'>Puntaje activo</p>
-                        <div className='font-semibold flex space-x-1 items-center'>
-                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/319084f745e5b3cd9e6c767b92808918.png`} className={`w-8 h-8 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
-                            <p>{triumphs.Active} <span className='text-xs'>/27,536</span></p>
+                        <p className='font-semibold text-lg'>Puntaje activo</p>
+                        <div className='font-semibold flex space-x-1 items-center text-lg'>
+                            <img src={`${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/319084f745e5b3cd9e6c767b92808918.png`} className={`w-10 h-10 mr-1`} style={{ filter: "brightness(0) contrast(100%)" }} />
+                            <p>{triumphs.Active} <span className='text-base'>/27,536</span></p>
                         </div>
                     </div>
                 </div>

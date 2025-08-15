@@ -212,8 +212,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             name: perk.name,
                             hash: perk.plugHash,
                         }));
-                        weaponStats = await getWeaponStats(itemResponse, investmentStats, getWeaponLevel(itemD.plugObjectives.data.objectivesPerPlug), itemD.stats.data.stats);
-                        weaponStats = colorStats(itemResponse, perks.filter(perk => perk != null), weaponStats)
+                        weaponStats = await getWeaponStats(itemResponse, investmentStats, getWeaponLevel(itemD.plugObjectives.data.objectivesPerPlug), itemD.instance?.data?.gearTier);
+                        weaponStats = colorStats(itemResponse, perks.filter(perk => perk != null), weaponStats, itemD.instance?.data?.gearTier)
                         const { modifierPerks, cosmeticPerks } = sortWeaponPerks(perks);
                         perks = {
                             modifierPerks: modifierPerks,
@@ -262,6 +262,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         craftedenchanced: itemResponse.tooltipNotifications[0]?.displayStyle,
                         weaponLevel: weaponLevel,
                         tier: itemD.instance?.data?.gearTier,
+                        tierColor: getTierColor(itemD.instance?.data?.gearTier),
                         armorCategory: armorCategory,
                         armorEnergy: {
                             energyCapacity: itemD.instance?.data?.energy?.energyCapacity,
@@ -373,14 +374,20 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
 
     function getArmorStats(item, investmentStats, stats, gearTier) {
         let sumaBase = 0, sumaAzul = 0, sumaAmarillo = 0;
+        const indexAB = investmentStats.findIndex(perk => perk.hash === 3122197216);
+        if (indexAB > -1) {
+            const [perk] = investmentStats.splice(indexAB, 1);
+            investmentStats.unshift(perk);
+        }
         stats.forEach((stat) => { //Para cada estat
             let blancobase, azul68a0b7 = 0, azul68a0b7_op8 = 0, amarillo = 0, perkAmarillo, perkAz8, perkAz68;
             investmentStats.forEach((perksinvestmentStat) => { //Para cada mod que afecta la stat
-                if (perksinvestmentStat.type == "armor_archetypes" && gearTier == 3 && stat.value == 37) {
+                if (perksinvestmentStat.hash == 3122197216) stat.value--; // Si tiene el mod de ajustes balanceados, restar 1 a la stat
+                if (perksinvestmentStat.type == "armor_archetypes" && gearTier >= 3 && stat.value == 37) {
                     switch (stat.statHash) {
                         case 392767087: if (perksinvestmentStat.hash == 549468645) stat.value += 3; break; //Salud con bulwark
                         case 4244567218: if (perksinvestmentStat.hash == 3349393475) stat.value += 3; break; //Cuerpo a cuerpo con Brawler
-                        case 1943323491: if(perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
+                        case 1943323491: if (perksinvestmentStat.hash == 2230428468) stat.value += 3; break; //Clase con Specialist
                         case 2996146975: if (perksinvestmentStat.hash == 1807652646) stat.value += 3; break; //Armas con Gunslinger
                         case 1735777505: if (perksinvestmentStat.hash == 2937665788) stat.value += 3; break; //Granada con Grenadier
                         case 144602215: if (perksinvestmentStat.hash == 4227065942) stat.value += 3; break; //Super con Paragon
@@ -561,7 +568,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         }
     }
 
-    async function getWeaponStats(item, perksinvestmentStats, weaponLevel) {
+    async function getWeaponStats(item, perksinvestmentStats, weaponLevel, tier) {
         const stats = item.investmentStats;
         if (item.itemTypeDisplayName == "Espada") { //Si es espada agregar resistencia de guardia
             stats.push({
@@ -575,17 +582,19 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const response = await getItemManifest(group, "DestinyStatGroupDefinition");
         const interpolatingStats = response.scaledStats;
         const order = response.scaledStats.map(stat => stat.statHash);
+        if (item.displayProperties.name == "Vuelo Festivo") console.log("hh", perksinvestmentStats, stats, tier);
         let weaponStats = await Promise.all(Object.values(stats).map(async (stat) => {
             const statResponse = await getItemManifest(stat.statTypeHash, "DestinyStatDefinition");
             // Verificar si algúna perk afecta el valor de la stat
             let modifiedValue = stat.value;
+
             perksinvestmentStats.forEach((perksinvestmentStat) => {
                 const matchingStat = perksinvestmentStat.investmentStats.find(
                     (invStat) => invStat.statTypeHash === stat.statTypeHash
                 );
                 if (matchingStat && perksinvestmentStat.hash !== 2728416796) { //evitar mejora lvl 3
 
-                    if (perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3);//Si es una armo obra maestra no crafteada, no sumar stats secundarias de obra maestra
+                    if (perksinvestmentStat.name.includes("Obra Maestra") && weaponLevel == null && matchingStat.value == 3 && tier == null);//Si es una armo obra maestra no crafteada, no sumar stats secundarias de obra maestra
                     else {
                         modifiedValue += matchingStat.value; // Sumar o restar el valor del investmentStat
                     }
@@ -630,11 +639,12 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             weaponStats.splice(index - 2, 0, element); // Inserta el elemento dos índices atrás
         }
 
-        // Mover Generación de munición detrás de "Asistencia de apuntado"
+        // Mover Generación de munición al final
         const generacionMuni = weaponStats.findIndex(stat => stat.statHash === 1931675084);
-        if (generacionMuni > 1) {
+        const retroceso = weaponStats.findIndex(stat => stat.statHash === 2715839340);
+        if (generacionMuni > -1 && retroceso > -1) {
             const [element] = weaponStats.splice(generacionMuni, 1); // Elimina el elemento del arreglo
-            weaponStats.splice(generacionMuni - 3, 0, element); // Inserta el elemento tres índices atrás
+            weaponStats.splice(retroceso, 0, element); // Inserta el elemento antes del retroceso
         }
 
         // Orden secundario para colocar Velocidad de golpe al principio
@@ -702,7 +712,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         return interpolatedStats;
     }
 
-    function colorStats(item, perks, stats) {
+    function colorStats(item, perks, stats, tier) {
         stats.forEach((stat) => {
             let blancobase = 0, blancoFFFFFF1F = 0, blancoFFFFFF3D = 0, azul = 0, rojo = 0, amarillo = 0;
             let perk1F, perk3D, perkAzul, perkRojo, perkAmarillo;
@@ -711,6 +721,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (invStat.statTypeHash == stat.statHash) {
                         if (perks[0] === perk || perk.name.includes("Obra Maestra")) { //Si esta en la posicion cero es el arquetipo o tiene obra maestra
                             if (perk.name.includes("Obra Maestra") && invStat.value == 3); //Si es una obra maestra no crafteada, no sumar stats secundarias
+                            if(perk.name.includes("Obra Maestra") && invStat.value == 0 && tier != null) { //Si es tier 5 y no tiene valor, sumarle 5
+                                amarillo += tier;
+                                perkAmarillo = tier + " Estadística Obra Maestra";
+                                if (stat.value < 100) stat.value += Math.min(tier, 100 - stat.value); //Sumar maximo hasta 100
+                            }
                             else if (perk.name.includes("Obra Maestra") && invStat.value == 10) {
                                 amarillo += invStat.value;
                                 perkAmarillo = invStat.value + " Estadística Obra Maestra";
@@ -807,6 +822,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
         })
+        if(item.displayProperties.name == "Vuelo Festivo") console.log("stats", stats);
         return stats;
     }
 
@@ -927,6 +943,22 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             rgb: color,
             rgba: colorRGBA,
         };
+    }
+
+    function getTierColor(tier) {
+        let color;
+        switch (tier) {
+            case 4:
+                color = "#D0AEF7";
+                break;
+            case 5:
+                color = "#E5CF7B";
+                break;
+            default:
+                color = "#ffffffff";
+                break;
+        }
+        return color;
     }
 
     async function getWeaponLevelAndProgression(objectivesPerPlug, sockets) {
@@ -1567,13 +1599,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         paddingTop: "22px",
                                                                                         pointerEvents: "none",
                                                                                     }}
-                                                                                    className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-1 flex-col absolute items-center">
+                                                                                    className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-[3px] flex-col absolute items-center">
                                                                                     {Array.from({ length: selectedWeapon.tier }).map((_, index) => (
                                                                                         <div
                                                                                             key={index}
-                                                                                            className="w-[6px] h-[6px] transform rotate-45"
+                                                                                            className="w-[4.5px] h-[4.5px] transform rotate-45"
                                                                                             style={{
-                                                                                                backgroundColor: "#ffffffdd",
+                                                                                                backgroundColor: selectedWeapon.tierColor,
                                                                                             }}
                                                                                         />
                                                                                     ))}
@@ -1908,13 +1940,13 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                 paddingTop: "22px",
                                                                                 pointerEvents: "none",
                                                                             }}
-                                                                            className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-1 flex-col absolute items-center">
+                                                                            className="flex bg-no-repeat box-border bg-cover items-center right-0 top-0 space-y-[3px] flex-col absolute items-center">
                                                                             {Array.from({ length: selectedArmor.tier }).map((_, index) => (
                                                                                 <div
                                                                                     key={index}
-                                                                                    className="w-[6px] h-[6px] transform rotate-45"
+                                                                                    className="w-[4.5px] h-[4.5px] transform rotate-45"
                                                                                     style={{
-                                                                                        backgroundColor: "#ffffffdd",
+                                                                                        backgroundColor: selectedArmor.tierColor,
                                                                                     }}
                                                                                 />
                                                                             ))}
