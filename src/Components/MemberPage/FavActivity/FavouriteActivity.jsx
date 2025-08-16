@@ -1,17 +1,18 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import compBG from "../../../assets/ActivityModes/comp.png";
 import gambitBG from "../../../assets/ActivityModes/gambit.png";
-import historyBG from "../../../assets/ActivityModes/history.png";
 import ibBG from "../../../assets/ActivityModes/ib.png";
 import pvpBG from "../../../assets/ActivityModes/pvp.jpg";
 import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
 import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import ActivitiesComp from "./ActivitiesComp";
 
 export default function FavouriteActivity({ membershipType, userId }) {
-    const [mostPlayedActivity, setMostPlayedMode] = useState(null);
-    const [charCompl, setCharCompl] = useState(null);
+    const [modeDataPVE, setModeDataPVE] = useState([]);
+    const [modeDataPVP, setModeDataPVP] = useState([]);
     const [error, setError] = useState(null);
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest } = useBungieAPI();
 
@@ -19,25 +20,23 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const fetchGeneralStats = async () => {
             try {
                 const mazmorras = await activityHashes(608898761, false);
-                const asaltos = await activityHashes(4110605575, false);
+                const operaciones = await activityHashes(4110605575, false);
                 const raids = await activityHashes(2043403989, false);
-                const ocasos = await activityHashes(547513715, false);
-                const historia = await activityHashes(1686739444, false);
                 const estandarte = await activityHashes(2371050408, true);
                 const crisol = await activityHashes(4088006058, true);
                 const Pruebas = await activityHashes(2112637710, true);
                 const gambito = await activityHashes(1848252830, true);
+                const competitivo = await activityHashes(2486723318, true);
 
                 let modeGroups = {
                     Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
-                    Asaltos: { hashes: asaltos, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Asaltos", bgImg: strikesBG },
+                    Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Operaciones", bgImg: strikesBG },
                     Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null },
-                    Ocasos: { hashes: ocasos, timePlayed: 0, completions: 0, kills: 0, modeHash: 3789021730, name: "Ocasos", bgImg: strikesBG },
-                    Historia: { hashes: historia, timePlayed: 0, completions: 0, kills: 0, modeHash: 1686739444, name: "Historia", bgImg: historyBG },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro" , bgImg: ibBG },
+                    Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG },
                     Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG },
                     Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG },
-                    Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG }
+                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2486723318, name: "Competitivo", bgImg: compBG }
                 };
 
                 const profileRes = await getCompsProfile(membershipType, userId);
@@ -58,50 +57,39 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     }
                 });
 
-                let mostPlayedMode = null;
-                let maxTimePlayed = 0;
+                let tempModeData = [];
                 for (const mode in modeGroups) {
-                    if (modeGroups[mode].timePlayed > maxTimePlayed) {
-                        maxTimePlayed = modeGroups[mode].timePlayed;
-                        mostPlayedMode = mode;
+                    let modoDatos = await fetchActivityDetails(modeGroups[mode].modeHash, "DestinyActivityModeDefinition", "general");
+                    if (modeGroups[mode].name == "Mazmorras" || modeGroups[mode].name == "Incursiones") {
+
                     }
-                }
-
-                let mostPlayedActivity = { name: null, completions: 0 };
-                allActivities.forEach(activity => {
-                    const hash = activity?.activityHash;
-                    if (hash == null) return;
-                    if (modeGroups[mostPlayedMode].hashes.includes(hash)) {
-                        if (activity.values.activityCompletions.basic.value > mostPlayedActivity.completions) {
-                            mostPlayedActivity = { name: activity.activityHash, completions: activity.values.activityCompletions.basic.value };
-                        }
+                    let characterCompletions = {};
+                    for (const characterId of characterIds) {
+                        characterCompletions[characterId] = {};
+                        characterCompletions[characterId].totalCompletions = await mostPlayedCharacter(modeGroups[mode], characterId, membershipType, userId);
+                        characterCompletions[characterId].percentage = ((characterCompletions[characterId].totalCompletions / modeGroups[mode].completions) * 100).toFixed(1);
+                        characterCompletions[characterId].character = await characterClass(characterId, membershipType, userId);
+                        characterCompletions[characterId].classImg = charImg(characterCompletions[characterId].character, membershipType, userId);
                     }
-                });
 
-                let modoDatos = await fetchActivityDetails(modeGroups[mostPlayedMode].modeHash, "DestinyActivityModeDefinition", "general");
-                const favAct = await fetchActivityDetails(mostPlayedActivity.name, "DestinyActivityDefinition");
-                let characterCompletions = {};
-                for (const characterId of characterIds) {
-                    characterCompletions[characterId] = {};
-                    characterCompletions[characterId].totalCompletions = await mostPlayedCharacter(modeGroups[mostPlayedMode], characterId, membershipType, userId);
-                    characterCompletions[characterId].percentage = ((characterCompletions[characterId].totalCompletions / modeGroups[mostPlayedMode].completions) * 100).toFixed(1);
-                    characterCompletions[characterId].character = await characterClass(characterId, membershipType, userId);
-                    characterCompletions[characterId].classImg = charImg(characterCompletions[characterId].character, membershipType, userId);
-                }
-
-
-                if (mostPlayedMode) {
-                    setMostPlayedMode({
-                        mode: modeGroups[mostPlayedMode].name,
-                        timePlayed: (modeGroups[mostPlayedMode].timePlayed / 3600).toFixed(0),
-                        completions: modeGroups[mostPlayedMode].completions,
-                        kills: modeGroups[mostPlayedMode].kills,
+                    tempModeData.push({
+                        mode: modeGroups[mode].name,
+                        timePlayed: (modeGroups[mode].timePlayed / 3600).toFixed(0),
+                        completions: modeGroups[mode].completions,
+                        kills: modeGroups[mode].kills,
                         icon: API_CONFIG.BUNGIE_API + modoDatos?.displayProperties?.icon,
-                        pgcrImg: modeGroups[mostPlayedMode].name == "Mazmorras" || modeGroups[mostPlayedMode].name == "Incursiones"  ? API_CONFIG.BUNGIE_API + favAct.pgcrImage : modeGroups[mostPlayedMode].bgImg,
-                        fav: favAct.displayProperties.name,
+                        pgcrImg: modeGroups[mode].name == "Mazmorras" || modeGroups[mode].name == "Incursiones" ? await getFavActivityImage(allActivities, modeGroups[mode]) : modeGroups[mode].bgImg,
+                        characterCompletions: characterCompletions,
                     });
                 }
-                setCharCompl(characterCompletions);
+                // TempModeData mitades: PVE y PVP
+                const mid = Math.ceil(tempModeData.length / 2);
+                const tempPVE = tempModeData.slice(0, mid);
+                const tempPVP = tempModeData.slice(mid);
+                tempPVE.sort((a, b) => b.timePlayed - a.timePlayed);
+                tempPVP.sort((a, b) => b.timePlayed - a.timePlayed);
+                setModeDataPVE(tempPVE);
+                setModeDataPVP(tempPVP);
             } catch (error) {
                 console.error(error);
             }
@@ -195,39 +183,28 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     }
 
+    async function getFavActivityImage(allActivities, mode) {
+        let mostPlayedActivity = { hash: null, timePlayed: 0 };
+        allActivities.forEach(activity => {
+            const hash = activity?.activityHash;
+            if (hash == null) return;
+            if (mode.hashes.includes(hash)) {
+                if (activity?.values?.activitySecondsPlayed?.basic?.value > mostPlayedActivity.timePlayed) {
+                    mostPlayedActivity = {
+                        hash: activity?.activityHash,
+                        timePlayed: activity?.values?.activitySecondsPlayed?.basic?.value
+                    };
+                }
+            }
+        });
+        const activity = await getItemManifest(mostPlayedActivity.hash, "DestinyActivityDefinition");
+        return API_CONFIG.BUNGIE_API + activity?.pgcrImage;
+    }
+
     return (
-        <div className="font-Inter">
-            <div className="text-white h-[375px]">
-                {mostPlayedActivity && charCompl ? (
-                    <div className="p-6 h-full rounded-lg content-fit justify-between shadow-lg flex object-fill bg-center bg-cover min-w-md" style={{ backgroundImage: `url(${mostPlayedActivity?.pgcrImg})` }}>
-                        <div className="justify-between flex flex-col relative w-full">
-                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-lg font-semibold p-0 leading-tight">
-                                Actividad favorita
-                            </div>
-                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 text-4xl font-semibold p-0">
-                                {mostPlayedActivity.mode}
-                            </div>
-                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0">
-                                Completiciones: {mostPlayedActivity.completions}<br />
-                                Tiempo jugado: {mostPlayedActivity.timePlayed}h<br />
-                                Bajas: {mostPlayedActivity.kills}<br />
-                                Más jugada: {mostPlayedActivity.fav}
-                            </div>
-                            <div className="bg-black/25 p-2 rounded-lg w-fit mr-10 p-0 flex space-x-6">
-                                {Object.keys(charCompl).sort((a, b) => charCompl[b].percentage - charCompl[a].percentage).map((char) => (
-                                    <div key={char} className="font-semibold mb-0 p-0 flex items-center" title={charCompl[char].totalCompletions}>
-                                        <img src={charCompl[char].classImg.link} className={`w-8 h-8 mr-1`} style={{ filter: `${charCompl[char].classImg.colore}`, marginLeft: '-3px' }} />{charCompl[char].percentage}%
-                                    </div>
-                                ))}
-                            </div>
-                            {mostPlayedActivity.icon && <img src={mostPlayedActivity.icon} className="w-20 h-20 opacity-50 absolute right-0 -top-4" />}
-                        </div>
-                    </div>
-                ) : (
-                    <p className="bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold h-full w-full text-black rounded-lg animate-pulse"></p>
-                )}
-            </div>
-            {error && <p>{error}</p>}
+        <div className="flex flex-col space-y-6">
+            <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} />
+            <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} />
         </div>
     );
 }
