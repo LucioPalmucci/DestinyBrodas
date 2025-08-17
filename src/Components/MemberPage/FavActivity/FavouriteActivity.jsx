@@ -6,6 +6,7 @@ import ibBG from "../../../assets/ActivityModes/ib.png";
 import pvpBG from "../../../assets/ActivityModes/pvp.jpg";
 import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
+import crucibleLogo from "../../../assets/cruciblelogo.png";
 import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import ActivitiesComp from "./ActivitiesComp";
@@ -14,7 +15,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [error, setError] = useState(null);
-    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest } = useBungieAPI();
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getGeneralStats } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
@@ -22,11 +23,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const mazmorras = await activityHashes(608898761, false);
                 const operaciones = await activityHashes(4110605575, false);
                 const raids = await activityHashes(2043403989, false);
+                const gambito = await activityHashes(1848252830, false);
                 const estandarte = await activityHashes(2371050408, true);
                 const crisol = await activityHashes(4088006058, true);
                 const Pruebas = await activityHashes(2112637710, true);
-                const gambito = await activityHashes(1848252830, true);
-                const competitivo = await activityHashes(2486723318, true);
+                const competitivo = await activityHashes(2486723318, false);
+
+                console.log("com", competitivo);
 
                 let modeGroups = {
                     Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
@@ -42,11 +45,14 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const profileRes = await getCompsProfile(membershipType, userId);
                 const characterIds = profileRes.profile.data.characterIds;
 
+                console.log(await getGeneralStats(membershipType, userId))
                 let allActivities = await activitiesStats(characterIds, membershipType, userId);
+                console.log(allActivities)
 
                 allActivities.forEach(activity => {
                     const hash = activity?.activityHash;
                     if (hash == null) return; // Maneja el caso de hash null
+
                     for (const mode in modeGroups) {
                         if (modeGroups[mode].hashes.includes(hash)) {
                             modeGroups[mode].timePlayed += activity.values.activitySecondsPlayed.basic.value;
@@ -60,9 +66,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 let tempModeData = [];
                 for (const mode in modeGroups) {
                     let modoDatos = await fetchActivityDetails(modeGroups[mode].modeHash, "DestinyActivityModeDefinition", "general");
-                    if (modeGroups[mode].name == "Mazmorras" || modeGroups[mode].name == "Incursiones") {
-
-                    }
                     let characterCompletions = {};
                     for (const characterId of characterIds) {
                         characterCompletions[characterId] = {};
@@ -77,17 +80,20 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         timePlayed: (modeGroups[mode].timePlayed / 3600).toFixed(0),
                         completions: modeGroups[mode].completions,
                         kills: modeGroups[mode].kills,
-                        icon: API_CONFIG.BUNGIE_API + modoDatos?.displayProperties?.icon,
+                        icon: modeGroups[mode].name == "Crisol" ? crucibleLogo : API_CONFIG.BUNGIE_API + modoDatos?.displayProperties?.icon,
                         pgcrImg: modeGroups[mode].name == "Mazmorras" || modeGroups[mode].name == "Incursiones" ? await getFavActivityImage(allActivities, modeGroups[mode]) : modeGroups[mode].bgImg,
                         characterCompletions: characterCompletions,
                     });
                 }
                 // TempModeData mitades: PVE y PVP
+
                 const mid = Math.ceil(tempModeData.length / 2);
-                const tempPVE = tempModeData.slice(0, mid);
-                const tempPVP = tempModeData.slice(mid);
-                tempPVE.sort((a, b) => b.timePlayed - a.timePlayed);
-                tempPVP.sort((a, b) => b.timePlayed - a.timePlayed);
+                let tempPVE = tempModeData.slice(0, mid);
+                let tempPVP = tempModeData.slice(mid);
+                tempPVE = getPercentages(tempPVE);
+                tempPVP = getPercentages(tempPVP);
+                tempPVE.sort((a, b) => b.completions - a.completions);
+                tempPVP.sort((a, b) => b.completions - a.completions);
                 setModeDataPVE(tempPVE);
                 setModeDataPVP(tempPVP);
             } catch (error) {
@@ -201,10 +207,27 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return API_CONFIG.BUNGIE_API + activity?.pgcrImage;
     }
 
+    function getPercentages(modes) {
+        const total = modes.reduce((sum, mode) => sum + mode.completions, 0);
+        return modes.map(mode => ({
+            ...mode,
+            percentage: total > 0 ? (mode.completions / total) * 100 : 0
+        }));
+    }
+
     return (
-        <div className="flex flex-col space-y-6">
-            <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} />
-            <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} />
+        <div>
+            {modeDataPVE.length > 0 && modeDataPVP.length > 0 ? (
+                <div className="flex flex-col space-y-6">
+                    <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} />
+                    <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} />
+                </div>
+            ): (
+                <div className="flex flex-col space-y-6">
+                    <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
+                    <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
+                </div>
+            )}
         </div>
     );
 }
