@@ -137,6 +137,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
             const filteredEntries = carnageReportResponse.entries.filter(entry =>
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
             );
+
             const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),

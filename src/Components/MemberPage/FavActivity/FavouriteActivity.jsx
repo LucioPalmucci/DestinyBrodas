@@ -15,21 +15,23 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [error, setError] = useState(null);
-    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getGeneralStats } = useBungieAPI();
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getCharacterManyActivities, getCarnageReport } = useBungieAPI();
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
-                const mazmorras = await activityHashes(608898761, false);
+                let mazmorras = await activityHashes(608898761, true);
                 const operaciones = await activityHashes(4110605575, false);
-                const raids = await activityHashes(2043403989, false);
+                let raids = await activityHashes(2043403989, true);
                 const gambito = await activityHashes(1848252830, false);
                 const estandarte = await activityHashes(2371050408, true);
-                const crisol = await activityHashes(4088006058, true);
+                let crisol = await activityHashes(4088006058, true);
                 const Pruebas = await activityHashes(2112637710, true);
-                const competitivo = await activityHashes(2486723318, false);
+                const competitivo = await activityHashes(2239249083, false);
 
-                console.log("com", competitivo);
+                // Exclude hashes from 'crisol' that already belong to 'competitivo'
+                const competitivoSet = new Set(competitivo);
+                crisol = crisol.filter(hash => !competitivoSet.has(hash));
 
                 let modeGroups = {
                     Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
@@ -39,16 +41,20 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG },
                     Pruebas: { hashes: Pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG },
                     Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG },
-                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2486723318, name: "Competitivo", bgImg: compBG }
+                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2239249083, name: "Competitivo", bgImg: compBG }
                 };
 
                 const profileRes = await getCompsProfile(membershipType, userId);
                 const characterIds = profileRes.profile.data.characterIds;
-
-                console.log(await getGeneralStats(membershipType, userId))
                 let allActivities = await activitiesStats(characterIds, membershipType, userId);
-                console.log(allActivities)
 
+                //console.log("Clears", await fetchAllRaidActivities(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
+                //console.log("All Activities", await fetchAllRaids(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
+
+                //const allDungeons = await fetchAllDungeons(membershipType, userId, characterIds, `62192879-bde5-45b6-9918-09166dc0c6d4`);
+
+                //const dataAllActivities = await fetchAllActivities(allActivities);
+                //console.log("Data All Activities", dataAllActivities);
                 allActivities.forEach(activity => {
                     const hash = activity?.activityHash;
                     if (hash == null) return; // Maneja el caso de hash null
@@ -85,7 +91,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         characterCompletions: characterCompletions,
                     });
                 }
-                // TempModeData mitades: PVE y PVP
 
                 const mid = Math.ceil(tempModeData.length / 2);
                 let tempPVE = tempModeData.slice(0, mid);
@@ -160,6 +165,130 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return classCompletitions;
     }
 
+    async function fetchAllRaidActivities(userId, apiKey) {
+        let allActivities = [];
+        let cursor = null;
+        let hasMore = true;
+
+        while (hasMore) {
+            const url = cursor
+                ? `https://api.raidhub.io/player/${userId}/history?count=5000&cursor=${cursor}`
+                : `https://api.raidhub.io/player/${userId}/history?count=5000`;
+
+            const response = await axios.get(url, {
+                headers: {
+                    "X-API-Key": apiKey
+                }
+            });
+
+            const data = response.data;
+            if (data.response.activities) {
+                allActivities = allActivities.concat(data.response.activities);
+            }
+
+            if (data.response.nextCursor) {
+                cursor = data.response.nextCursor;
+            } else {
+                hasMore = false;
+            }
+        }
+
+        return allActivities;
+    }
+
+    async function fetchAllRaids(userId, apiKey) {
+        try {
+            const acts = await axios.get(
+                `https://api.raidhub.io/player/${userId}/instances?minSeason=1&fresh=true`,
+                {
+                    headers: {
+                        "X-API-Key": apiKey
+                    }
+                }
+            );
+            return acts.data;
+        } catch (error) {
+            console.error("Error en fetchAllRaids:", error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    async function fetchAllDungeons(membershipType, userId, characterIds, apiKey) {
+        let allDungeons = await Promise.all(
+            characterIds.map(async (charId) => {
+                let page = 0;
+                let allDungeonsChar = [];
+                while (true) {
+                    const activities = await getCharacterManyActivities(membershipType, userId, charId, "82", page);
+                    if (!activities || activities.length === 0) break;
+                    allDungeonsChar = allDungeonsChar.concat(activities);
+                    page++;
+                }
+                return allDungeonsChar;
+            })
+        );
+        allDungeons = allDungeons.flat();
+        //console.log("All Dungeons Activities", allDungeons.length);
+        let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value > 0);
+        //console.log("All Cleared Dungeons Activities", allClearedDungeons.length);
+
+        /*let allClearedFreshDungeons = await Promise.all(allClearedDungeons.map(async (dungeon) => {
+            try {
+                const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
+                if (acts.activityWasStartedFromBeginning == true) {
+                    return {
+                        ...dungeon,
+                    };
+                }
+            } catch (error) {
+                console.error("Error en fetchAllRaids:", error.response?.data || error.message);
+                throw error;
+            }
+        }));
+        allClearedFreshDungeons = allClearedFreshDungeons.filter(dungeon => dungeon !== undefined);*/
+
+        const groupedByDirectorActivityHash = {};
+        allClearedDungeons
+            .filter(dungeon => dungeon !== undefined)
+            .forEach(dungeon => {
+                const hash = dungeon.activityDetails.directorActivityHash;
+                if (!groupedByDirectorActivityHash[hash]) {
+                    groupedByDirectorActivityHash[hash] = [];
+                }
+                groupedByDirectorActivityHash[hash].push(dungeon);
+            });
+
+        for (const hash in groupedByDirectorActivityHash) {
+            const activityDef = await getItemManifest(hash, "DestinyActivityDefinition");
+            const groupName = activityDef?.displayProperties?.name || "Desconocido";
+            groupedByDirectorActivityHash[hash] = {
+                name: groupName,
+                activities: groupedByDirectorActivityHash[hash]
+            };
+        }
+
+        //console.log("All cleared fresh dungeons ", groupedByDirectorActivityHash);
+
+        return allClearedDungeons;
+    }
+
+    async function fetchAllActivities(allActivities) {
+        const BATCH_SIZE = 10; // Ajusta este número según tu RAM/conexión
+        const results = [];
+        for (let i = 0; i < allActivities.length; i += BATCH_SIZE) {
+            const batch = allActivities.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(batch.map(async (activity) => {
+                const activityData = await getItemManifest(activity.activityHash, "DestinyActivityDefinition");
+                return {
+                    Name: activityData?.displayProperties?.name || "Desconocido",
+                    Type: activityData?.activityTypeHash || activityData?.directActivityModeHash || "Desconocido",
+                    mode: activityData?.modeType || "Desconocido",
+                };
+            }));
+            results.push(...batchResults);
+        }
+        return results;
+    }
     async function characterClass(characterId, membershipType, userId) {
         const characterRes = await getProfileChars(membershipType, userId, characterId);
         switch (characterRes.classType) {
@@ -222,7 +351,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} />
                     <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} />
                 </div>
-            ): (
+            ) : (
                 <div className="flex flex-col space-y-6">
                     <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
                     <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>

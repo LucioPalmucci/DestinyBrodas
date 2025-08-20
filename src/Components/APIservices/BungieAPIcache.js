@@ -6,7 +6,6 @@ import { API_CONFIG } from '../../config'; // Asegúrate de que esta ruta sea co
 const globalCache = new Map();
 const globalLoading = new Set();
 
-// TTL por tipo de dato (en millisegundos)
 const TTL_CONFIG = 60 * 1000; // 2 minutos
 
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
@@ -169,6 +168,12 @@ export const useBungieAPI = () => {
         const response = await apiRequest('generalStats', url, [membershipType, membershipId]);
         return response?.Response;
     }, [apiRequest]);
+
+    const getCharacterManyActivities = useCallback(async (membershipType, userId, characterId, mode, page) => {
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=250+&page=${page}&mode=${mode}&lc=es`;
+        const response = await apiRequest('activities', url, [membershipType, userId, characterId, mode, page]);
+        return response?.Response?.activities || [];
+    }, [apiRequest])
 
     // Obtener actividades de un personaje
     const getCharacterActivities = useCallback(async (membershipType, userId, characterId) => {
@@ -390,6 +395,7 @@ export const useBungieAPI = () => {
         getProfileChars,
         getEmblem,
         getGuardianRank,
+        getCharacterManyActivities,
         getCarnageReport,
         getItemManifest,
         getManifest,
