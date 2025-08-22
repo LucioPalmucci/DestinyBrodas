@@ -40,10 +40,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Operaciones", bgImg: strikesBG },
                     Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null },
                     Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG, modeData: [] },
                     Pruebas: { hashes: pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG },
-                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG },
-                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2239249083, name: "Competitivo", bgImg: compBG, modeData: []}
+                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG, modeData: [] },
+                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2239249083, name: "Competitivo", bgImg: compBG, modeData: [] }
                 };
 
                 const profileRes = await getCompsProfile(membershipType, userId);
@@ -61,6 +61,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 //Método especial para competitivo
                 modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData);
+                modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"]);
+                modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"]);
+                modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"]);
 
                 //console.log("Clears", await fetchAllRaidActivities(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
                 //console.log("All Activities", await fetchAllRaids(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
@@ -340,10 +343,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const totalCompletions = Object.values(characterCompletions).reduce((acc, curr) => acc + (curr.completions || 0), 0);
         Object.keys(characterCompletions).forEach(charId => {
             characterCompletions[charId].percentage = totalCompletions > 0
-            ? ((characterCompletions[charId].completions / totalCompletions) * 100).toFixed(1)
-            : "0.0";
+                ? ((characterCompletions[charId].completions / totalCompletions) * 100).toFixed(1)
+                : "0.0";
         });
-        console.log("Character Completions", characterCompletions);
         allCompetitive = allCompetitive.flat();
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
         allCompetitive.forEach(activity => {
@@ -373,6 +375,52 @@ export default function FavouriteActivity({ membershipType, userId }) {
             division: division,
             characterCompletions: characterCompletions,
         }
+    }
+
+    async function fetchPVPDATA(membershipType, userId, allActivities, group) {
+        let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
+        console.log("All Activities Raw", group);
+        allActivities.forEach(activity => {
+            const hash = activity?.activityHash;
+            if (hash == null) return; // Maneja el caso de hash null
+            if (group.hashes.includes(hash)) {
+                timePlayed += activity.values.activitySecondsPlayed.basic.value;
+                completions += activity.values.activityCompletions.basic.value;
+                kills += activity.values.activityKills.basic.value;
+                deaths += activity.values.activityDeaths.basic.value;
+                wins += activity?.values?.activityWins?.basic?.value;
+                kd += activity?.values?.activityKillsDeathsRatio?.basic?.value;
+            }
+        });
+
+        let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
+        let totalKD = (kills / (deaths || 1)).toFixed(2);
+
+        let lighthouse = null;
+        if(group.name === "Pruebas de Osiris") {
+            lighthouse = await fetchTrialsData(membershipType, userId);
+        }
+
+        return {
+            completions,
+            timePlayed: (timePlayed / 3600).toFixed(0),
+            kills,
+            deaths,
+            wins,
+            defeats,
+            kd,
+            winDefeatRatio,
+            totalKD,
+            lighthouse
+        };
+    }
+
+    async function fetchTrialsData(membershipType, userId) {
+        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
+        let flawless = resPrg?.metrics?.data.metrics?.[1765255052]?.objectiveProgress.progress;
+        let highestStreak = resPrg?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
+        let gilded = resPrg?.metrics?.data.metrics?.[4112712479]?.objectiveProgress.progress;
+        return { flawless, highestStreak, gilded };
     }
 
     async function fetchAllActivities(allActivities) {
