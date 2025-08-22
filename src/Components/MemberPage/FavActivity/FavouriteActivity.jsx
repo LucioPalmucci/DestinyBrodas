@@ -22,7 +22,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             try {
                 let mazmorras = await activityHashes(608898761, true);
                 let operaciones = await activityHashes(4110605575, false);
-                let raids = await activityHashes(2043403989, true);
+                let raids = await activityHashes(2043403989, true, true);
                 let gambito = await activityHashes(1848252830, false);
                 let estandarte = await activityHashes(2371050408, true);
                 let crisol = await activityHashes(4088006058, true);
@@ -37,7 +37,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 let modeGroups = {
                     Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
-                    Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Operaciones", bgImg: strikesBG },
+                    Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Operaciones", bgImg: strikesBG, modeData: [] },
                     Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null },
                     Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG },
                     Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG, modeData: [] },
@@ -64,6 +64,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"]);
                 modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"]);
                 modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"]);
+                modeGroups["Operaciones"].modeData = await getFavActivity(allActivities, modeGroups["Operaciones"]);
+                modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true);
 
                 //console.log("Clears", await fetchAllRaidActivities(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
                 //console.log("All Activities", await fetchAllRaids(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
@@ -242,7 +244,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
             }
         }
 
-        return allActivities;
+        allActivities = allActivities.filter(activity => activity?.completed == true);
+        const completitions = allActivities.length;
+        const freshCompletitions = allActivities.filter(activity => activity?.fresh == true).length;
+        const checkpointCompletitions = allActivities.filter(activity => activity?.fresh == false).length;
+
+        return {
+            completitions,
+            freshCompletitions,
+            checkpointCompletitions
+        };
     }
 
     async function fetchAllRaids(userId, apiKey) {
@@ -379,7 +390,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function fetchPVPDATA(membershipType, userId, allActivities, group) {
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
-        console.log("All Activities Raw", group);
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return; // Maneja el caso de hash null
@@ -421,6 +431,65 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let highestStreak = resPrg?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
         let gilded = resPrg?.metrics?.data.metrics?.[4112712479]?.objectiveProgress.progress;
         return { flawless, highestStreak, gilded };
+    }
+
+    async function getFavActivity(allActivities, group) {
+        let favoriteActivity = null;
+        allActivities.forEach(activity => {
+            const hash = activity?.activityHash;
+            if (hash == null) return;
+            if (group.hashes.includes(hash)) {
+                if( activity.values.activityCompletions.basic.value > (favoriteActivity?.completions || 0) ) {
+                    favoriteActivity = {
+                        hash,
+                        completions: activity.values.activityCompletions.basic.value,
+                    };
+                }
+            }
+        });
+        let favoriteActivityData = await getItemManifest(favoriteActivity.hash, "DestinyActivityDefinition");
+        return favoriteActivityData;
+    }
+
+    async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid) {
+        let completions = 0, favoriteActivity = null;
+        if(group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
+        favoriteActivity = await getFavActivity(allActivities, group);
+        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
+
+        let seals = await fetchAllSeals(isRaid, resPrg);
+
+        console.log("Favor ", seals);
+    }
+
+    async function fetchAllSeals(isRaid, progressions) {
+        const raidSeals = [3954661385, 334829503, 238107129, 1976056830, 2613142083, 2886738008, 3734352323, 2960810718, 1827854727, 1486062207, 3492865493];
+        const dungeonSeals = [2105055614, 2723381343, 1021469803, 1705744655, 4183969062, 854126634, 2603002048];
+
+        let seals = [];
+        if(isRaid) seals = raidSeals;
+        else seals = dungeonSeals;
+
+        const SealData = await Promise.all(
+            seals.map(async (sealHash) => {
+                const seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
+                return {
+                    name: seal?.displayProperties?.name || "Desconocido",
+                    iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                    iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                    hash: seal?.hash,
+                    completionRecordHash: seal?.completionRecordHash || 0,
+                    completed: false,
+                };
+            })
+        );
+
+        SealData.forEach(seal => {
+            seal.completed = progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete;
+        });
+        console.log("Sellos de Raid", SealData);
+
+        return SealData;
     }
 
     async function fetchAllActivities(allActivities) {
