@@ -85,20 +85,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 //Método especial para competitivo
                 modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData);
-                modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"]);
-                modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"]);
-                modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"]);
+                modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514);
+                modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"], 2161171268);
+                modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"], 1733555826, 4112712479);
                 modeGroups["Operaciones"].modeData = await getFavActivity(allActivities, modeGroups["Operaciones"]);
                 modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds);
                 modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds);
                 modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds);
-
-                //console.log("Clears", await fetchAllRaidActivities(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
-                //console.log("All Activities", await fetchAllRaids(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
-
-                //const allDungeons = await fetchAllDungeons(membershipType, userId, characterIds, `62192879-bde5-45b6-9918-09166dc0c6d4`);
-
-                //const dataAllActivities = await fetchAllActivities(allActivities);
 
                 allActivities.forEach(activity => {
                     const hash = activity?.activityHash;
@@ -404,7 +397,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     }
 
-    async function fetchPVPDATA(membershipType, userId, allActivities, group) {
+    async function fetchPVPDATA(membershipType, userId, allActivities, group, sealHash, gildedHash) {
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0, precisionKills = 0;
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
@@ -423,10 +416,17 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
         let totalKD = (kills / (deaths || 1)).toFixed(2);
 
+        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
+        let seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
+
         let lighthouse = null;
         if (group.name === "Pruebas de Osiris") {
             lighthouse = await fetchTrialsData(membershipType, userId);
         }
+
+        Object.values(resPrg?.metrics?.data.metrics || {}).forEach(metric => {
+            if (metric.objectiveProgress?.progress === 10) console.log("Metric Data ", metric);
+        });
 
         return {
             completions,
@@ -439,7 +439,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
             winDefeatRatio,
             totalKD,
             lighthouse,
-            precisionKills
+            precisionKills,
+            seal: {
+                name: seal?.displayProperties?.name || "Desconocido",
+                iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                hash: seal?.hash,
+                completionRecordHash: seal?.completionRecordHash || 0,
+                completed: resPrg.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
+                gilded: resPrg?.metrics?.data.metrics?.[gildedHash]?.objectiveProgress.progress,
+            }
         };
     }
 
@@ -447,7 +456,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const resPrg = await getProfileGeneralProgressions(membershipType, userId);
         let flawless = resPrg?.metrics?.data.metrics?.[1765255052]?.objectiveProgress.progress;
         let highestStreak = resPrg?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
-        let gilded = resPrg?.metrics?.data.metrics?.[4112712479]?.objectiveProgress.progress;
         return { flawless, highestStreak, gilded };
     }
 
@@ -548,11 +556,21 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
         let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
 
+        const seal = await getItemManifest(3665267419, "DestinyPresentationNodeDefinition");
         return {
             invadersDefeated,
-            gilded,
             motas,
-            winDefeatRatio
+            winDefeatRatio,
+            seal:
+            {
+                name: seal?.displayProperties?.name || "Desconocido",
+                iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                hash: seal?.hash,
+                completionRecordHash: seal?.completionRecordHash || 0,
+                completed: resPrg.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
+                gilded: gilded,
+            }
         };
 
     }
@@ -635,19 +653,21 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const responseGeneral = await getGeneralStats(membershipType, userId);
         let mostUsedWeapon = null;
         Object.values(responseGeneral.mergedAllCharacters.results.allPvP.allTime).forEach(weapon => {
-            if(weapon.statId && weapon.statId.includes("weapon")) {
-                if(!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
+            if (weapon.statId && weapon.statId.includes("weapon")) {
+                if (!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
                     mostUsedWeapon = weapon;
                 }
             }
         });
+        let weaponInfo = { name: '', icon: 'icon-na' };
         if (mostUsedWeapon) {
             const weaponType = mostUsedWeapon.statId.replace("weaponKills", "");
-            console.log("Most Used Weapon: ", weaponType);
-            const weaponInfo = weaponTranslations[weaponType] || {};
-            console.log("Weapon Name:", weaponInfo.name);
-            console.log("Weapon Icon:", weaponInfo.icon);
+            weaponInfo = weaponTranslations[weaponType] || {};
         }
+        return mostUsedWeapon ? {
+            name: weaponInfo.name,
+            icon: weaponInfo.icon
+        } : null;
     }
 
     return (
