@@ -14,8 +14,31 @@ import ActivitiesComp from "./ActivitiesComp";
 export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
+    const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
     const [error, setError] = useState(null);
-    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions } = useBungieAPI();
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
+
+    //Armas e iconos
+    const weaponTranslations = {
+        'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
+        'BeamRifle': { name: 'Fusil de Rastreo', icon: 'icon-BeamRifle' },
+        'Bow': { name: 'Arco', icon: 'icon-Bow' },
+        'FusionRifle': { name: 'Fusil de Fusion', icon: 'icon-FusionRifle' },
+        'Glaive': { name: 'Guja', icon: 'icon-Glaive' },
+        'GrenadeLauncher': { name: 'Lanzagranadas', icon: 'icon-GrenadeLauncher' },
+        'HandCannon': { name: 'Cañón de Mano', icon: 'icon-HandCannon' },
+        'MachineGun': { name: 'Ametralladora', icon: 'icon-MachineGun' },
+        'PulseRifle': { name: 'Fusil de Pulsos', icon: 'icon-PulseRifle' },
+        'RocketLauncher': { name: 'Lanzacohetes', icon: 'icon-RocketLauncher' },
+        'ScoutRifle': { name: 'Fusil de Explorador', icon: 'icon-ScoutRifle' },
+        'Shotgun': { name: 'Escopeta', icon: 'icon-Shotgun' },
+        'SideArm': { name: 'Pistola', icon: 'icon-SideArm' },
+        'Sniper': { name: 'Francotirador', icon: 'icon-Sniper' },
+        'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
+        'Sword': { name: 'Espada', icon: 'icon-Sword' },
+        'TraceRifle': { name: 'Fusil de Rastreo', icon: 'icon-TraceRifle' },
+        'N/A': { name: '', icon: 'icon-na' }
+    };
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
@@ -58,6 +81,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     });
                 });
                 let allActivities = await activitiesStats(characterIds, membershipType, userId);
+                setMostUsedWeaponPVP(await getMostUsedWeapons(membershipType, userId));
 
                 //Método especial para competitivo
                 modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData);
@@ -65,7 +89,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"]);
                 modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"]);
                 modeGroups["Operaciones"].modeData = await getFavActivity(allActivities, modeGroups["Operaciones"]);
-                modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true);
+                modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds);
+                modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds);
+                modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds);
 
                 //console.log("Clears", await fetchAllRaidActivities(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
                 //console.log("All Activities", await fetchAllRaids(userId, `62192879-bde5-45b6-9918-09166dc0c6d4`));
@@ -256,24 +282,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
     }
 
-    async function fetchAllRaids(userId, apiKey) {
-        try {
-            const acts = await axios.get(
-                `https://api.raidhub.io/player/${userId}/instances?minSeason=1&fresh=true`,
-                {
-                    headers: {
-                        "X-API-Key": apiKey
-                    }
-                }
-            );
-            return acts.data;
-        } catch (error) {
-            console.error("Error en fetchAllRaids:", error.response?.data || error.message);
-            throw error;
-        }
-    }
-
-    async function fetchAllDungeons(membershipType, userId, characterIds) {
+    async function fetchAllDungeonsActivities(membershipType, userId, characterIds) {
         let allDungeons = await Promise.all(
             characterIds.map(async (charId) => {
                 let page = 0;
@@ -290,7 +299,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons = allDungeons.flat();
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value > 0);
 
-        /*let allClearedFreshDungeons = await Promise.all(allClearedDungeons.map(async (dungeon) => {
+        let allClearedFreshDungeons = await Promise.all(allClearedDungeons.map(async (dungeon) => {
             try {
                 const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
                 if (acts.activityWasStartedFromBeginning == true) {
@@ -303,9 +312,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 throw error;
             }
         }));
-        allClearedFreshDungeons = allClearedFreshDungeons.filter(dungeon => dungeon !== undefined);*/
+        allClearedFreshDungeons = allClearedFreshDungeons.filter(dungeon => dungeon !== undefined);
 
-        const groupedByDirectorActivityHash = {};
+        const completitions = allClearedDungeons.length;
+        const freshCompletitions = allClearedFreshDungeons.length;
+        const checkpointCompletitions = allClearedDungeons.length - allClearedFreshDungeons.length;
+
+        /*const groupedByDirectorActivityHash = {};
         allClearedDungeons
             .filter(dungeon => dungeon !== undefined)
             .forEach(dungeon => {
@@ -323,9 +336,12 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 name: groupName,
                 activities: groupedByDirectorActivityHash[hash]
             };
-        }
-
-        return allClearedDungeons;
+        }*/
+        return {
+            completitions,
+            freshCompletitions,
+            checkpointCompletitions
+        };
     }
 
     async function fetchAllCompetitiveMatches(membershipType, userId, charactersData) {
@@ -373,7 +389,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let totalKD = (kills / (deaths || 1)).toFixed(2);
 
         const resPrg = await getProfileGeneralProgressions(membershipType, userId);
-        let division = resPrg.metrics.data.metrics[268448617].objectiveProgress; // Partidas jugadas
+        let division = resPrg.metrics.data.metrics[268448617].objectiveProgress;
 
         return {
             completions: completions,
@@ -389,7 +405,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }
 
     async function fetchPVPDATA(membershipType, userId, allActivities, group) {
-        let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
+        let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0, precisionKills = 0;
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return; // Maneja el caso de hash null
@@ -400,6 +416,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 deaths += activity.values.activityDeaths.basic.value;
                 wins += activity?.values?.activityWins?.basic?.value;
                 kd += activity?.values?.activityKillsDeathsRatio?.basic?.value;
+                precisionKills += activity?.values?.activityPrecisionKills?.basic?.value;
             }
         });
 
@@ -407,7 +424,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let totalKD = (kills / (deaths || 1)).toFixed(2);
 
         let lighthouse = null;
-        if(group.name === "Pruebas de Osiris") {
+        if (group.name === "Pruebas de Osiris") {
             lighthouse = await fetchTrialsData(membershipType, userId);
         }
 
@@ -421,7 +438,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
             kd,
             winDefeatRatio,
             totalKD,
-            lighthouse
+            lighthouse,
+            precisionKills
         };
     }
 
@@ -439,7 +457,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             const hash = activity?.activityHash;
             if (hash == null) return;
             if (group.hashes.includes(hash)) {
-                if( activity.values.activityCompletions.basic.value > (favoriteActivity?.completions || 0) ) {
+                if (activity.values.activityCompletions.basic.value > (favoriteActivity?.completions || 0)) {
                     favoriteActivity = {
                         hash,
                         completions: activity.values.activityCompletions.basic.value,
@@ -451,15 +469,20 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return favoriteActivityData;
     }
 
-    async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid) {
+    async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars) {
         let completions = 0, favoriteActivity = null;
-        if(group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
+        if (group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
+        else completions = await fetchAllDungeonsActivities(membershipType, userId, chars);
         favoriteActivity = await getFavActivity(allActivities, group);
         const resPrg = await getProfileGeneralProgressions(membershipType, userId);
 
         let seals = await fetchAllSeals(isRaid, resPrg);
 
-        console.log("Favor ", seals);
+        return {
+            completions,
+            favoriteActivity,
+            seals
+        };
     }
 
     async function fetchAllSeals(isRaid, progressions) {
@@ -467,7 +490,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const dungeonSeals = [2105055614, 2723381343, 1021469803, 1705744655, 4183969062, 854126634, 2603002048];
 
         let seals = [];
-        if(isRaid) seals = raidSeals;
+        if (isRaid) seals = raidSeals;
         else seals = dungeonSeals;
 
         const SealData = await Promise.all(
@@ -487,12 +510,54 @@ export default function FavouriteActivity({ membershipType, userId }) {
         SealData.forEach(seal => {
             seal.completed = progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete;
         });
-        console.log("Sellos de Raid", SealData);
 
         return SealData;
     }
 
-    async function fetchAllActivities(allActivities) {
+    async function getGambitoData(membershipType, userId, allActivities, group, characterIds) {
+        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
+        let invadersDefeated = resPrg?.metrics?.data.metrics?.[3227312321]?.objectiveProgress.progress;
+        let motas = resPrg?.metrics?.data.metrics?.[1462038198]?.objectiveProgress.progress;
+        let gilded = resPrg?.metrics?.data.metrics?.[2365336843]?.objectiveProgress.progress;
+
+        let completions = 0, wins = 0;
+
+        let gambito = await Promise.all(
+            characterIds.map(async (charId) => {
+                let page = 0;
+                let allDungeonsChar = [];
+                while (true) {
+                    const activities = await getCharacterManyActivities(membershipType, userId, charId, "63", page);
+                    if (!activities || activities.length === 0) break;
+                    allDungeonsChar = allDungeonsChar.concat(activities);
+                    page++;
+                }
+                return allDungeonsChar;
+            })
+        );
+        gambito = gambito.flat();
+
+        allActivities.forEach(activity => {
+            const hash = activity?.activityHash;
+            if (hash == null) return; // Maneja el caso de hash null
+            if (group.hashes.includes(hash)) {
+                completions += activity.values.activityCompletions.basic.value;
+                wins += activity?.values?.activityWins?.basic?.value;
+            }
+        });
+
+        let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
+
+        return {
+            invadersDefeated,
+            gilded,
+            motas,
+            winDefeatRatio
+        };
+
+    }
+
+    /*async function fetchAllActivities(allActivities) {
         const BATCH_SIZE = 10; // Ajusta este número según tu RAM/conexión
         const results = [];
         for (let i = 0; i < allActivities.length; i += BATCH_SIZE) {
@@ -509,7 +574,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             results.push(...batchResults);
         }
         return results;
-    }
+    }*/
 
     async function characterClass(characterId, membershipType, userId) {
         const characterRes = await getProfileChars(membershipType, userId, characterId);
@@ -564,6 +629,25 @@ export default function FavouriteActivity({ membershipType, userId }) {
             ...mode,
             percentage: total > 0 ? (mode.completions / total) * 100 : 0
         }));
+    }
+
+    async function getMostUsedWeapons(membershipType, userId) {
+        const responseGeneral = await getGeneralStats(membershipType, userId);
+        let mostUsedWeapon = null;
+        Object.values(responseGeneral.mergedAllCharacters.results.allPvP.allTime).forEach(weapon => {
+            if(weapon.statId && weapon.statId.includes("weapon")) {
+                if(!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
+                    mostUsedWeapon = weapon;
+                }
+            }
+        });
+        if (mostUsedWeapon) {
+            const weaponType = mostUsedWeapon.statId.replace("weaponKills", "");
+            console.log("Most Used Weapon: ", weaponType);
+            const weaponInfo = weaponTranslations[weaponType] || {};
+            console.log("Weapon Name:", weaponInfo.name);
+            console.log("Weapon Icon:", weaponInfo.icon);
+        }
     }
 
     return (
