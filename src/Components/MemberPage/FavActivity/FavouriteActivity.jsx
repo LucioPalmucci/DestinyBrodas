@@ -43,14 +43,15 @@ export default function FavouriteActivity({ membershipType, userId }) {
     useEffect(() => {
         const fetchGeneralStats = async () => {
             try {
-                let mazmorras = await activityHashes(608898761, true);
-                let operaciones = await activityHashes(4110605575, false);
-                let raids = await activityHashes(2043403989, true, true);
-                let gambito = await activityHashes(1848252830, false);
-                let estandarte = await activityHashes(2371050408, true);
-                let crisol = await activityHashes(4088006058, true);
-                let pruebas = await activityHashes(2112637710, true);
-                let competitivo = await activityHashes(2239249083); //1430623298, 3194159491, 2442635447, 197180276,
+                const manifestRes = await getManifest();
+                let mazmorras = await activityHashes(608898761, true, manifestRes);
+                let operaciones = await activityHashes(4110605575, false, manifestRes);
+                let raids = await activityHashes(2043403989, true, manifestRes);
+                let gambito = await activityHashes(1848252830, false, manifestRes);
+                let estandarte = await activityHashes(2371050408, true, manifestRes);
+                let crisol = await activityHashes(4088006058, true, manifestRes);
+                let pruebas = await activityHashes(2112637710, true, manifestRes);
+                let competitivo = await activityHashes(2239249083, true, manifestRes); //1430623298, 3194159491, 2442635447, 197180276,
 
                 // Sacar hashes del crisol estandarte y pruebas que pertenencen a competitivo
                 const competitivoSet = new Set(competitivo);
@@ -71,27 +72,34 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 const profileRes = await getCompsProfile(membershipType, userId);
                 const characterIds = profileRes.profile.data.characterIds;
-                let charactersData = [];
-                characterIds.forEach(async (characterId) => {
-                    const charClass = await characterClass(characterId, membershipType, userId);
-                    charactersData.push({
-                        class: charClass,
-                        classImg: charImg(charClass),
-                        id: characterId,
-                    });
-                });
-                let allActivities = await activitiesStats(characterIds, membershipType, userId);
+                let allActivities = [];
+                let charactersData = await Promise.all(
+                    characterIds.map(async (characterId) => {
+                        const charClass = await characterClass(characterId, membershipType, userId);
+                        let act = await getAggregateActivityStats(membershipType, userId, characterId);
+                        allActivities.push(...Object.values(act));
+                        return {
+                            class: charClass,
+                            classImg: charImg(charClass),
+                            id: characterId,
+                            act,
+                        };
+
+                    })
+                );
+                allActivities = allActivities.flat();
                 setMostUsedWeaponPVP(await getMostUsedWeapons(membershipType, userId));
 
+                const profileProgression = await getProfileGeneralProgressions(membershipType, userId);
                 //Método especial para competitivo
-                modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData);
-                modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514);
-                modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"], 2161171268);
-                modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"], 1733555826, 4112712479);
+                modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData, profileProgression);
+                modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514, profileProgression);
+                modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"], 2161171268, null, profileProgression);
+                modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"], 1733555826, 4112712479, profileProgression);
                 modeGroups["Operaciones"].modeData = await getFavActivity(allActivities, modeGroups["Operaciones"]);
-                modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds);
-                modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds);
-                modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds);
+                modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds, profileProgression);
+                modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds, profileProgression);
+                modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression);
 
                 allActivities.forEach(activity => {
                     const hash = activity?.activityHash;
@@ -112,7 +120,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     let characterCompletions = {};
                     for (const character of charactersData) {
                         characterCompletions[character.id] = {};
-                        characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(modeGroups[mode], character.id, membershipType, userId);
+                        characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(modeGroups[mode], character);
                         characterCompletions[character.id].percentage = ((characterCompletions[character.id].totalCompletions / modeGroups[mode].completions) * 100).toFixed(1);
                         characterCompletions[character.id].character = character.class;
                         characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
@@ -158,9 +166,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
     };
 
 
-    async function activityHashes(mode, pvp) {
-        const manifestRes = await getManifest();
-        const activityUrl = `https://www.bungie.net${manifestRes.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
+    async function activityHashes(mode, pvp, manifest) {
+        const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
 
         const activityRes = await axios.get(activityUrl);
 
@@ -173,55 +180,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return activityHashes;
     }
 
-    async function activityFamily(mode) {
-        const manifestRes = await getManifest();
-        const activityUrl = `https://www.bungie.net${manifestRes.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
-
-        const activityRes = await axios.get(activityUrl);
-
-        const activityData = activityRes.data;
-        const filteredActivities = Object.values(activityData).filter(
-            (activity) => Array.isArray(activity.activityFamilyHashes) && activity.activityFamilyHashes.includes(mode)
-        );
-
-        const activityHashes = filteredActivities.map((activity) => activity.hash);
-        return activityHashes;
-    }
-
-    async function activityHashesArray(modes, pvp) {
-        const manifestRes = await getManifest();
-        const activityUrl = `https://www.bungie.net${manifestRes.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
-
-        const activityRes = await axios.get(activityUrl);
-
-        const activityData = activityRes.data;
-        const filteredActivities = Object.values(activityData).filter(
-            (activity) => pvp
-                ? modes.includes(activity.activityTypeHash)
-                : modes.includes(activity.directActivityModeHash)
-        );
-
-        const activityHashes = filteredActivities.map((activity) => activity.hash);
-        return activityHashes;
-    }
-
-    async function activitiesStats(characterIds, membershipType, userId) {
-        let allActivities = [];
-        for (const characterId of characterIds) {
-            const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
-            allActivities = allActivities.concat(activitiesStats.activities);
-        }
-        return allActivities;
-    }
-
-    async function mostPlayedCharacter(mode, characterId, membershipType, userId) {
-        const activitiesStats = await getAggregateActivityStats(membershipType, userId, characterId);
-
-        if (!activitiesStats || !activitiesStats.activities || !Array.isArray(activitiesStats.activities) || activitiesStats.activities.length === 0) {
-            console.warn(`No activities found for character ${characterId}`);
-            return 0;
-        }
-        let allActivities = activitiesStats.activities;
+    async function mostPlayedCharacter(mode, charactersData) {
+        console.log("Most Played Character Mode ", charactersData);
+        let allActivities = charactersData.act.activities;
         let classCompletitions = 0;
 
         allActivities.forEach(activity => {
@@ -292,44 +253,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons = allDungeons.flat();
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value > 0);
 
-        let allClearedFreshDungeons = await Promise.all(allClearedDungeons.map(async (dungeon) => {
-            try {
-                const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
-                if (acts.activityWasStartedFromBeginning == true) {
-                    return {
-                        ...dungeon,
-                    };
-                }
-            } catch (error) {
-                console.error("Error en fetchAllRaids:", error.response?.data || error.message);
-                throw error;
-            }
-        }));
-        allClearedFreshDungeons = allClearedFreshDungeons.filter(dungeon => dungeon !== undefined);
+        console.log("Cleared Dungeons", allClearedDungeons.length);
+
+        let allClearedFreshDungeons = await getAllFreshDungeons(allClearedDungeons);
+
+        console.log("Cleared Fresh Dungeons", allClearedFreshDungeons.length);
 
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons.length;
         const checkpointCompletitions = allClearedDungeons.length - allClearedFreshDungeons.length;
 
-        /*const groupedByDirectorActivityHash = {};
-        allClearedDungeons
-            .filter(dungeon => dungeon !== undefined)
-            .forEach(dungeon => {
-                const hash = dungeon.activityDetails.directorActivityHash;
-                if (!groupedByDirectorActivityHash[hash]) {
-                    groupedByDirectorActivityHash[hash] = [];
-                }
-                groupedByDirectorActivityHash[hash].push(dungeon);
-            });
-
-        for (const hash in groupedByDirectorActivityHash) {
-            const activityDef = await getItemManifest(hash, "DestinyActivityDefinition");
-            const groupName = activityDef?.displayProperties?.name || "Desconocido";
-            groupedByDirectorActivityHash[hash] = {
-                name: groupName,
-                activities: groupedByDirectorActivityHash[hash]
-            };
-        }*/
         return {
             completitions,
             freshCompletitions,
@@ -337,7 +270,26 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
     }
 
-    async function fetchAllCompetitiveMatches(membershipType, userId, charactersData) {
+    async function getAllFreshDungeons(allClearedDungeons) {
+        let freshDungeons = [], batchSize = 10;
+        for (let i = 0; i < allClearedDungeons.length; i += batchSize) {
+            const batch = allClearedDungeons.slice(i, i + batchSize);
+            const results = await Promise.all(batch.map(async (dungeon) => {
+                try {
+                    const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
+                    if (acts.activityWasStartedFromBeginning === true) {
+                        return dungeon;
+                    }
+                } catch (error) {
+                }
+                return null;
+            }));
+            freshDungeons.push(...results.filter(Boolean));
+        }
+        return freshDungeons;
+    }
+
+    async function fetchAllCompetitiveMatches(membershipType, userId, charactersData, progressions) {
         let characterCompletions = {};
         let allCompetitive = await Promise.all(
             charactersData.map(async (character) => {
@@ -380,9 +332,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
         let winDefeatRatio = (wins / (wins + defeats || 1) * 100).toFixed(1);
         let totalKD = (kills / (deaths || 1)).toFixed(2);
-
-        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
-        let division = resPrg.metrics.data.metrics[268448617].objectiveProgress;
+        let division = progressions.metrics.data.metrics[268448617].objectiveProgress;
 
         return {
             completions: completions,
@@ -397,7 +347,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     }
 
-    async function fetchPVPDATA(membershipType, userId, allActivities, group, sealHash, gildedHash) {
+    async function fetchPVPDATA(membershipType, userId, allActivities, group, sealHash, gildedHash, progressions) {
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0, precisionKills = 0;
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
@@ -416,17 +366,12 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
         let totalKD = (kills / (deaths || 1)).toFixed(2);
 
-        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
         let seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
 
         let lighthouse = null;
         if (group.name === "Pruebas de Osiris") {
-            lighthouse = await fetchTrialsData(membershipType, userId);
+            lighthouse = await fetchTrialsData(progressions);
         }
-
-        Object.values(resPrg?.metrics?.data.metrics || {}).forEach(metric => {
-            if (metric.objectiveProgress?.progress === 10) console.log("Metric Data ", metric);
-        });
 
         return {
             completions,
@@ -446,21 +391,21 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                 hash: seal?.hash,
                 completionRecordHash: seal?.completionRecordHash || 0,
-                completed: resPrg.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
-                gilded: resPrg?.metrics?.data.metrics?.[gildedHash]?.objectiveProgress.progress,
+                completed: progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
+                gilded: progressions.metrics.data.metrics?.[gildedHash]?.objectiveProgress.progress,
             }
         };
     }
 
-    async function fetchTrialsData(membershipType, userId) {
-        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
-        let flawless = resPrg?.metrics?.data.metrics?.[1765255052]?.objectiveProgress.progress;
-        let highestStreak = resPrg?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
-        return { flawless, highestStreak, gilded };
+    async function fetchTrialsData(progressions) {
+        let flawless = progressions?.metrics?.data.metrics?.[1765255052]?.objectiveProgress.progress;
+        let highestStreak = progressions?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
+        return { flawless, highestStreak };
     }
 
     async function getFavActivity(allActivities, group) {
         let favoriteActivity = null;
+        console.log("Favorite allActivities ", allActivities);
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return;
@@ -473,18 +418,18 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 }
             }
         });
+        console.log("Favorite Activity Raw", favoriteActivity);
         let favoriteActivityData = await getItemManifest(favoriteActivity.hash, "DestinyActivityDefinition");
         return favoriteActivityData;
     }
 
-    async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars) {
+    async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars, progressions) {
         let completions = 0, favoriteActivity = null;
         if (group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
         else completions = await fetchAllDungeonsActivities(membershipType, userId, chars);
         favoriteActivity = await getFavActivity(allActivities, group);
-        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
 
-        let seals = await fetchAllSeals(isRaid, resPrg);
+        let seals = await fetchAllSeals(isRaid, progressions);
 
         return {
             completions,
@@ -522,11 +467,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return SealData;
     }
 
-    async function getGambitoData(membershipType, userId, allActivities, group, characterIds) {
-        const resPrg = await getProfileGeneralProgressions(membershipType, userId);
-        let invadersDefeated = resPrg?.metrics?.data.metrics?.[3227312321]?.objectiveProgress.progress;
-        let motas = resPrg?.metrics?.data.metrics?.[1462038198]?.objectiveProgress.progress;
-        let gilded = resPrg?.metrics?.data.metrics?.[2365336843]?.objectiveProgress.progress;
+    async function getGambitoData(membershipType, userId, allActivities, group, characterIds, progressions) {
+        let invadersDefeated = progressions?.metrics?.data.metrics?.[3227312321]?.objectiveProgress.progress;
+        let motas = progressions?.metrics?.data.metrics?.[1462038198]?.objectiveProgress.progress;
+        let gilded = progressions?.metrics?.data.metrics?.[2365336843]?.objectiveProgress.progress;
 
         let completions = 0, wins = 0;
 
@@ -568,31 +512,12 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                 hash: seal?.hash,
                 completionRecordHash: seal?.completionRecordHash || 0,
-                completed: resPrg.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
+                completed: progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
                 gilded: gilded,
             }
         };
 
     }
-
-    /*async function fetchAllActivities(allActivities) {
-        const BATCH_SIZE = 10; // Ajusta este número según tu RAM/conexión
-        const results = [];
-        for (let i = 0; i < allActivities.length; i += BATCH_SIZE) {
-            const batch = allActivities.slice(i, i + BATCH_SIZE);
-            const batchResults = await Promise.all(batch.map(async (activity) => {
-                const activityData = await getItemManifest(activity, "DestinyActivityDefinition");
-                return {
-                    Name: activityData?.displayProperties?.name || "Desconocido",
-                    hash: activityData?.hash || "Desconocido",
-                    Type: activityData?.activityTypeHash || activityData?.directActivityModeHash || "Desconocido",
-                    mode: activityData?.activityModeTypes || "Desconocido",
-                };
-            }));
-            results.push(...batchResults);
-        }
-        return results;
-    }*/
 
     async function characterClass(characterId, membershipType, userId) {
         const characterRes = await getProfileChars(membershipType, userId, characterId);
