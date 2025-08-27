@@ -51,7 +51,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 let estandarte = await activityHashes(2371050408, true, manifestRes);
                 let crisol = await activityHashes(4088006058, true, manifestRes);
                 let pruebas = await activityHashes(2112637710, true, manifestRes);
-                let competitivo = await activityHashes(2239249083, true, manifestRes); //1430623298, 3194159491, 2442635447, 197180276,
+                let competitivo = await activityHashes(2239249083, true, manifestRes); //1430623298, 3194159491, 2442635447, 197180276
 
                 // Sacar hashes del crisol estandarte y pruebas que pertenencen a competitivo
                 const competitivoSet = new Set(competitivo);
@@ -96,7 +96,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514, profileProgression);
                 modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"], 2161171268, null, profileProgression);
                 modeGroups["Pruebas"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Pruebas"], 1733555826, 4112712479, profileProgression);
-                modeGroups["Operaciones"].modeData = await getFavActivity(allActivities, modeGroups["Operaciones"]);
+                modeGroups["Operaciones"].modeData.favoriteActivity = await getFavActivity(allActivities, modeGroups["Operaciones"]);
                 modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds, profileProgression);
                 modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds, profileProgression);
                 modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression);
@@ -165,7 +165,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     };
 
-
     async function activityHashes(mode, pvp, manifest) {
         const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
 
@@ -181,7 +180,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }
 
     async function mostPlayedCharacter(mode, charactersData) {
-        console.log("Most Played Character Mode ", charactersData);
         let allActivities = charactersData.act.activities;
         let classCompletitions = 0;
 
@@ -203,28 +201,30 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
         while (hasMore) {
             const url = cursor
-                ? `https://api.raidhub.io/player/${userId}/history?count=5000&cursor=${cursor}`
-                : `https://api.raidhub.io/player/${userId}/history?count=5000`;
+            ? `https://api.raidhub.io/player/${userId}/history?count=5000&cursor=${cursor}`
+            : `https://api.raidhub.io/player/${userId}/history`;
 
             const response = await axios.get(url, {
-                headers: {
-                    "X-API-Key": apiKey
-                }
+            headers: {
+                "X-API-Key": apiKey
+            }
             });
 
             const data = response.data;
+
             if (data.response.activities) {
-                allActivities = allActivities.concat(data.response.activities);
+              allActivities = allActivities.concat(data.response.activities);
             }
 
             if (data.response.nextCursor) {
-                cursor = data.response.nextCursor;
+            cursor = data.response.nextCursor;
             } else {
-                hasMore = false;
+            hasMore = false;
             }
         }
 
-        allActivities = allActivities.filter(activity => activity?.completed == true);
+        allActivities = allActivities.filter(activity => activity?.player?.completed == true);
+
         const completitions = allActivities.length;
         const freshCompletitions = allActivities.filter(activity => activity?.fresh == true).length;
         const checkpointCompletitions = allActivities.filter(activity => activity?.fresh == false).length;
@@ -251,13 +251,39 @@ export default function FavouriteActivity({ membershipType, userId }) {
             })
         );
         allDungeons = allDungeons.flat();
-        let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value > 0);
+        allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
 
-        console.log("Cleared Dungeons", allClearedDungeons.length);
+        let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
+        //console.log("All Cleared Dungeons ", allClearedDungeons);
 
-        let allClearedFreshDungeons = await getAllFreshDungeons(allClearedDungeons);
+        // Agrupar las cleared dungeons por directorActivityHash
+        let dungeonsByDirectorHash = {};
+        allClearedDungeons.forEach(dungeon => {
+            const directorHash = dungeon?.activityDetails?.referenceId;
+            if (!directorHash) return;
+            if (!dungeonsByDirectorHash[directorHash]) {
+            dungeonsByDirectorHash[directorHash] = {
+                name: null,
+                dungeons: []
+            };
+            }
+            dungeonsByDirectorHash[directorHash].dungeons.push(dungeon);
+        });
 
-        console.log("Cleared Fresh Dungeons", allClearedFreshDungeons.length);
+        // Buscar el nombre de cada grupo usando getItemManifest
+        await Promise.all(
+            Object.keys(dungeonsByDirectorHash).map(async (directorHash) => {
+            try {
+                const activityDef = await getItemManifest(directorHash, "DestinyActivityDefinition");
+                dungeonsByDirectorHash[directorHash].name = activityDef?.displayProperties?.name || "Desconocido";
+            } catch (e) {
+                dungeonsByDirectorHash[directorHash].name = "Desconocido";
+            }
+            })
+        );
+
+        console.log("Dungeons agrupadas por directorActivityHash:", dungeonsByDirectorHash);
+        //let allClearedFreshDungeons = await getAllFreshDungeons(allDungeons);
 
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons.length;
@@ -405,7 +431,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function getFavActivity(allActivities, group) {
         let favoriteActivity = null;
-        console.log("Favorite allActivities ", allActivities);
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return;
@@ -418,7 +443,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 }
             }
         });
-        console.log("Favorite Activity Raw", favoriteActivity);
         let favoriteActivityData = await getItemManifest(favoriteActivity.hash, "DestinyActivityDefinition");
         return favoriteActivityData;
     }
