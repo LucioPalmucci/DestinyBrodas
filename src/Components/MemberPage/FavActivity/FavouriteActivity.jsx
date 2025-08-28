@@ -236,55 +236,31 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
     }
 
-    async function fetchAllDungeonsActivities(membershipType, userId, characterIds) {
+    async function fetchAllDungeonsActivities(membershipType, userId, characterIds, group) {
         let allDungeons = await Promise.all(
             characterIds.map(async (charId) => {
                 let page = 0;
                 let allDungeonsChar = [];
                 while (true) {
-                    const activities = await getCharacterManyActivities(membershipType, userId, charId, "82", page);
+                    const activities = await getCharacterManyActivities(membershipType, userId, charId, "7", page);
+                    //const activities2 = await getCharacterManyActivities(membershipType, userId, charId, "2", page);
                     if (!activities || activities.length === 0) break;
                     allDungeonsChar = allDungeonsChar.concat(activities);
+                    //allDungeonsChar = allDungeonsChar.concat(activities2);
                     page++;
                 }
+
                 return allDungeonsChar;
             })
         );
         allDungeons = allDungeons.flat();
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
-
+        allDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
+        allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-        //console.log("All Cleared Dungeons ", allClearedDungeons);
 
-        // Agrupar las cleared dungeons por directorActivityHash
-        let dungeonsByDirectorHash = {};
-        allClearedDungeons.forEach(dungeon => {
-            const directorHash = dungeon?.activityDetails?.referenceId;
-            if (!directorHash) return;
-            if (!dungeonsByDirectorHash[directorHash]) {
-            dungeonsByDirectorHash[directorHash] = {
-                name: null,
-                dungeons: []
-            };
-            }
-            dungeonsByDirectorHash[directorHash].dungeons.push(dungeon);
-        });
-
-        // Buscar el nombre de cada grupo usando getItemManifest
-        await Promise.all(
-            Object.keys(dungeonsByDirectorHash).map(async (directorHash) => {
-            try {
-                const activityDef = await getItemManifest(directorHash, "DestinyActivityDefinition");
-                dungeonsByDirectorHash[directorHash].name = activityDef?.displayProperties?.name || "Desconocido";
-            } catch (e) {
-                dungeonsByDirectorHash[directorHash].name = "Desconocido";
-            }
-            })
-        );
-
-        console.log("Dungeons agrupadas por directorActivityHash:", dungeonsByDirectorHash);
-        //let allClearedFreshDungeons = await getAllFreshDungeons(allDungeons);
-
+        console.log("All Dungeons ", allClearedDungeons.length);
+        let allClearedFreshDungeons = await getAllFreshDungeons(allDungeons);
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons.length;
         const checkpointCompletitions = allClearedDungeons.length - allClearedFreshDungeons.length;
@@ -303,6 +279,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             const results = await Promise.all(batch.map(async (dungeon) => {
                 try {
                     const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
+                    console.log("Carnage Report for Dungeon: ", acts);
                     if (acts.activityWasStartedFromBeginning === true) {
                         return dungeon;
                     }
@@ -450,7 +427,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars, progressions) {
         let completions = 0, favoriteActivity = null;
         if (group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
-        else completions = await fetchAllDungeonsActivities(membershipType, userId, chars);
+        else completions = await fetchAllDungeonsActivities(membershipType, userId, chars, group);
         favoriteActivity = await getFavActivity(allActivities, group);
 
         let seals = await fetchAllSeals(isRaid, progressions);

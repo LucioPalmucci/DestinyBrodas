@@ -170,7 +170,7 @@ export const useBungieAPI = () => {
     }, [apiRequest]);
 
     const getCharacterManyActivities = useCallback(async (membershipType, userId, characterId, mode, page) => {
-        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=250+&page=${page}&mode=${mode}&lc=es`;
+        const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=250&page=${page}&mode=${mode}&lc=es`;
         const response = await apiRequest('activities', url, [membershipType, userId, characterId, mode, page]);
         return response?.Response?.activities || [];
     }, [apiRequest])
