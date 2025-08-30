@@ -122,8 +122,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     let characterCompletions = {};
                     for (const character of charactersData) {
                         characterCompletions[character.id] = {};
-                        characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(modeGroups[mode], character);
-                        characterCompletions[character.id].percentage = ((characterCompletions[character.id].totalCompletions / modeGroups[mode].completions) * 100).toFixed(1);
+                        characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(modeGroups[mode], character) || modeGroups[mode].modeData.characterCompletions[character.id]?.completions || 0;
+                        characterCompletions[character.id].percentage = modeGroups[mode].name == "Competitivo" ? modeGroups[mode].modeData.characterCompletions[character.id]?.percentage : ((characterCompletions[character.id].totalCompletions / modeGroups[mode].completions) * 100).toFixed(1) || 0;
                         characterCompletions[character.id].character = character.class;
                         characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
                     }
@@ -315,6 +315,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 : "0.0";
         });
         allCompetitive = allCompetitive.flat();
+        console.log("All Competitive Activities", allCompetitive);
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
         allCompetitive.forEach(activity => {
             completions += activity?.values?.completed?.basic?.value || 0;
@@ -324,15 +325,22 @@ export default function FavouriteActivity({ membershipType, userId }) {
             wins += activity?.values?.standing?.basic?.value == 0 ? 1 : 0;
             defeats += activity?.values?.standing?.basic?.value == 1 ? 1 : 0;
             kd += activity?.values?.killsDeathsRatio?.basic?.value || 0;
+            
+
         });
 
         let winDefeatRatio = (wins / (wins + defeats || 1) * 100).toFixed(1);
         let totalKD = (kills / (deaths || 1)).toFixed(2);
-        let division = progressions.metrics.data.metrics[268448617].objectiveProgress;
-
+        let division = progressions.characterProgressions.data[charactersData[0].id].progressions[3696598664];
+        let logo = await getItemManifest("3696598664", "DestinyProgressionDefinition");
+        division = {
+            ...division,
+            logo: API_CONFIG.BUNGIE_API + logo.steps[division.stepIndex].icon
+        }
         return {
             completions: completions,
             timePlayed: (timePlayed / 3600).toFixed(0),
+            percentage: (completions / (totalCompletions || 1) * 100).toFixed(1),
             kills: kills,
             wins: wins,
             defeats: defeats,
@@ -376,9 +384,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
             deaths,
             wins,
             defeats,
-            kd,
+            kd: totalKD,
             winDefeatRatio,
-            totalKD,
             lighthouse,
             precisionKills,
             seals: {
@@ -585,7 +592,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
         return mostUsedWeapon ? {
             name: weaponInfo.name,
-            icon: weaponInfo.icon
+            icon: weaponInfo.icon,
+            kills: mostUsedWeapon.basic.value
         } : null;
     }
 
@@ -593,8 +601,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
         <div>
             {modeDataPVE.length > 0 && modeDataPVP.length > 0 ? (
                 <div className="flex flex-col space-y-6">
-                    <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} />
-                    <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} />
+                    <ActivitiesComp activities={modeDataPVE} tipo={"PVE"} pvpWeapon={null} />
+                    <ActivitiesComp activities={modeDataPVP} tipo={"PVP"} pvpWeapon={mostUsedWeaponPVP} />
                 </div>
             ) : (
                 <div className="flex flex-col space-y-6">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ActivityPopUp from "./ActivityPopUp";
 
-const ActivitiesComp = ({ activities, tipo }) => {
+const ActivitiesComp = ({ activities, tipo, pvpWeapon }) => {
     const [hoveredIndex, setHoveredIndex] = useState(null);
 
     return (
@@ -33,7 +33,7 @@ const ActivitiesComp = ({ activities, tipo }) => {
                                 }}
                             >
                                 {hoveredIndex === index && (
-                                    <ActivityPopUp activity={activity} onClose={() => setHoveredIndex(null)} />
+                                    <ActivityPopUp activity={activity} onClose={() => setHoveredIndex(null)} pvpWeapon={pvpWeapon} />
                                 )}
                             </div>
                         </div>
