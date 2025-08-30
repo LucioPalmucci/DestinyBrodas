@@ -182,6 +182,18 @@ export const useBungieAPI = () => {
         return response?.Response?.activities || [];
     }, [apiRequest]);
 
+    const getCharacterActivitiesBE = useCallback(async (membershipType, userId) => {
+        const url = `http://127.0.0.1:5000/activities/${membershipType}/${userId}`;
+        const response = await apiRequest('activitiesBE', url, [membershipType, userId]);
+        return response || [];
+    }, [apiRequest]);
+
+    const getCarnageReportBE = useCallback(async (membershipType, userId, activityId) => {
+        const url = `http://127.0.0.1:5000/carnage_report/${membershipType}/${userId}/${activityId}`;
+        const response = await apiRequest('carnageReportBE', url, [membershipType, userId, activityId]);
+        return response || [];
+    }, [apiRequest]);
+
     // Obtener las últimas actividades de un personaje (limitadas por count)
     const getRecentActivities = useCallback(async (membershipType, userId, characterId, count) => {
         const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}&lc=es`;
@@ -400,6 +412,8 @@ export const useBungieAPI = () => {
         getItemManifest,
         getManifest,
         getManifestData,
+        getCharacterActivitiesBE,
+        getCarnageReportBE,
         getClanUser,
 
         // Método genérico

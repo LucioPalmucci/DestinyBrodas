@@ -1,4 +1,5 @@
 import axios from "axios";
+import pLimit from 'p-limit';
 import { useEffect, useState } from "react";
 import compBG from "../../../assets/ActivityModes/comp.png";
 import gambitBG from "../../../assets/ActivityModes/gambit.png";
@@ -11,12 +12,13 @@ import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcache";
 import ActivitiesComp from "./ActivitiesComp";
 
+
 export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
     const [error, setError] = useState(null);
-    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats, getCarnageReportBE } = useBungieAPI();
 
     //Armas e iconos
     const weaponTranslations = {
@@ -92,6 +94,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
                 const profileProgression = await getProfileGeneralProgressions(membershipType, userId);
                 //Método especial para competitivo
+                modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression);
                 modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData, profileProgression);
                 modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514, profileProgression);
                 modeGroups["Estandarte"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Estandarte"], 2161171268, null, profileProgression);
@@ -99,7 +102,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 modeGroups["Operaciones"].modeData.favoriteActivity = await getFavActivity(allActivities, modeGroups["Operaciones"]);
                 modeGroups["Gambito"].modeData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds, profileProgression);
                 modeGroups["Incursiones"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Incursiones"], `62192879-bde5-45b6-9918-09166dc0c6d4`, true, characterIds, profileProgression);
-                modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression);
 
                 allActivities.forEach(activity => {
                     const hash = activity?.activityHash;
@@ -201,30 +203,29 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
         while (hasMore) {
             const url = cursor
-            ? `https://api.raidhub.io/player/${userId}/history?count=5000&cursor=${cursor}`
-            : `https://api.raidhub.io/player/${userId}/history`;
+                ? `https://api.raidhub.io/player/${userId}/history?count=5000&cursor=${cursor}`
+                : `https://api.raidhub.io/player/${userId}/history`;
 
             const response = await axios.get(url, {
-            headers: {
-                "X-API-Key": apiKey
-            }
+                headers: {
+                    "X-API-Key": apiKey
+                }
             });
 
             const data = response.data;
 
             if (data.response.activities) {
-              allActivities = allActivities.concat(data.response.activities);
+                allActivities = allActivities.concat(data.response.activities);
             }
 
             if (data.response.nextCursor) {
-            cursor = data.response.nextCursor;
+                cursor = data.response.nextCursor;
             } else {
-            hasMore = false;
+                hasMore = false;
             }
         }
 
         allActivities = allActivities.filter(activity => activity?.player?.completed == true);
-
         const completitions = allActivities.length;
         const freshCompletitions = allActivities.filter(activity => activity?.fresh == true).length;
         const checkpointCompletitions = allActivities.filter(activity => activity?.fresh == false).length;
@@ -243,10 +244,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 let allDungeonsChar = [];
                 while (true) {
                     const activities = await getCharacterManyActivities(membershipType, userId, charId, "7", page);
-                    //const activities2 = await getCharacterManyActivities(membershipType, userId, charId, "2", page);
                     if (!activities || activities.length === 0) break;
                     allDungeonsChar = allDungeonsChar.concat(activities);
-                    //allDungeonsChar = allDungeonsChar.concat(activities2);
                     page++;
                 }
 
@@ -255,15 +254,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
         );
         allDungeons = allDungeons.flat();
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
-        allDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
         allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-
-        console.log("All Dungeons ", allClearedDungeons.length);
-        let allClearedFreshDungeons = await getAllFreshDungeons(allDungeons);
+        //let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
+        let allClearedFreshDungeons = [];
         const completitions = allClearedDungeons.length;
-        const freshCompletitions = allClearedFreshDungeons.length;
-        const checkpointCompletitions = allClearedDungeons.length - allClearedFreshDungeons.length;
+        const freshCompletitions = allClearedFreshDungeons?.filter(dungeon => dungeon.activityWasStartedFromBeginning == true).length || 0;
+        const checkpointCompletitions = allClearedFreshDungeons.filter(dungeon => dungeon.activityWasStartedFromBeginning == false).length || 0;
 
         return {
             completitions,
@@ -272,24 +269,20 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
     }
 
-    async function getAllFreshDungeons(allClearedDungeons) {
-        let freshDungeons = [], batchSize = 10;
-        for (let i = 0; i < allClearedDungeons.length; i += batchSize) {
-            const batch = allClearedDungeons.slice(i, i + batchSize);
-            const results = await Promise.all(batch.map(async (dungeon) => {
-                try {
+    async function getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds) {
+        const limit = pLimit(250);
+        const results = await Promise.all(
+            allClearedDungeons.map(dungeon =>
+                limit(async () => {
                     const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
-                    console.log("Carnage Report for Dungeon: ", acts);
-                    if (acts.activityWasStartedFromBeginning === true) {
-                        return dungeon;
-                    }
-                } catch (error) {
-                }
-                return null;
-            }));
-            freshDungeons.push(...results.filter(Boolean));
-        }
-        return freshDungeons;
+                    return {
+                        ...dungeon,
+                        activityWasStartedFromBeginning: acts.activityWasStartedFromBeginning,
+                    };
+                })
+            )
+        );
+        return results;
     }
 
     async function fetchAllCompetitiveMatches(membershipType, userId, charactersData, progressions) {
@@ -388,10 +381,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
             totalKD,
             lighthouse,
             precisionKills,
-            seal: {
+            seals: {
                 name: seal?.displayProperties?.name || "Desconocido",
-                iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
-                iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                iconComplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                iconIncomplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                 hash: seal?.hash,
                 completionRecordHash: seal?.completionRecordHash || 0,
                 completed: progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
@@ -452,8 +445,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
                 return {
                     name: seal?.displayProperties?.name || "Desconocido",
-                    iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
-                    iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                    iconComplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                    iconIncomplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                     hash: seal?.hash,
                     completionRecordHash: seal?.completionRecordHash || 0,
                     completed: false,
@@ -506,11 +499,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
             invadersDefeated,
             motas,
             winDefeatRatio,
-            seal:
+            seals:
             {
                 name: seal?.displayProperties?.name || "Desconocido",
-                iconComplete: seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
-                iconIncomplete: seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
+                iconComplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
+                iconIncomplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                 hash: seal?.hash,
                 completionRecordHash: seal?.completionRecordHash || 0,
                 completed: progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete,
