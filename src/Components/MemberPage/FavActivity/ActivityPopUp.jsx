@@ -3,52 +3,66 @@ import { useEffect, useState } from "react";
 export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
     return (
         <div className="bg-black/90 opacity-90 p-3 rounded w-fit min-w-60" onClick={onClose}>
-            {activity?.modeData?.favoriteActivity && (
-                <p>Favorita: {activity.modeData.favoriteActivity.displayProperties?.name}</p>
-            )}
-            {activity?.modeData?.completions?.completitions != null || activity?.completions != null ? (
-                <p>Completiciones: {activity?.modeData?.completions?.completitions ?? activity?.completions}</p>
-            ) : null}
-            {activity?.modeData?.completions?.freshCompletitions != null && (
-                <p>Fresh: {activity.modeData.completions.freshCompletitions}</p>
-            )}
-            {activity?.modeData?.completions?.checkpointCompletitions != null && (
-                <p>Checkpoint: {activity.modeData.completions.checkpointCompletitions}</p>
-            )}
-            {activity?.modeData?.winDefeatRatio != null && (
-                <p>Win ratio: {activity.modeData.winDefeatRatio}%</p>
-            )}
-            {activity?.modeData?.invadersDefeated != null && (
-                <p>Invasores derrotados: {activity.modeData.invadersDefeated}</p>
-            )}
-            {activity?.modeData?.motas != null && (
-                <p>Motas: {activity.modeData.motas}</p>
-            )}
-            {activity?.modeData?.kd != null && (
-                <p>KD: {activity.modeData.kd}</p>
-            )}
-            {activity?.modeData?.precisionKills != null && (
-                <p>Precision: {activity.modeData.precisionKills}</p>
-            )}
-            {(activity?.modeData?.division?.logo || activity?.modeData?.division?.currentProgress != null) && (
-                <div className="flex items-center">
-                    {activity?.modeData?.division?.logo && (
-                        <img src={activity.modeData.division.logo} className="w-8 h-8" />
+            <div className="flex mb-2 justify-between w-full h-30">
+                <div className="flex flex-col h-full">
+                    {activity?.modeData?.favoriteActivity && (
+                        <p>Favorita: {activity.modeData.favoriteActivity.displayProperties?.name}</p>
                     )}
-                    {activity?.modeData?.division?.currentProgress != null && (
-                        <p> {activity.modeData.division.currentProgress}</p>
+                    {activity?.modeData?.completions?.completitions != null || activity?.completions != null ? (
+                        <p>Completiciones: {activity?.modeData?.completions?.completitions ?? activity?.completions}</p>
+                    ) : null}
+                    {activity?.modeData?.completions?.freshCompletitions != null && (
+                        <p>Full: {activity.modeData.completions.freshCompletitions}</p>
+                    )}
+                    {activity?.modeData?.completions?.checkpointCompletitions != null && (
+                        <p>Checkpoint: {activity.modeData.completions.checkpointCompletitions}</p>
+                    )}
+                    {activity?.modeData?.winDefeatRatio != null && (
+                        <p>Win ratio: {activity.modeData.winDefeatRatio}%</p>
+                    )}
+                    {activity?.modeData?.invadersDefeated != null && (
+                        <p>Invasores derrotados: {activity.modeData.invadersDefeated}</p>
+                    )}
+                    {activity?.modeData?.motas != null && (
+                        <p>Motas: {activity.modeData.motas}</p>
+                    )}
+                    {activity?.modeData?.kd != null && (
+                        <p>KD: {activity.modeData.kd}</p>
+                    )}
+                    {activity?.modeData?.precisionKills != null && (
+                        <p>Precision: {activity.modeData.precisionKills}</p>
+                    )}
+                    {(activity?.modeData?.division?.logo || activity?.modeData?.division?.currentProgress != null) && (
+                        <div className="flex items-center">
+                            {activity?.modeData?.division?.logo && (
+                                <img src={activity.modeData.division.logo} className="w-8 h-8" />
+                            )}
+                            {activity?.modeData?.division?.currentProgress != null && (
+                                <p> {activity.modeData.division.currentProgress}</p>
+                            )}
+                        </div>
+                    )}
+                    {pvpWeapon && (
+                        <p>
+                            Arma PVP:{" "}
+                            <i
+                                className={pvpWeapon.icon}
+                                title={pvpWeapon.name + "\n" + pvpWeapon.kills + " bajas"}
+                            ></i>
+                        </p>
                     )}
                 </div>
-            )}
-            {pvpWeapon && (
-                <p>
-                    Arma PVP:{" "}
-                    <i
-                        className={pvpWeapon.icon}
-                        title={pvpWeapon.name + "\n" + pvpWeapon.kills + " bajas"}
-                    ></i>
-                </p>
-            )}
+                {activity.characterCompletions &&
+                    <div className="flex flex-col justify-evenly items-center">
+                        {Object.entries(activity.characterCompletions).map(([indx, char]) => (
+                            <div key={indx} className="flex flex-col justify-center items-center">
+                                <img src={char.classImg.link} title={char.totalCompletions} className="w-6 h-6 " style={{ filter: char.classImg.colore }} />
+                                <p className="text-xs">{char.percentage}%</p>
+                            </div>
+                        ))}
+                    </div>
+                }
+            </div>
             {activity?.modeData?.seals && (
                 <div className="flex flex-col items-start">
                     {Array.isArray(activity.modeData.seals) ? (
@@ -78,23 +92,13 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     )}
                 </div>
             )}
-            {activity.characterCompletions &&
-                <div className="flex w-full justify-evenly">
-                    {Object.entries(activity.characterCompletions).map(([indx, char]) => (
-                        <div key={indx}>
-                            <img src={char.classImg.link} title={char.totalCompletions} className="w-10 h-10 mb-2" style={{ filter: char.classImg.colore }} />
-                            <p>{char.percentage}%</p>
-                        </div>
-                    ))}
-                </div>
-            }
         </div>
     );
 
     // Slider component
     function SealSlider({ seals }) {
         const [offset, setOffset] = useState(0);
-        const itemWidth = 90; // px
+        const itemWidth = 50; // px
         const visibleCount = 4;
         const speed = 0.3; // px por frame
 
@@ -142,9 +146,9 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                             <img
                                 src={seal.iconComplete}
                                 alt={seal.name}
-                                className={`w-16 h-16 mb-2 ${seal.completed ? "opacity-100" : "opacity-40"}`}
+                                className={`w-9 h-9 mb-1 ${seal.completed ? "opacity-100" : "opacity-40"}`}
                             />
-                            <p className="text-xs text-center">{seal.name}</p>
+                            <p className="text-[0.35rem] text-center w-14 uppercase">{seal.name}</p>
                         </div>
                     ))}
                 </div>

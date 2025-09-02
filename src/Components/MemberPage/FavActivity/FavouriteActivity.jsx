@@ -228,7 +228,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allActivities = allActivities.filter(activity => activity?.player?.completed == true);
         const completitions = allActivities.length;
         const freshCompletitions = allActivities.filter(activity => activity?.fresh == true).length;
-        const checkpointCompletitions = allActivities.filter(activity => activity?.fresh == false).length;
+        const checkpointCompletitions = allActivities.filter(activity => activity?.fresh == false || activity?.fresh == null).length;
 
         return {
             completitions,
@@ -450,8 +450,15 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const SealData = await Promise.all(
             seals.map(async (sealHash) => {
                 const seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
+                let sealName = seal?.displayProperties?.name || "Desconocido";
+                if (sealName.startsWith("El ")) {
+                    sealName = sealName.slice(3);
+                } else if (sealName.startsWith("La ")) {
+                    sealName = sealName.slice(3);
+                }
+                sealName = sealName.charAt(0).toUpperCase() + sealName.slice(1);
                 return {
-                    name: seal?.displayProperties?.name || "Desconocido",
+                    name: sealName || "Desconocido",
                     iconComplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[0]?.frames?.[0],
                     iconIncomplete: API_CONFIG.BUNGIE_API + seal?.displayProperties?.iconSequences?.[1]?.frames?.[0],
                     hash: seal?.hash,
