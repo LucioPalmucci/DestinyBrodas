@@ -8,7 +8,14 @@ import { useBungieAPI } from '../../APIservices/BungieAPIcache';
 import { getTimeSinceLastConnection } from '../../LastConexion';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';
+import Commendations from '../Commendations/Commendations';
+import CurrentActivity from '../CurrentActivity/CurrentActivity';
 import FavouriteActivity from '../FavActivity/FavouriteActivity';
+import FavouriteWeapons from '../FavWeapons/FavouriteWeapons';
+import ActivityHistory from '../History/ActivityHistory';
+import SimpleLoadout from '../Lodaut/SimpleLodaut';
+import ClanTeammates from '../Teammates/ClanTeamates';
+import TriumphScore from '../TriumphScore/TriumphScore';
 import ReportLinks from './ReportLinks';
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -157,24 +164,24 @@ function MemberDetail() {
                                 </div>
                             </div>
                         )}
-                        {/* <TriumphScore userId={membershipId} membershipType={membershipType} /> */}
-                        {/* <Commendations userId={membershipId} membershipType={membershipType} />
+                         <TriumphScore userId={membershipId} membershipType={membershipType} />
+                         <Commendations userId={membershipId} membershipType={membershipType} />
                         <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
-                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} /> */}
+                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div className='w-[60%] space-y-6'>
                         <div className='flex items-center'>
                             <div className='flex space-x-6 w-full'>
-                            {/* <div className='space-y-6 w-full'>
+                             <div className='space-y-6 w-full'>
                                 <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
                                 <ClanTeammates userId={membershipId} membershipType={membershipType} />
-                            </div> */}
+                            </div>
                             <div className='w-full'>
                                 <FavouriteActivity userId={membershipId} membershipType={membershipType} />
                             </div>
                             </div>
                         </div>
-                        {/* <ActivityHistory userId={membershipId} membershipType={membershipType} /> */}
+                         <ActivityHistory userId={membershipId} membershipType={membershipType} />
                     </div>
                 </div>
             </div>

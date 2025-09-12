@@ -613,8 +613,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 </div>
             ) : (
                 <div className="flex flex-col space-y-6">
-                    <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
-                    <div className="py-4 p-6 rounded-lg h-[375px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
+                    <div className="py-4 p-6 rounded-lg h-[300px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
+                    <div className="py-4 p-6 rounded-lg h-[300px] flex justify-center bg-gray-300 items-center animate-pulse"></div>
                 </div>
             )}
         </div>

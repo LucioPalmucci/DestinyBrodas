@@ -96,6 +96,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
+                console.log("Party Members Details:", partyMembersDetails);
                 setPartyMembers(partyMembersDetails);
 
                 if (partyMembers.length > 1) {
@@ -283,11 +284,11 @@ export default function CurrentActivity({ type, id, isOnline }) {
     return (
         <div className="w-full">
             {activity ? (
-                <div className="h-[375px] text-white p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className={`w-full h-full flex flex-col justify-between`}>
+                <div className="h-[300px] text-white px-3 p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
+                    <div className={`w-full h-full flex justify-between`}>
                         {activity.name ? (
-                            <div className="justify-between h-full">
-                                <div className={`flex items-top justify-between relative mb-0.5 ${partyMembers.length === 0 ? "mb-2" : "mb-0.5"}`}>
+                            <div className="justify-between h-full w-full">
+                                <div className={`flex items-center justify-between relative mb-0.5 ${partyMembers.length === 0 ? "mb-2" : "mb-0.5"}`}>
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold leading-tight">
                                             Actividad en curso
@@ -299,96 +300,101 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         <p className="italic text-xs leading-tight">Desde hace {activity.date} minutos</p>
                                     </div>
                                     {activity.logo &&
-                                        <div className="opacity-50 absolute right-0 -top-4">
-                                            <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-20 h-20" />
+                                        <div className="opacity-50 absolute right-0">
+                                            <img src={`${API_CONFIG.BUNGIE_API}${activity.logo}`} className="w-16 h-16 mb-1" />
                                         </div>
                                     }
                                 </div>
-                                <div className="bg-black/25 p-2 rounded-lg w-fit">
-                                    {activity.PVPoPVE === "PVP" ? (
-                                        <>
-                                            {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
-                                            <p className="mb-0 font-semibold text-xl">{activity.planeta}
-                                                {activity.planeta && activity.name !== activity.planeta && <span> - {activity.name}{activity.mapaDePVP}</span>}<br />
-                                            </p>
-                                        </>
-                                    ) : <>
-                                        {<p className="text-4xl font-semibold">{activity.name}</p>}
-                                        {activity.playlist && !activity.name.includes(activity.playlist) && <p className="text-3xl font-semibold">{activity.playlist}</p>}
-                                        <p className="mb-0 font-semibold text-xl">
-                                            {activity.type && (activity.destinación === activity.name || activity.destinación === null) && <p>{activity.type}</p>}
-                                            {activity.destinación && activity.type == null && <p>{activity.destinación}</p>}
-                                            {activity.destinación && activity.type && activity.destinación !== activity.name && (
-                                                <span> {activity.type} - {activity.destinación}</span>
-                                            )}
-                                        </p>
-                                    </>}
-                                    {activity.PVPoPVE === "PVP" && activity.oponentes != null ? (
-                                        <div className="flex justify-evenly">
-                                            <div className="flex flex-col text-center items-center">
-                                                {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
-                                                <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
-                                                    <p className="text-xl">{activity.puntosAliados || 0}</p>
-                                                </div>
-                                            </div>
-                                            <div className="border-l border-gray-100 mx-4"></div>
-                                            <div className="flex flex-col text-center items-center">
-                                                {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
-                                                <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
-                                                    <p className="text-xl">{activity.puntosOponentes || 0}</p>
-                                                </div>
-                                            </div>
-                                        </div>) : (
-                                        <div>
-                                            {!activity.puntosAliados || activity.puntosAliados == 0 && <p className="text-start mb-0">Puntos: {activity.puntosAliados}</p>}
+                                <div className={`${activity.PVPoPVE === "PVP" ? "flex-row" : "flex-col"} w-full flex space-x-4`}>
+                                    <div className={`bg-black/25 rounded-lg ${partyMembers.length > 1 ? "w-80" : "w-fit"}`}>
+                                        <div className="px-2">
+                                            {activity.PVPoPVE === "PVP" ? (
+                                                <>
+                                                    {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
+                                                    <p className="mb-0 font-semibold text-xl">{activity.planeta}
+                                                        {activity.planeta && activity.name !== activity.planeta && <span> - {activity.name}{activity.mapaDePVP}</span>}<br />
+                                                    </p>
+                                                </>
+                                            ) : <>
+                                                {<p className="text-4xl font-semibold">{activity.name}</p>}
+                                                {activity.playlist && !activity.name.includes(activity.playlist) && <p className="text-3xl font-semibold">{activity.playlist}</p>}
+                                                <p className="mb-0 font-semibold text-xl">
+                                                    {activity.type && (activity.destinación === activity.name || activity.destinación === null) && <p>{activity.type}</p>}
+                                                    {activity.destinación && activity.type == null && <p>{activity.destinación}</p>}
+                                                    {activity.destinación && activity.type && activity.destinación !== activity.name && (
+                                                        <span> {activity.type} - {activity.destinación}</span>
+                                                    )}
+                                                </p>
+                                            </>}
                                         </div>
-                                    )}
-
+                                        {activity.PVPoPVE === "PVP" && activity.oponentes != null ? (
+                                            <div className="flex justify-between mx-10 mb-2">
+                                                <div className="flex flex-col text-center items-center">
+                                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
+                                                    <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                        <p className="text-xl">{activity.puntosAliados || 0}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="border-l border-gray-100 mx-4"></div>
+                                                <div className="flex flex-col text-center items-center">
+                                                    {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Rivales:</span> {activity.oponentes}</p> : null}
+                                                    <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
+                                                        <p className="text-xl">{activity.puntosOponentes || 0}</p>
+                                                    </div>
+                                                </div>
+                                            </div>) : (
+                                            <div>
+                                                {!activity.puntosAliados || activity.puntosAliados == 0 && <p className="text-start mb-0">Puntos: {activity.puntosAliados}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {partyMembers.length > 0 && <div className={`bg-black/25 p-1 py-0.5 rounded-lg px-1.5 ${partyMembers.length > 1 ? "w-full" : "w-fit"}`} >
+                                        <h4 className="text-lg font-bold mb-0.5">Escuadra:</h4>
+                                        {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
+                                            <div className="relative w-full">
+                                                <CaruselTemmate
+                                                    members={partyMembers}
+                                                    onMemberClick={setJugadorSelected}
+                                                    selectedMember={jugadorSelected}
+                                                    mode={activity?.PVPoPVE}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <ul className={`grid gap-2 text-start w-full mb-5 ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                                                {partyMembers.map((member, idx) => (
+                                                    <li key={member.membershipId} className="relative">
+                                                        <a
+                                                            className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover"
+                                                            onClick={() => setJugadorSelected(idx)}
+                                                        >
+                                                            <>
+                                                                <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={30} height={30} alt="Emblem" />
+                                                                <div className="flex flex-col text-sm">
+                                                                    <span>{member.uniqueName}</span>
+                                                                    <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
+                                                                </div>
+                                                            </>
+                                                        </a>
+                                                        {jugadorSelected === idx && (
+                                                            <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
+                                                                <PopUpTeammate jugador={member} />
+                                                            </div>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>}
                                 </div>
                             </div>
                         ) : (
                             <p className="text-4xl font-semibold items-center bg-black/25 p-2 rounded-lg w-fit">En órbita </p>
                         )}
-                        {partyMembers.length > 0 && <div className={`bg-black/25 p-1 py-0.5 rounded-lg w-full px-1.5 ${partyMembers.length > 1 ? "w-full" : "w-fit"}`}>
-                            <h4 className="text-xl font-bold mb-1">Escuadra:</h4>
-                            {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
-                                <div className="relative w-full">
-                                    <CaruselTemmate
-                                        members={partyMembers}
-                                        onMemberClick={setJugadorSelected}
-                                        selectedMember={jugadorSelected}
-                                        mode={activity?.PVPoPVE}
-                                    />
-                                </div>
-                            ) : (
-                                <ul className={`grid gap-2 text-start w-full mb-5 ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-                                    {partyMembers.map((member, idx) => (
-                                        <li key={member.membershipId} className="relative">
-                                            <a
-                                                className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover"
-                                                onClick={() => setJugadorSelected(idx)}
-                                            >
-                                                <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                                <div className="flex flex-col">
-                                                    <span>{member.uniqueName}</span>
-                                                    <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
-                                                </div>
-                                            </a>
-                                            {jugadorSelected === idx && (
-                                                <div ref={popupRef} className="absolute left-full top-0 z-50 ml-2">
-                                                    <PopUpTeammate jugador={member} />
-                                                </div>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>}
                     </div>
                 </div>
             ) : (
                 <div
-                    className="text-white p-6 rounded-lg content-fit shadow-lg h-[375px] flex flex-col bg-center bg-cover relative"
+                    className="text-white p-6 rounded-lg content-fit shadow-lg h-[300px] flex flex-col bg-center bg-cover relative"
                     style={{ backgroundImage: `url(${orbit})` }}
                 >
                     {/* Overlay de transparencia */}

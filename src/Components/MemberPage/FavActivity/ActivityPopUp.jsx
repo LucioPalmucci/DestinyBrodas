@@ -76,8 +76,8 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                     className={`w-16 h-16 mb-2 ${activity.modeData.seals.completed ? "opacity-100" : "opacity-40"}`}
                                 />
                                 <div
-                                    className="flex mt-2 items-center justify-center py-1 w-full border-white/25 border-y-[0.1px]"
-                                    style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
+                                    className="flex mt-2 items-center justify-center py-1 w-full"
+                                    //style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
                                 >
                                     <p className="tracking-[0.2em] text-xs uppercase titulo">{activity.modeData.seals.name}</p>
                                     {activity.modeData.seals.gilded && activity.modeData.seals.gilded > 0 && (
@@ -140,7 +140,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     {displaySeals.map((seal, idx) => (
                         <div
                             key={seal.hash + idx}
-                            className="flex flex-col items-center"
+                            className="flex flex-col items-center mx-1"
                             style={{ width: `${itemWidth}px`, flex: '0 0 auto' }}
                         >
                             <img
@@ -148,7 +148,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                 alt={seal.name}
                                 className={`w-9 h-9 mb-1 ${seal.completed ? "opacity-100" : "opacity-40"}`}
                             />
-                            <p className="text-[0.35rem] text-center w-14 uppercase">{seal.name}</p>
+                            <p className="text-[0.32rem] text-center w-14 uppercase">{seal.name}</p>
                         </div>
                     ))}
                 </div>
