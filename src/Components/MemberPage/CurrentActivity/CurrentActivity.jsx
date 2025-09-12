@@ -96,7 +96,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
-                console.log("Party Members Details:", partyMembersDetails);
+                console.log("Party Members Details: dsdds ", activity);
                 setPartyMembers(partyMembersDetails);
 
                 if (partyMembers.length > 1) {
@@ -131,7 +131,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
     };
 
     const fetchPartyMembersDetails = async (partyMembersData, activity2) => {
-        const filteredMembers = partyMembersData.filter(member => member.membershipId !== id); //Filtra el usuario de la pagina
+        const filteredMembers = Array(3).fill(partyMembersData).flat();//.filter(member => member.membershipId !== id); //Filtra el usuario de la pagina
         return await Promise.all(filteredMembers.map(async member => {
             const plataformas = [3, 1, 2, 10, 6];
             let profileResponse;
@@ -287,7 +287,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 <div className="h-[300px] text-white px-3 p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
                     <div className={`w-full h-full flex justify-between`}>
                         {activity.name ? (
-                            <div className="justify-between h-full w-full">
+                            <div className="justify-between flex flex-col h-full w-full">
                                 <div className={`flex items-center justify-between relative mb-0.5 ${partyMembers.length === 0 ? "mb-2" : "mb-0.5"}`}>
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold leading-tight">
@@ -305,9 +305,9 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         </div>
                                     }
                                 </div>
-                                <div className={`${activity.PVPoPVE === "PVP" ? "flex-row" : "flex-col"} w-full flex space-x-4`}>
-                                    <div className={`bg-black/25 rounded-lg ${partyMembers.length > 1 ? "w-80" : "w-fit"}`}>
-                                        <div className="px-2">
+                                <div className={`${activity.PVPoPVE === "PVP" ? "flex-row" : "flex-col"} w-full flex gap-3 h-full`}>
+                                    <div className={`bg-black/25 rounded-lg ${activity.PVPoPVE === "PVP" ? "w-70" : "w-fit"} flex flex-col`}>
+                                        <div className="p-2">
                                             {activity.PVPoPVE === "PVP" ? (
                                                 <>
                                                     {activity.type && !activity.type.includes(activity.name) && <p className="text-4xl font-semibold mb-0">{activity.type}</p>}
@@ -328,7 +328,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                             </>}
                                         </div>
                                         {activity.PVPoPVE === "PVP" && activity.oponentes != null ? (
-                                            <div className="flex justify-between mx-10 mb-2">
+                                            <div className="flex justify-between mx-10 mt-6">
                                                 <div className="flex flex-col text-center items-center">
                                                     {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
                                                     <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">
@@ -348,10 +348,10 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                             </div>
                                         )}
                                     </div>
-                                    {partyMembers.length > 0 && <div className={`bg-black/25 p-1 py-0.5 rounded-lg px-1.5 ${partyMembers.length > 1 ? "w-full" : "w-fit"}`} >
+                                    {partyMembers.length > 0 && <div className={`bg-black/25 p-1 py-0.5 rounded-lg px-1.5 ${activity?.PVPoPVE === "PVP" ? "w-55" : "w-[500px]"}`} >
                                         <h4 className="text-lg font-bold mb-0.5">Escuadra:</h4>
-                                        {partyMembers.length > 4 || (activity?.PVPoPVE === "PVP" && partyMembers.length > 2) ? (
-                                            <div className="relative w-full">
+                                        {(activity?.PVPoPVE != "PVP" && partyMembers.length > 2) || (activity?.PVPoPVE === "PVP" && partyMembers.length > 3) ? (
+                                            <div className="relative">
                                                 <CaruselTemmate
                                                     members={partyMembers}
                                                     onMemberClick={setJugadorSelected}
@@ -360,15 +360,15 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                                 />
                                             </div>
                                         ) : (
-                                            <ul className={`grid gap-2 text-start w-full mb-5 ${partyMembers.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                                            <ul className={`grid gap-1 text-start w-full ${activity.PVPoPVE == "PVP" ? "grid-cols-1" : "grid-cols-3"}`}>
                                                 {partyMembers.map((member, idx) => (
                                                     <li key={member.membershipId} className="relative">
                                                         <a
-                                                            className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover"
+                                                            className="flex items-center gap-2 bg-black/25 p-2 rounded-lg cursor-pointer transition-all duration-200 clan-member-shimmer-hover w-50"
                                                             onClick={() => setJugadorSelected(idx)}
                                                         >
                                                             <>
-                                                                <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={30} height={30} alt="Emblem" />
+                                                                <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={33} height={33} alt="Emblem" />
                                                                 <div className="flex flex-col text-sm">
                                                                     <span>{member.uniqueName}</span>
                                                                     <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>

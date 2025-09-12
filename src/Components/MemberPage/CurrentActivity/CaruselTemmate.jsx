@@ -12,18 +12,18 @@ import PopUpTeammate from "./PopUpTeammate";
 const CustomPrevArrow = ({ onClick }) => (
     <button
         onClick={onClick}
-        className="absolute -left-5 top-1/2 transform -translate-y-1/2 -translate-x-2 bg-black/25 hover:bg-black/40 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
+        className="absolute left-0.5 top-1/2 transform -translate-y-1/2 -translate-x-2 bg-black/25 hover:bg-black/40 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
     >
-        <img src={caretLeft} width={10} height={10} alt="Previous" style={{ filter: "brightness(0) saturate(100%) invert(1)" }} />
+        <img src={caretLeft} width={7} height={7} alt="Previous" style={{ filter: "brightness(0) saturate(100%) invert(1)" }} />
     </button>
 );
 
 const CustomNextArrow = ({ onClick }) => (
     <button
         onClick={onClick}
-        className="absolute -right-5 top-1/2 transform -translate-y-1/2 translate-x-2 bg-black/25 hover:bg-black/40 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
+        className="absolute right-0.5 top-1/2 transform -translate-y-1/2 translate-x-2 bg-black/25 hover:bg-black/40 p-1 px-2 rounded-lg transition-all duration-200 z-10 cursor-pointer"
     >
-        <img src={caretRight} width={10} height={10} alt="Next" style={{ filter: "brightness(0) saturate(100%) invert(1)" }} />
+        <img src={caretRight} width={7} height={7} alt="Next" style={{ filter: "brightness(0) saturate(100%) invert(1)" }} />
     </button>
 );
 
@@ -37,11 +37,11 @@ export default function CaruselTemmate({ members, onMemberClick, mode }) {
         dots: false,
         infinite: true,
         speed: 300,
-        slidesToShow: 2,
+        slidesToShow: mode === "PVP" ? 1 : 2,
         slidesToScroll: 1,
         autoplay: false,
         arrows: true,
-        rows: mode == "PVP" ? 1 : 2,
+        rows: mode === "PVP" ? 3 : 1,
         slidesPerRow: 1,
         prevArrow: <CustomPrevArrow />,
         nextArrow: <CustomNextArrow />,
@@ -101,17 +101,17 @@ export default function CaruselTemmate({ members, onMemberClick, mode }) {
 
     return (
         <div>
-            <div className="relative min-h-fit">
-                <Slider {...settings} className="w-[500px]">
+            <div className="relative min-h-fit justify-center flex items-center">
+                <Slider {...settings} className="w-full px-4">
                     {members.map((member, idx) => (
-                        <div key={member.membershipId} className="px-1 py-1">
+                        <div key={member.membershipId} className="px-1 py-0.5">
                             <div className="relative">
                                 <a
                                     className={`flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200  clan-member-shimmer-hover`}
                                     onClick={(e) => handleMemberClick(idx, e)}
                                 >
-                                    <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={40} height={40} alt="Emblem" />
-                                    <div className="flex flex-col">
+                                    <img src={`${API_CONFIG.BUNGIE_API}${member.emblemPath}`} width={33} height={33} alt="Emblem" />
+                                    <div className="flex flex-col text-sm">
                                         <span>{member.uniqueName}</span>
                                         <span>{member.clase} <i className={`icon-${member.subclass}`} style={{ fontStyle: "normal" }} /> - {member.light}</span>
                                     </div>
