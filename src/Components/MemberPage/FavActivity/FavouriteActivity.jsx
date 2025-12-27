@@ -139,8 +139,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         modeData: modeGroups[mode].modeData || [],
                     });
                 }
-
-                console.log("Temp Mode Data", tempModeData);
                 const mid = Math.ceil(tempModeData.length / 2);
                 let tempPVE = tempModeData.slice(0, mid);
                 let tempPVP = tempModeData.slice(mid);
@@ -315,7 +313,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 : "0.0";
         });
         allCompetitive = allCompetitive.flat();
-        console.log("All Competitive Activities", allCompetitive);
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
         allCompetitive.forEach(activity => {
             completions += activity?.values?.completed?.basic?.value || 0;
@@ -441,7 +438,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function fetchAllSeals(isRaid, progressions) {
         const raidSeals = [3954661385, 334829503, 238107129, 1976056830, 2613142083, 2886738008, 3734352323, 2960810718, 1827854727, 1486062207, 3492865493];
-        const dungeonSeals = [2105055614, 2723381343, 1021469803, 1705744655, 4183969062, 854126634, 2603002048];
+        const dungeonSeals = [1504131436, 2105055614, 2723381343, 1021469803, 1705744655, 4183969062, 854126634, 2603002048];
 
         let seals = [];
         if (isRaid) seals = raidSeals;
@@ -586,7 +583,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         const responseGeneral = await getGeneralStats(membershipType, userId);
         let mostUsedWeapon = null;
         Object.values(responseGeneral.mergedAllCharacters.results.allPvP.allTime).forEach(weapon => {
-            if (weapon.statId && weapon.statId.includes("weapon")) {
+            if (weapon.statId && weapon.statId.includes("weapon") && !weapon.statId.includes("Super") && !weapon.statId.includes("Melee") && !weapon.statId.includes("Grenade")) {
                 if (!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
                     mostUsedWeapon = weapon;
                 }

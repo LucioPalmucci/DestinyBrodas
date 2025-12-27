@@ -80,12 +80,12 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                     //style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
                                 >
                                     <p className="tracking-[0.2em] text-xs uppercase titulo">{activity.modeData.seals.name}</p>
-                                    {activity.modeData.seals.gilded && activity.modeData.seals.gilded > 0 && (
+                                    {activity.modeData.seals.gilded > 0 && (
                                         <div className="flex items-center ml-1">
                                             <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
                                             <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{activity.modeData.seals.gilded}</p>
                                         </div>
-                                    )}
+                                    ) }
                                 </div>
                             </div>
                         </div>

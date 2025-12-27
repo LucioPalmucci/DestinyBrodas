@@ -96,7 +96,6 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
-                console.log("Party Members Details: dsdds ", activity);
                 setPartyMembers(partyMembersDetails);
 
                 if (partyMembers.length > 1) {
@@ -131,7 +130,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
     };
 
     const fetchPartyMembersDetails = async (partyMembersData, activity2) => {
-        const filteredMembers = Array(3).fill(partyMembersData).flat();//.filter(member => member.membershipId !== id); //Filtra el usuario de la pagina
+        const filteredMembers = Array(3).fill(partyMembersData).flat().filter(member => member.membershipId !== id); //Filtra el usuario de la pagina
         return await Promise.all(filteredMembers.map(async member => {
             const plataformas = [3, 1, 2, 10, 6];
             let profileResponse;
@@ -285,9 +284,9 @@ export default function CurrentActivity({ type, id, isOnline }) {
         <div className="w-full">
             {activity ? (
                 <div className="h-[300px] text-white px-3 p-6 rounded-lg shadow-lg flex bg-center bg-cover w-full" style={{ backgroundImage: `url(${activity.imagen})` }}>
-                    <div className={`w-full h-full flex justify-between`}>
+                    <div className={`w-full h-fit flex justify-between`}>
                         {activity.name ? (
-                            <div className="justify-between flex flex-col h-full w-full">
+                            <div className="justify-between flex flex-col h-fit w-full">
                                 <div className={`flex items-center justify-between relative mb-0.5 ${partyMembers.length === 0 ? "mb-2" : "mb-0.5"}`}>
                                     <div className="bg-black/25 p-2 rounded-lg w-fit h-fit">
                                         <div className="flex items-center text-lg font-semibold leading-tight">
@@ -328,7 +327,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                             </>}
                                         </div>
                                         {activity.PVPoPVE === "PVP" && activity.oponentes != null ? (
-                                            <div className="flex justify-between mx-10 mt-6">
+                                            <div className="flex justify-between mx-10 mt-1 mb-1">
                                                 <div className="flex flex-col text-center items-center">
                                                     {activity.oponentes ? <p className="mb-2"><span className="font-semibold">Aliados:</span> {activity.jugadores}</p> : null}
                                                     <div className="w-[50px] py-2 border-1 border-white items-center flex justify-center">

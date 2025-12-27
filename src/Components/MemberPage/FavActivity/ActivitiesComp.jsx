@@ -10,7 +10,6 @@ const ActivitiesComp = ({ activities, tipo, pvpWeapon }) => {
         setHoveredIndex(index);
         const rect = itemRefs.current[index]?.getBoundingClientRect();
         if (rect) {
-            console.log("Mouse entered:", index);
             if (window.innerWidth - rect.right < 200) {
                 setPopupDirection("left");
             } else {

@@ -115,7 +115,6 @@ export default function MemberCard({ member }) {
             const responseMode = await getItemManifest(currentActivityMode, "DestinyActivityModeDefinition");
             const responseName = await getItemManifest(currentActivityHash, "DestinyActivityDefinition");
             const responsePlaylist = await getItemManifest(currentPlaylist, "DestinyActivityDefinition");
-            console.log("activityResponse", responseName);
             const name = responseName?.displayProperties?.name || 'En órbita';
             const type = responseMode?.displayProperties?.name;
             const playlist = responsePlaylist?.displayProperties?.name;

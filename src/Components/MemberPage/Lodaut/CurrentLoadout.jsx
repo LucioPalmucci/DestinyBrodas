@@ -345,9 +345,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     function sortByArtificePerk(perks) {
+
         const modifiers = [
             "enhancements",
             "intrinsics",
+            "tuning.mods"
         ]
         const design = [
             "shader",
@@ -357,7 +359,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const designPerks = perks.filter(perk => design.some(des => perk?.perkType?.includes(des)));
 
         for (const mod of modifierPerks) {
-            if (mod.name.includes("Forjada con") || mod.name.includes("Modificador vacío")) {
+            if (mod.name.includes("Forjad") || mod.name.includes("Modificador vacío") || mod.name.includes("/") || mod.name.includes("equilibrado")) {
                 const index = modifierPerks.indexOf(mod);
                 if (index > -1) {
                     modifierPerks.splice(index, 1); // Remove the perk from its current position
@@ -395,7 +397,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     }
                     stats[6].value += 3;
                 }
-                if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && ![5, 10, 15].includes(stat.value)) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
+                if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && ![5, 10, 15].includes(stat.value) && stat.value > 0) { //Si es el mod de armadura mejorada, solo mejorar las que tienen base 0
                     if (stat.name == "Total") stat.value = stat.value - 15;
                     else stat.value = stat.value - 5;
                 }
@@ -417,7 +419,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             perkAz8 = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             break;
                         case 5: //Si es 5 por el mod insertado o por mejorar armadura
-                            if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && (stat.value == 5 || (stat.value == 15 || stat.value == 10 && stat.secciones["azul68a0b7"].value > 0))) {
+                            if (perksinvestmentStat.type == "v460.plugs.armor.masterworks" && (stat.value == 5 || (stat.value == 15 || stat.value == 10 && stat.secciones?.["azul68a0b7"].value > 0))) {
                                 amarillo += matchingStat.value || 0;
                                 perkAmarillo = "+" + matchingStat.value + " " + perksinvestmentStat.name
                             }
@@ -582,7 +584,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         const response = await getItemManifest(group, "DestinyStatGroupDefinition");
         const interpolatingStats = response.scaledStats;
         const order = response.scaledStats.map(stat => stat.statHash);
-        if (item.displayProperties.name == "Vuelo Festivo") console.log("hh", perksinvestmentStats, stats, tier);
         let weaponStats = await Promise.all(Object.values(stats).map(async (stat) => {
             const statResponse = await getItemManifest(stat.statTypeHash, "DestinyStatDefinition");
             // Verificar si algúna perk afecta el valor de la stat
@@ -822,7 +823,6 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (perkAmarillo) stat.isMw = true; //Atributo de obra maestra
             else stat.isMw = false;
         })
-        if(item.displayProperties.name == "Vuelo Festivo") console.log("stats", stats);
         return stats;
     }
 
@@ -894,7 +894,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             if (modActivo) {
                 let breakerInfo;
                 const text = modActivo.trim().toLowerCase();
-                if (text.includes("imparable")) {
+                if (text.includes("imparable") || text.includes("tormenta")) {
                     breakerInfo = await getItemManifest(3178805705, "DestinyBreakerTypeDefinition");
                 } else if (text.includes("sobrecarga")) {
                     breakerInfo = await getItemManifest(2611060930, "DestinyBreakerTypeDefinition");
@@ -1070,8 +1070,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             pointsProgress: artifact.pointProgression.currentProgress,
             pointsProgressNextLvl: artifact.pointProgression.progressToNextLevel,
             powerBonus: artifact?.powerBonus,
-            powerProgress: artifact.powerBonusProgression.progressToNextLevel,
-            powerProgressNextLvl: artifact.powerBonusProgression.nextLevelAt,
+            powerProgress: artifact.powerBonusProgression?.progressToNextLevel,
+            powerProgressNextLvl: artifact.powerBonusProgression?.nextLevelAt,
         })
     }
 
@@ -1119,7 +1119,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
         if (hash == null) return;
         let color;
         const response = await getItemManifest(hash, "DestinySandboxPerkDefinition");
-        if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5")) {
+        if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5") ||  response.displayProperties.description.includes("-5")) {
             color = "#68a0b7";
         } else if (response.displayProperties.description.includes("+3")) {
             color = "rgba(104, 160, 183, 0.8)";
@@ -1316,6 +1316,16 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
             return `<span style="color:#799AB5;">${match}</span>`;
         });
     }
+
+    const excludedModifiersWeapons = [
+        "weapon.mod_", 
+        "weapon_tiering",
+        "cosmetics",
+        "stat_upgrades",
+        "forms",
+        "perk_upgrades"
+    ];
+
 
     return (
         !loading ? (
@@ -1514,7 +1524,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                 <div className="flex space-x-2 justify-end">
                                                                     {items[index].perks.modifierPerks.map((perk) => (
                                                                         perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk.name !== "Ranura de potenciador de nivel de arma vacía" && (
-                                                                            !perk.perkType?.includes("weapon.mod_") && !perk.perkType?.includes("weapon_tiering") ?
+                                                                            !excludedModifiersWeapons.some(mod => perk.perkType?.includes(mod)) ?
                                                                                 (<div key={perk.perkHash} className="relative group ">
                                                                                     <svg viewBox="0 0 100 100" width="40" height="40" className="group">
                                                                                         <defs>
@@ -1675,7 +1685,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="border-l border-0.5 border-white/25 " style={{ height: "67px" }} />
-                                                                                    <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "28%" }}>
+                                                                                    <div className="space-y-1 flex flex-col justify-top items-center" style={{ width: "30%" }}>
                                                                                         <p className="font-semibold text-sm">Diseño</p>
                                                                                         <div className="flex flex-wrap space-x-1.5 w-fit mt-1">
                                                                                             {selectedWeapon.perks.cosmeticPerks.design.map((perk, index) => (
@@ -1906,7 +1916,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                         )}
                                                                         <div className="absolute left-10 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                             <strong>{perk.name}</strong><br />
-                                                                            {perk.desc?.description && (<p className={`text-xs whitespace-pre-line w-fit`} style={{ color: perk.desc?.color ?? "#FFF" }} dangerouslySetInnerHTML={{ __html: `${perk.desc?.description}` }} />)}
+                                                                            {perk.desc && (
+                                                                                <p className={`text-xs whitespace-pre-line w-fit`} style={{ color: typeof perk.desc === 'object' ? perk.desc?.color ?? "#FFF" : "#FFF" }} dangerouslySetInnerHTML={{ __html: typeof perk.desc === 'object' ? perk.desc?.description || "" : perk.desc }} />
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 )
@@ -1964,7 +1976,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                                         <div className="absolute left-70 top-1 mt-2 w-max max-w-[230px] bg-neutral-800 text-white text-xs p-1.5 border-1 border-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                                             <p>{stat.desc}</p>
                                                                                         </div>
-                                                                                        <p style={{ width: "31%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
+                                                                                        <p style={{ width: "34%", textAlign: "right", fontWeight: "300", marginRight: "2%" }} className={stat.isMw ? "text-[#e8a534]" : ""}>{stat.name}</p>
                                                                                         <p style={{ width: "8%", textAlign: "right", fontWeight: "300", marginRight: "2%", marginLeft: "1%" }} className={stat.isMw ? "text-[#e8a534]" : "" + stat.statHash == 1 ? "border-t-1 border-white" : ""}>{stat.statHash != 1 && "+"}{stat.value}</p>
                                                                                         {stat.iconPath ? (
                                                                                             <img src={`${API_CONFIG.BUNGIE_API}${stat.iconPath}`} height={12} style={{ marginRight: "3px", width: "3.5%" }} />
