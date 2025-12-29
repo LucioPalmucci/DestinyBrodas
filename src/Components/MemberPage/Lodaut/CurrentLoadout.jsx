@@ -135,9 +135,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                             return {
                                 ...perk,
                                 name: perkResponse.displayProperties.name,
-                                desc: perkResponse.displayProperties.description || await getDescription(perkResponse.perks[0]?.perkHash),
+                                desc: perkResponse.investmentStats.length >= 1 ? await getDescription(perkResponse.hash) : perkResponse.displayProperties.description,
                                 iconPath: perkResponse.displayProperties.icon,
-                                perkHash: perkResponse.perks[0]?.perkHash,
+                                perkHash: perkResponse.hash,
                                 perkType: perkResponse.plug.plugCategoryIdentifier,
                                 isEnhanced: perkResponse.itemTypeDisplayName,
                                 investmentStats: perkResponse.investmentStats,
@@ -722,7 +722,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                     if (invStat.statTypeHash == stat.statHash) {
                         if (perks[0] === perk || perk.name.includes("Obra Maestra")) { //Si esta en la posicion cero es el arquetipo o tiene obra maestra
                             if (perk.name.includes("Obra Maestra") && invStat.value == 3); //Si es una obra maestra no crafteada, no sumar stats secundarias
-                            if(perk.name.includes("Obra Maestra") && invStat.value == 0 && tier != null) { //Si es tier 5 y no tiene valor, sumarle 5
+                            if (perk.name.includes("Obra Maestra") && invStat.value == 0 && tier != null) { //Si es tier 5 y no tiene valor, sumarle 5
                                 amarillo += tier;
                                 perkAmarillo = tier + " Estadística Obra Maestra";
                                 if (stat.value < 100) stat.value += Math.min(tier, 100 - stat.value); //Sumar maximo hasta 100
@@ -1116,10 +1116,11 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getDescription(hash) {
+
         if (hash == null) return;
         let color;
         const response = await getItemManifest(hash, "DestinySandboxPerkDefinition");
-        if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5") ||  response.displayProperties.description.includes("-5")) {
+        if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5") || response.displayProperties.description.includes("-5")) {
             color = "#68a0b7";
         } else if (response.displayProperties.description.includes("+3")) {
             color = "rgba(104, 160, 183, 0.8)";
@@ -1318,7 +1319,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     const excludedModifiersWeapons = [
-        "weapon.mod_", 
+        "weapon.mod_",
         "weapon_tiering",
         "cosmetics",
         "stat_upgrades",
@@ -1460,7 +1461,7 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                             <div className="flex mb-2">
                                                 {items[11].perks.slice(7).map((perk, perkIndex) => (
                                                     perk.name != "Ranura de fragmento vacía" ? (
-                                                        <div className="group relative">
+                                                        <div key={perk.plugHash || perk.perkHash || `${perk.name}-${perkIndex}`} className="group relative">
                                                             <img key={perkIndex + perk.name} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className="w-[30px] h-[30px] mx-1" alt={perk.name} />
                                                             <div className="absolute left-8 top-1 mt-2 w-max max-w-[230px] text-white text-xs shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                                                 <div className="p-1 pb-2 px-2" style={{ backgroundColor: items[11].elementalColor.color }}>
@@ -1498,9 +1499,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     <div className={"flex space-x-2 mr-4"}>
                                                         {index == 8 || index == 16 ? (
                                                             index == 8 ? (
-                                                                items[index].perks?.map((perk) => (
+                                                                items[index].perks?.map((perk, pIdx) => (
                                                                     perk.name && (index !== 16 || perk.isVisible) && perk?.iconPath && perk?.name !== "Mejorar Espectro" && perk.name !== "Ranura de modificador de actividad" && perk.perkType !== "shader" && perk.perkType !== "hologram" && (
-                                                                        <div className="group relative">
+                                                                        <div className="group relative" key={perk.plugHash || perk.perkHash || pIdx}>
                                                                             <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={index == 16 ? "w-[25px] h-[25px]" : "w-[40px] h-[40px] mb-1"} alt={perk.name} />
                                                                             {perk.investmentStats?.[0]?.value && (
                                                                                 <span className="absolute top-0.5 right-[0.5px] text-white text-[0.5rem] rounded-full px-1">
@@ -1899,9 +1900,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     </div>
                                                     <div className="ml-4 justify-between flex flex-col">
                                                         <div className="flex space-x-2 mb-1">
-                                                            {items[index].perks.modifierPerks.map((perk) => (
+                                                            {items[index].perks.modifierPerks.map((perk, pIdx) => (
                                                                 perk && perk.isVisible && perk.name !== "Mejorar armadura" && perk.perkType != "intrinsics" && (
-                                                                    <div className="relative w-[40px] h-[40px] group">
+                                                                    <div className="relative w-[40px] h-[40px] group" key={`${perk.perkHash}-${pIdx}`}>
                                                                         <img
                                                                             src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`}
                                                                             width={40}
@@ -2036,9 +2037,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                                             <div className="space-y-1 flex flex-col justify-center items-center  font-[200]" style={{ width: "27%" }}>
                                                                                 <p className="text-sm font-semibold">Diseño</p>
                                                                                 <div className="space-x-2 flex flex ">
-                                                                                    {selectedArmor.perks?.cosmeticPerks?.map((perk) => (
+                                                                                    {selectedArmor.perks?.cosmeticPerks?.map((perk, pIdx) => (
                                                                                         perk.name && perk?.iconPath && (
-                                                                                            <img src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
+                                                                                            <img key={perk.plugHash || perk.perkHash || pIdx} src={`${API_CONFIG.BUNGIE_API}${perk.iconPath}`} className={"w-[30.5px] h-[30.5px]"} alt={perk.name} title={perk.name} />
                                                                                         )
                                                                                     ))}
                                                                                 </div>
@@ -2104,9 +2105,9 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                                     )}
                                                 </div>
                                                 <div className="flex justify-center items-center space-x-1">
-                                                    {items[index].perks?.map((perk) => (
+                                                    {items[index].perks?.map((perk, pIdx) => (
                                                         perk.iconPath && (
-                                                            <div className="relative">
+                                                            <div className="relative" key={perk.perkHash || perk.plugHash || pIdx}>
                                                                 {perk.perkType?.includes("vehicles.mod") ?
                                                                     (<div key={perk.perkHash} title={perk.name}>
                                                                         <svg viewBox="0 0 100 100" width="40" height="40" >
@@ -2173,8 +2174,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit z-0 text-start items-center justify-center h-full w-full">
                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">GESTOS</legend>
                                     <div className="flex space-x-8 justify-center mx-6">
-                                        {items[15].perks?.map((perk) => (
-                                            <div className="flex mb-4 ">
+                                        {items[15].perks?.map((perk, pIdx) => (
+                                            <div className="flex mb-4" key={perk.perkHash || perk.plugHash || perk.name || pIdx}>
                                                 {perk.iconPath && (
                                                     <div className="relative">
                                                         <a href={`https://www.light.gg/db/es/items/${perk.plugHash}`} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300">
@@ -2198,8 +2199,8 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                                 <fieldset className="flex flex-col border-2 px-4 rounded-lg w-fit text-start items-center justify-center py-4.5 h-full w-full">
                                     <legend className="text-white text-sm mb-2 z-10 font-semibold px-2">EMBLEMAS</legend>
                                     <div className="flex space-x-10 justify-evenly mx-4 pb-3">
-                                        {emblems.map((emblem) => (
-                                            <div className="flex flex-col mb-5 justify-center items-center">
+                                        {emblems.map((emblem, eIdx) => (
+                                            <div className="flex flex-col mb-5 justify-center items-center" key={`${emblem.hash}-${eIdx}`}>
                                                 <h1 className="font-semibold text-sm mb-1">{emblem.class}</h1>
                                                 {emblem.iconPath && (
                                                     <div className={`${emblem.currentClass === true ? "shadow-[0_0_6px_4px_rgba(255,215,0,0.8)] w-[50px] h-[50px]" : ""}`}>

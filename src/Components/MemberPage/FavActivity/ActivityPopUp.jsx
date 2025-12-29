@@ -38,7 +38,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                 <img src={activity.modeData.division.logo} className="w-8 h-8" />
                             )}
                             {activity?.modeData?.division?.currentProgress != null && (
-                                <p> {activity.modeData.division.currentProgress}</p>
+                                <p className="ml-0.5">{activity.modeData.division.currentProgress}</p>
                             )}
                         </div>
                     )}

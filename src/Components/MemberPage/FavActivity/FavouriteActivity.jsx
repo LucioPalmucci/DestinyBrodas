@@ -254,8 +254,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
         allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-        //let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
-        let allClearedFreshDungeons = [];
+        let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
+        //let allClearedFreshDungeons = [];
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons?.filter(dungeon => dungeon.activityWasStartedFromBeginning == true).length || 0;
         const checkpointCompletitions = allClearedFreshDungeons.filter(dungeon => dungeon.activityWasStartedFromBeginning == false).length || 0;
@@ -466,7 +466,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         );
 
         SealData.forEach(seal => {
-            seal.completed = progressions.profileRecords.data.records[seal.completionRecordHash].objectives[0].complete;
+            seal.completed = progressions.profileRecords.data.records?.[seal.completionRecordHash]?.objectives[0].complete;
         });
 
         return SealData;
