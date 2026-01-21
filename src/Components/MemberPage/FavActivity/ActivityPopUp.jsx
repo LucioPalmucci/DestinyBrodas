@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
+import check from '../../../assets/check.png';
+import favorite from '../../../assets/favorite.png';
+
 
 export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
     return (
         <div className="bg-black/90 opacity-90 p-3 rounded w-fit min-w-60" onClick={onClose}>
-            <div className="flex mb-2 justify-between w-full h-30">
-                <div className="flex flex-col h-full">
+            <div className="flex items-stretch mb-2 justify-between w-full font-normal text-[0.7rem] h-20">
+                <div className="flex flex-col h-full space-y-0.5 justify-center">
                     {activity?.modeData?.favoriteActivity && (
-                        <p>Favorita: {activity.modeData.favoriteActivity.displayProperties?.name}</p>
+                        <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]"/> {activity.modeData.favoriteActivity.displayProperties?.name}</p>
                     )}
                     {activity?.modeData?.completions?.completitions != null || activity?.completions != null ? (
-                        <p>Completiciones: {activity?.modeData?.completions?.completitions ?? activity?.completions}</p>
+                        <p className="flex items-center"><img src={check} alt="check" className="w-3 h-3 mr-1"/> {activity?.modeData?.completions?.completitions ?? activity?.completions}</p>
                     ) : null}
-                    {activity?.modeData?.completions?.freshCompletitions != null && (
-                        <p>Full: {activity.modeData.completions.freshCompletitions}</p>
-                    )}
-                    {activity?.modeData?.completions?.checkpointCompletitions != null && (
-                        <p>Checkpoint: {activity.modeData.completions.checkpointCompletitions}</p>
+                    {activity?.modeData?.completions?.freshCompletitions != null && activity?.modeData?.completions?.checkpointCompletitions != null && (
+                        <p className="pl-[16px] text-[0.58rem] opacity-70">Full: {activity.modeData.completions.freshCompletitions} | Check: {activity.modeData.completions.checkpointCompletitions}</p>
                     )}
                     {activity?.modeData?.winDefeatRatio != null && (
                         <p>Win ratio: {activity.modeData.winDefeatRatio}%</p>
@@ -53,43 +53,86 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     )}
                 </div>
                 {activity.characterCompletions &&
-                    <div className="flex flex-col justify-evenly items-center">
-                        {Object.entries(activity.characterCompletions).map(([indx, char]) => (
-                            <div key={indx} className="flex flex-col justify-center items-center">
-                                <img src={char.classImg.link} title={char.totalCompletions} className="w-6 h-6 " style={{ filter: char.classImg.colore }} />
-                                <p className="text-xs">{char.percentage}%</p>
+                    <div className="relative w-20 h-full">
+                        {(() => {
+                            const chars = Array.isArray(activity.characterCompletions)
+                                ? activity.characterCompletions.slice(0, 3)
+                                : Object.values(activity.characterCompletions).slice(0, 3);
+                            return (
+                                <div className="w-20 font-light h-full text-[0.65rem]">
+                                <div className="flex justify-center mb-1">
+                                    {chars[0] && (
+                                        <div className="flex flex-col items-center h-full">
+                                            <img
+                                                src={chars[0].classImg.link}
+                                                title={chars[0].totalCompletions || chars[0].completions}
+                                                className="w-5 h-5"
+                                                style={{ filter: chars[0].classImg.colore }}
+                                            />
+                                            <p>{(chars[0].percentage || 0)}%</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex justify-between">
+                                    {chars[1] ? (
+                                        <div className="flex flex-col items-center h-full">
+                                            <img
+                                                src={chars[1].classImg.link}
+                                                title={chars[1].totalCompletions || chars[1].completions}
+                                                className="w-5 h-5"
+                                                style={{ filter: chars[1].classImg.colore }}
+                                            />
+                                            <p>{(chars[1].percentage || 0)}%</p>
+                                        </div>
+                                    ) : <div /> }
+                                    {chars[2] ? (
+                                        <div className="flex flex-col items-center h-full">
+                                            <img
+                                                src={chars[2].classImg.link}
+                                                title={chars[2].totalCompletions || chars[2].completions}
+                                                className="w-5 h-5"
+                                                style={{ filter: chars[2].classImg.colore }}
+                                            />
+                                            <p>{(chars[2].percentage || 0)}%</p>
+                                        </div>
+                                    ) : <div /> }
+                                </div>
                             </div>
-                        ))}
+                            );
+                        })()}
                     </div>
                 }
             </div>
             {activity?.modeData?.seals && (
-                <div className="flex flex-col items-start">
-                    {Array.isArray(activity.modeData.seals) ? (
-                        <SealSlider seals={activity.modeData.seals} />
-                    ) : (
-                        <div className="flex flex-col items-center">
-                            <div className="flex flex-col justify-center items-center mb-4 cursor-pointer relative group">
-                                <img
-                                    src={activity.modeData.seals.iconComplete}
-                                    alt={activity.modeData.seals.name}
-                                    className={`w-16 h-16 mb-2 ${activity.modeData.seals.completed ? "opacity-100" : "opacity-40"}`}
-                                />
-                                <div
-                                    className="flex mt-2 items-center justify-center py-1 w-full"
+                <div>
+                    <div className="border-t border-0.5 border-white/25 mb-2.5 mx-3" />
+                    <div className="flex flex-col items-start">
+                        {Array.isArray(activity.modeData.seals) ? (
+                            <SealSlider seals={activity.modeData.seals} />
+                        ) : (
+                            <div className="flex flex-col items-center w-full">
+                                <div className="flex flex-col justify-center items-center cursor-pointer relative group">
+                                    <img
+                                        src={activity.modeData.seals.iconComplete}
+                                        alt={activity.modeData.seals.name}
+                                        className={`w-12 h-12  ${activity.modeData.seals.completed ? "opacity-100" : "opacity-40"}`}
+                                    />
+                                    <div
+                                        className="flex mt-2 items-center justify-center py-1 w-full"
                                     //style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
-                                >
-                                    <p className="tracking-[0.2em] text-xs uppercase titulo">{activity.modeData.seals.name}</p>
-                                    {activity.modeData.seals.gilded > 0 && (
-                                        <div className="flex items-center ml-1">
-                                            <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
-                                            <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{activity.modeData.seals.gilded}</p>
-                                        </div>
-                                    ) }
+                                    >
+                                        <p className="tracking-[0.2em] text-xs uppercase titulo">{activity.modeData.seals.name}</p>
+                                        {activity.modeData.seals.gilded > 0 && (
+                                            <div className="flex items-center ml-1">
+                                                <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
+                                                <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{activity.modeData.seals.gilded}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -127,7 +170,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
         return (
             <div
                 className="overflow-hidden w-full"
-                style={{ width: `${itemWidth * visibleCount}px` }}
+                style={{ width: `${itemWidth * visibleCount + 13}px` }}
             >
                 <div
                     className="flex"
@@ -148,7 +191,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                 alt={seal.name}
                                 className={`w-9 h-9 mb-1 ${seal.completed ? "opacity-100" : "opacity-40"}`}
                             />
-                            <p className="text-[0.32rem] text-center w-14 uppercase">{seal.name}</p>
+                            <p className="text-[0.32rem] text-center w-14 uppercase font-light">{seal.name}</p>
                         </div>
                     ))}
                 </div>

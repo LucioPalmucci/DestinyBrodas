@@ -131,11 +131,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
                         perks = await Promise.all(itemD.sockets.data?.sockets?.map(async (perk) => {
                             if (!perk.plugHash) return null;
                             const perkResponse = await getItemManifest(perk.plugHash, "DestinyInventoryItemDefinition");
-
                             return {
                                 ...perk,
                                 name: perkResponse.displayProperties.name,
-                                desc: perkResponse.investmentStats.length >= 1 ? await getDescription(perkResponse.hash) : perkResponse.displayProperties.description,
+                                desc: perkResponse.investmentStats.length >= 1 ? await getDescription(perkResponse.perks[0]?.perkHash) : perkResponse.displayProperties.description,
                                 iconPath: perkResponse.displayProperties.icon,
                                 perkHash: perkResponse.hash,
                                 perkType: perkResponse.plug.plugCategoryIdentifier,
@@ -1116,10 +1115,10 @@ export default function CurrentLoadout({ membershipType, userId, name, seasonHas
     }
 
     async function getDescription(hash) {
-
         if (hash == null) return;
         let color;
         const response = await getItemManifest(hash, "DestinySandboxPerkDefinition");
+        if (!response) return;
         if (response.displayProperties.description.includes("+10") || response.displayProperties.description.includes("+5") || response.displayProperties.description.includes("-5")) {
             color = "#68a0b7";
         } else if (response.displayProperties.description.includes("+3")) {

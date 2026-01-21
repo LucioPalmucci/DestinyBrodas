@@ -10,7 +10,7 @@ const ActivitiesComp = ({ activities, tipo, pvpWeapon }) => {
         setHoveredIndex(index);
         const rect = itemRefs.current[index]?.getBoundingClientRect();
         if (rect) {
-            if (window.innerWidth - rect.right < 200) {
+            if (window.innerWidth - rect.right < 300) {
                 setPopupDirection("left");
             } else {
                 setPopupDirection("right");
@@ -18,16 +18,16 @@ const ActivitiesComp = ({ activities, tipo, pvpWeapon }) => {
         }
     };
     return (
-        <div className="h-[300px] text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover" style={{ backgroundImage: `url(${activities[0]?.pgcrImg})` }}>
+        <div className="h-[300px] flex flex-col text-white p-6 px-3 rounded-lg space-y-2 content-fit justify-center shadow-lg object-fill bg-center bg-cover" style={{ backgroundImage: `url(${activities[0]?.pgcrImg})` }}>
             <div className="bg-black/25 p-2 rounded-lg w-fit">
                 <p className="flex items-center text-xl font-semibold mb-0 p-0 leading-tight">Actividades mas jugadas en {tipo}</p>
             </div>
-            <div className="flex space-x-2 bg-black/50 p-2 justify-between rounded-lg mt-4 h-fit text-sm font-semibold leading-tight w-full">
+            <div className="flex space-x-2 bg-black/50 justify-between rounded-lg mt-4 h-fit text-sm font-semibold leading-tight w-full">
                 {activities.map((activity, index) => (
                     <div
                         key={index}
                         ref={el => itemRefs.current[index] = el}
-                        className="relative flex flex-col space-y-2 items-center max-w-[25%] cursor-pointer"
+                        className="relative flex flex-col space-y-2 items-center max-w-[25%] cursor-pointer hover:bg-black/30 p-3 rounded-lg transition-colors"
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseLeave={() => setHoveredIndex(null)}
                     >

@@ -127,6 +127,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         characterCompletions[character.id].character = character.class;
                         characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
                     }
+                    characterCompletions = Object.values(characterCompletions).sort((a, b) => b.totalCompletions - a.totalCompletions);
 
                     tempModeData.push({
                         mode: modeGroups[mode].name,
@@ -254,8 +255,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
         allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-        let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
-        //let allClearedFreshDungeons = [];
+        //let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
+        let allClearedFreshDungeons = [];
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons?.filter(dungeon => dungeon.activityWasStartedFromBeginning == true).length || 0;
         const checkpointCompletitions = allClearedFreshDungeons.filter(dungeon => dungeon.activityWasStartedFromBeginning == false).length || 0;
@@ -312,6 +313,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 ? ((characterCompletions[charId].completions / totalCompletions) * 100).toFixed(1)
                 : "0.0";
         });
+
         allCompetitive = allCompetitive.flat();
         let completions = 0, timePlayed = 0, kills = 0, wins = 0, defeats = 0, kd = 0, deaths = 0;
         allCompetitive.forEach(activity => {
@@ -322,8 +324,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
             wins += activity?.values?.standing?.basic?.value == 0 ? 1 : 0;
             defeats += activity?.values?.standing?.basic?.value == 1 ? 1 : 0;
             kd += activity?.values?.killsDeathsRatio?.basic?.value || 0;
-            
-
         });
 
         let winDefeatRatio = (wins / (wins + defeats || 1) * 100).toFixed(1);
