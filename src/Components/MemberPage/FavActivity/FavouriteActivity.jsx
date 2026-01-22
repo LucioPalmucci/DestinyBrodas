@@ -62,14 +62,14 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 pruebas = pruebas.filter(hash => !competitivoSet.has(hash));
 
                 let modeGroups = {
-                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null },
-                    Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Operaciones", bgImg: strikesBG, modeData: [] },
-                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null },
-                    Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG },
-                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG, modeData: [] },
-                    Pruebas: { hashes: pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG },
-                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG, modeData: [] },
-                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2239249083, name: "Competitivo", bgImg: compBG, modeData: [] }
+                    Mazmorras: { hashes: mazmorras, timePlayed: 0, completions: 0, kills: 0, modeHash: 608898761, name: "Mazmorras", bgImg: null, textCompletitions: "mazmorras" },
+                    Operaciones: { hashes: operaciones, timePlayed: 0, completions: 0, kills: 0, modeHash: 2394616003, name: "Portal", bgImg: strikesBG, modeData: [], textCompletitions: "actividades" },
+                    Incursiones: { hashes: raids, timePlayed: 0, completions: 0, kills: 0, modeHash: 2043403989, name: "Incursiones", bgImg: null, textCompletitions: "incursiones" },
+                    Gambito: { hashes: gambito, timePlayed: 0, completions: 0, kills: 0, modeHash: 1848252830, name: "Gambito", bgImg: gambitBG, textCompletitions: "partidas" },
+                    Estandarte: { hashes: estandarte, timePlayed: 0, completions: 0, kills: 0, modeHash: 1826469369, name: "Estandarte de Hierro", bgImg: ibBG, modeData: [], textCompletitions: "partidas" },
+                    Pruebas: { hashes: pruebas, timePlayed: 0, completions: 0, kills: 0, modeHash: 1673724806, name: "Pruebas de Osiris", bgImg: trialsBG, textCompletitions: "partidas" },
+                    Crisol: { hashes: crisol, timePlayed: 0, completions: 0, kills: 0, modeHash: 1164760504, name: "Crisol", bgImg: pvpBG, modeData: [], textCompletitions: "partidas" },
+                    Competitivo: { hashes: competitivo, timePlayed: 0, completions: 0, kills: 0, modeHash: 2239249083, name: "Competitivo", bgImg: compBG, modeData: [], textCompletitions: "partidas" }
                 };
 
                 const profileRes = await getCompsProfile(membershipType, userId);
@@ -93,7 +93,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 setMostUsedWeaponPVP(await getMostUsedWeapons(membershipType, userId));
 
                 const profileProgression = await getProfileGeneralProgressions(membershipType, userId);
-                //Método especial para competitivo
                 modeGroups["Mazmorras"].modeData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression);
                 modeGroups["Competitivo"].modeData = await fetchAllCompetitiveMatches(membershipType, userId, charactersData, profileProgression);
                 modeGroups["Crisol"].modeData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514, profileProgression);
@@ -115,6 +114,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         }
                     }
                 });
+
+                modeGroups["Gambito"].completions = profileProgression.profileRecords.data.records?.[3565692839]?.intervalObjectives[0].progress;
 
                 let tempModeData = [];
                 for (const mode in modeGroups) {
@@ -138,6 +139,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         pgcrImg: modeGroups[mode].name == "Mazmorras" || modeGroups[mode].name == "Incursiones" ? await getFavActivityImage(allActivities, modeGroups[mode]) : modeGroups[mode].bgImg,
                         characterCompletions: characterCompletions,
                         modeData: modeGroups[mode].modeData || [],
+                        textCompletitions: modeGroups[mode].textCompletitions
                     });
                 }
                 const mid = Math.ceil(tempModeData.length / 2);
@@ -168,10 +170,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function activityHashes(mode, pvp, manifest) {
         const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
-
         const activityRes = await axios.get(activityUrl);
-
         const activityData = activityRes.data;
+
         const filteredActivities = Object.values(activityData).filter(
             (activity) => pvp ? activity.activityTypeHash == mode : activity.directActivityModeHash == mode
         );
@@ -380,7 +381,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             kills,
             deaths,
             wins,
-            defeats,
+            defeats: completions - wins,
             kd: totalKD,
             winDefeatRatio,
             lighthouse,
@@ -419,6 +420,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
         });
         let favoriteActivityData = await getItemManifest(favoriteActivity.hash, "DestinyActivityDefinition");
         return favoriteActivityData;
+    }
+
+    async function getGambitCompletitions(membershipType, userId, progressions) {
+        return progressions.profileRecords.data.records?.[seal.completionRecordHash]?.objectives[0].complete;
     }
 
     async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars, progressions) {
@@ -473,43 +478,56 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }
 
     async function getGambitoData(membershipType, userId, allActivities, group, characterIds, progressions) {
-        let invadersDefeated = progressions?.metrics?.data.metrics?.[3227312321]?.objectiveProgress.progress;
-        let motas = progressions?.metrics?.data.metrics?.[1462038198]?.objectiveProgress.progress;
+        let invadersDefeated = progressions?.metrics?.data.metrics?.[3227312321]?.objectiveProgress.progress; // 921988512 seasonal, 3227312321 historico
         let gilded = progressions?.metrics?.data.metrics?.[2365336843]?.objectiveProgress.progress;
+        let invasiones = progressions?.profileRecords?.data.records?.[985373860]?.intervalObjectives[0]?.progress;
 
-        let completions = 0, wins = 0;
+        let motasTitan = progressions?.profileRecords?.data.records?.[89114360]?.objectives[2]?.progress;
+        let motasHechicero = progressions?.profileRecords?.data.records?.[2129704137]?.objectives[2]?.progress;
+        let motasCazador = progressions?.profileRecords?.data.records?.[1676011372]?.objectives[2]?.progress;
+        
+        let winsTitan = progressions?.profileRecords?.data.records?.[89114360]?.objectives[0]?.progress;
+        let winsHechicero = progressions?.profileRecords?.data.records?.[2129704137]?.objectives[0]?.progress;
+        let winsCazador = progressions?.profileRecords?.data.records?.[1676011372]?.objectives[0]?.progress;
+
+        let motas = (motasTitan || 0) + (motasHechicero || 0) + (motasCazador || 0);
+        let completions = progressions?.profileRecords.data.records?.[3565692839]?.intervalObjectives[0].progress;
+        let wins = (winsTitan || 0) + (winsHechicero || 0) + (winsCazador || 0);
 
         let gambito = await Promise.all(
             characterIds.map(async (charId) => {
                 let page = 0;
-                let allDungeonsChar = [];
+                let allGambChar = [];
                 while (true) {
                     const activities = await getCharacterManyActivities(membershipType, userId, charId, "63", page);
                     if (!activities || activities.length === 0) break;
-                    allDungeonsChar = allDungeonsChar.concat(activities);
+                    allGambChar = allGambChar.concat(activities);
                     page++;
                 }
-                return allDungeonsChar;
+                return allGambChar;
             })
         );
         gambito = gambito.flat();
 
-        allActivities.forEach(activity => {
+        /*allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return; // Maneja el caso de hash null
             if (group.hashes.includes(hash)) {
-                completions += activity.values.activityCompletions.basic.value;
                 wins += activity?.values?.activityWins?.basic?.value;
             }
-        });
+        });*/
 
         let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
 
         const seal = await getItemManifest(3665267419, "DestinyPresentationNodeDefinition");
         return {
             invadersDefeated,
+            invasiones,
+            killsGamb: invadersDefeated + invasiones,
             motas,
             winDefeatRatio,
+            wins,
+            defeats: completions - wins,
             seals:
             {
                 name: seal?.displayProperties?.name || "Desconocido",

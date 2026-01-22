@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import check from '../../../assets/check.png';
+import check from "../../../assets/check.png";
 import favorite from '../../../assets/favorite.png';
+import mote from '../../../assets/mote.png';
 
 
 export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
@@ -11,26 +12,29 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     {activity?.modeData?.favoriteActivity && (
                         <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]"/> {activity.modeData.favoriteActivity.displayProperties?.name}</p>
                     )}
+                    {activity?.modeData?.winDefeatRatio != null && (
+                        <div>
+                        <p>Ratio: {activity.modeData.winDefeatRatio}% </p>
+                        <p className="pl-[16px] text-[0.58rem] opacity-70">G: {activity.modeData.wins}  |  P: {activity.modeData.defeats}</p>
+                        </div>
+                    )}
                     {activity?.modeData?.completions?.completitions != null || activity?.completions != null ? (
-                        <p className="flex items-center"><img src={check} alt="check" className="w-3 h-3 mr-1"/> {activity?.modeData?.completions?.completitions ?? activity?.completions}</p>
+                        <p className="flex items-center"> <img src={check} alt="check" className="w-3 h-3 mr-1"/> {activity?.modeData?.completions?.completitions ?? activity?.completions} {activity?.textCompletitions}</p>
                     ) : null}
                     {activity?.modeData?.completions?.freshCompletitions != null && activity?.modeData?.completions?.checkpointCompletitions != null && (
                         <p className="pl-[16px] text-[0.58rem] opacity-70">Full: {activity.modeData.completions.freshCompletitions} | Check: {activity.modeData.completions.checkpointCompletitions}</p>
                     )}
-                    {activity?.modeData?.winDefeatRatio != null && (
-                        <p>Win ratio: {activity.modeData.winDefeatRatio}%</p>
-                    )}
-                    {activity?.modeData?.invadersDefeated != null && (
-                        <p>Invasores derrotados: {activity.modeData.invadersDefeated}</p>
+                    {activity?.modeData?.killsGamb != null && (
+                        <p className="flex items-center"><i className='icon-kills mr-1 mb-0.5'></i>{activity.modeData.killsGamb} guardianes</p>
                     )}
                     {activity?.modeData?.motas != null && (
-                        <p>Motas: {activity.modeData.motas}</p>
+                        <p className="flex items-center"><img src={mote} alt="mote" className="w-3 h-3 mr-1"/> {activity.modeData.motas}</p>
                     )}
                     {activity?.modeData?.kd != null && (
                         <p>KD: {activity.modeData.kd}</p>
                     )}
                     {activity?.modeData?.precisionKills != null && (
-                        <p>Precision: {activity.modeData.precisionKills}</p>
+                        <p><i className="icon-precision" style={{ fontStyle: "normal" }} /> {activity.modeData.precisionKills}</p>
                     )}
                     {(activity?.modeData?.division?.logo || activity?.modeData?.division?.currentProgress != null) && (
                         <div className="flex items-center">
@@ -115,17 +119,17 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                                     <img
                                         src={activity.modeData.seals.iconComplete}
                                         alt={activity.modeData.seals.name}
-                                        className={`w-12 h-12  ${activity.modeData.seals.completed ? "opacity-100" : "opacity-40"}`}
+                                        className={`w-9 h-9 mb-1 ${activity.modeData.seals.completed ? "opacity-100" : "opacity-40"}`}
                                     />
                                     <div
-                                        className="flex mt-2 items-center justify-center py-1 w-full"
+                                        className="flex py-1 w-full font-light"
                                     //style={{ background: "linear-gradient(to right, rgba(237, 178, 94, 0) 0%, rgba(174, 114, 47, 0.5) 25%, rgba(174, 114, 47, 0.5) 75%, rgba(237, 178, 94, 0) 100%)" }}
                                     >
-                                        <p className="tracking-[0.2em] text-xs uppercase titulo">{activity.modeData.seals.name}</p>
+                                        <p className="tracking-[0.2em] text-xs uppercase titulo text-[0.5rem]">{activity.modeData.seals.name}</p>
                                         {activity.modeData.seals.gilded > 0 && (
-                                            <div className="flex items-center ml-1">
-                                                <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.8rem' }} />
-                                                <p style={{ fontStyle: 'normal', fontSize: '0.6rem', position: 'relative', top: '-0.30rem' }}>{activity.modeData.seals.gilded}</p>
+                                            <div className="flex ml-1 -translate-y-[1px] items-center">
+                                                <i className="icon-gilded font-[100]" style={{ fontStyle: 'normal', fontSize: '0.54rem' }} />
+                                                <p style={{ fontStyle: 'normal', fontSize: '0.4rem', position: 'relative', top: '-0.10rem' }}>{activity.modeData.seals.gilded}</p>
                                             </div>
                                         )}
                                     </div>

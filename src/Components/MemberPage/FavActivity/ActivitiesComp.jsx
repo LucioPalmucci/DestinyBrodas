@@ -29,7 +29,7 @@ const ActivitiesComp = ({ activities, tipo, pvpWeapon }) => {
                         ref={el => itemRefs.current[index] = el}
                         className="relative flex flex-col space-y-2 items-center max-w-[25%] cursor-pointer hover:bg-black/30 p-3 rounded-lg transition-colors"
                         onMouseEnter={() => handleMouseEnter(index)}
-                        onMouseLeave={() => setHoveredIndex(null)}
+                        //onMouseLeave={() => setHoveredIndex(null)}
                     >
                         <img src={activity.icon} alt={activity.name} className="w-19 h-19 rounded-lg" />
                         <p className="text-lg">{activity.mode}</p>
