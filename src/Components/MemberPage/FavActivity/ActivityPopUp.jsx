@@ -9,8 +9,8 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
         <div className="bg-black/90 opacity-90 p-3 rounded w-fit min-w-60" onClick={onClose}>
             <div className="flex items-stretch mb-2 justify-between w-full font-normal text-[0.7rem] h-20">
                 <div className="flex flex-col h-full space-y-0.5 justify-center">
-                    {activity?.modeData?.favoriteActivity && (
-                        <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]"/> {activity.modeData.favoriteActivity.displayProperties?.name}</p>
+                    {(activity?.modeData?.favoriteActivity) && (
+                        <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]"/> {activity.modeData.favoriteActivity?.displayProperties?.name}</p>
                     )}
                     {activity?.modeData?.winDefeatRatio != null && (
                         <div>

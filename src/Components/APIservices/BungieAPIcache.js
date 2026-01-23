@@ -6,7 +6,7 @@ import { API_CONFIG } from '../../config'; // Asegúrate de que esta ruta sea co
 const globalCache = new Map();
 const globalLoading = new Set();
 
-const TTL_CONFIG = 60 * 1000; // 2 minutos
+const TTL_CONFIG = 10 * 60 * 1000; // 10 minutos
 
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
 
@@ -18,9 +18,15 @@ export const useBungieAPI = () => {
     // Para cancelar requests si el componente se desmonta
     const abortControllerRef = useRef(new AbortController());
 
-    // Generar clave de cache
+    // Generar clave de cache de forma estable
     const generateCacheKey = useCallback((type, ...params) => {
-        return `${type}:${params.join(':')}`;
+        try {
+            const payload = { type, params };
+            return `${type}:${encodeURIComponent(JSON.stringify(payload.params))}`;
+        } catch (e) {
+            // Fallback simple
+            return `${type}:${params.join(':')}`;
+        }
     }, []);
 
     // Verificar si el cache es válido
@@ -31,7 +37,8 @@ export const useBungieAPI = () => {
         const now = Date.now();
         const ttl = TTL_CONFIG;
 
-        return (now - cached.timestamp) < ttl;
+        const ts = Number(cached.timestamp) || 0;
+        return ts > 0 && (now - ts) < ttl;
     }, []);
 
     // Función genérica para hacer requests con cache
@@ -40,6 +47,17 @@ export const useBungieAPI = () => {
 
         // Verificar cache
         if (isCacheValid(cacheKey, type)) {
+            // actualizar stats para reflejar hit de cache
+            setCacheStats({
+                size: globalCache.size,
+                loading: globalLoading.size
+            });
+            // log debug detallado del hit
+            try {
+                const cached = globalCache.get(cacheKey);
+                const age = Date.now() - (cached?.timestamp || 0);
+                //console.debug('cache hit', { cacheKey, age, ttl: TTL_CONFIG, timestamp: cached?.timestamp });
+            } catch (e) {}
             return globalCache.get(cacheKey).data;
         }
 
@@ -83,6 +101,7 @@ export const useBungieAPI = () => {
                 timestamp: Date.now()
             });
 
+            //try { console.debug('cache set', { cacheKey, timestamp: Date.now() }); } catch (e) {}
             // Actualizar stats
             setCacheStats({
                 size: globalCache.size,
@@ -91,8 +110,10 @@ export const useBungieAPI = () => {
 
             return data;
         } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('Request cancelled');
+            // Detectar cancelaciones (AbortController + Axios CanceledError)
+            const isAbort = error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED';
+            if (isAbort) {
+                console.debug('Request cancelled', { cacheKey, reason: error?.message || error?.code });
                 return null;
             }
             console.error(`Error fetching ${type}:`, error);
@@ -103,6 +124,28 @@ export const useBungieAPI = () => {
             setLoading(false);
         }
     }, [generateCacheKey, isCacheValid]);
+
+    const loadCache = (cacheKey, cacheTTL) => {
+        try {
+            const raw = localStorage.getItem(cacheKey);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (Date.now() - parsed.ts > cacheTTL) {
+                localStorage.removeItem(cacheKey);
+                return null;
+            }
+            return parsed.data;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const saveCache = (cacheKey, data) => {
+        try {
+            localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+        } catch (e) {
+        }
+    };
 
     // ========== MÉTODOS ESPECÍFICOS PARA DESTINY API ==========
 
@@ -423,6 +466,9 @@ export const useBungieAPI = () => {
         clearCache,
         getCacheStatsDetailed,
         cleanup,
+
+        loadCache,
+        saveCache,
 
         // Estados del cache
         isCached: (type, ...params) => {
