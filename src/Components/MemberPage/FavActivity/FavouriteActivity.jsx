@@ -105,7 +105,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const mostUsedWeapon = await getMostUsedWeapons(membershipType, userId);
                 setMostUsedWeaponPVP(mostUsedWeapon);
 
-                console.log("All activities fetched for favourite activities:", allActivities);
                 const profileProgression = await getProfileGeneralProgressions(membershipType, userId);
                 let localPVE = [];
                 let localPVP = [];
@@ -152,6 +151,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }, [membershipType, userId]);
 
     async function buildModeData(mode, allActivities, charactersData, progressions) {
+
         allActivities.forEach(activity => {
             const hash = activity?.activityHash;
             if (hash == null) return; // Maneja el caso de hash null
@@ -182,7 +182,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             completions: mode.completions || mode.modeData?.completions,
             kills: mode.kills || mode.modeData?.kills,
             icon: mode.name == "Crisol" ? crucibleLogo : API_CONFIG.BUNGIE_API + modoDatos?.displayProperties?.icon,
-            pgcrImg: mode.name == "Mazmorras" || mode.name == "Incursiones" ? await getFavActivityImage(allActivities, mode) : mode.bgImg,
+            pgcrImg: mode.name == "Mazmorras" || mode.name == "Incursiones" ? API_CONFIG.BUNGIE_API + mode.modeData?.favoriteActivity?.pgcrImage : mode.bgImg,
             characterCompletions: characterCompletions,
             modeData: mode.modeData || [],
             textCompletitions: mode.textCompletitions
@@ -399,26 +399,27 @@ export default function FavouriteActivity({ membershipType, userId }) {
             }
         });
 
+        if(group.name == "Estandarte de Hierro") {
+            wins = progressions.profileRecords.data.records?.[4159436958]?.objectives[0].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[1].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[2].progress || 0;
+        }
+        if(group.name == "Crisol") {
+            completions = progressions.profileRecords.data.records?.[4181381577]?.intervalObjectives[0].progress || 0;
+            wins = progressions.profileRecords.data.records?.[3561485187]?.intervalObjectives[0].progress || 0;
+        }
         let winDefeatRatio = (wins / (completions || 1) * 100).toFixed(1);
         let totalKD = (kills / (deaths || 1)).toFixed(2);
 
         let seal = await getItemManifest(sealHash, "DestinyPresentationNodeDefinition");
-
-        let lighthouse = null;
-        if (group.name === "Pruebas de Osiris") {
-            lighthouse = await fetchTrialsData(progressions);
-        }
 
         group.modeData = {
             completions,
             timePlayed: (timePlayed / 3600).toFixed(0),
             kills,
             deaths,
-            wins,
+            wins: wins,
             defeats: completions - wins,
             kd: totalKD,
             winDefeatRatio,
-            lighthouse,
             precisionKills,
             seals: {
                 name: seal?.displayProperties?.name || "Desconocido",
@@ -434,11 +435,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
         return completeData;
     }
 
-    async function fetchTrialsData(progressions) {
+    /*async function fetchTrialsData(progressions) {
         let flawless = progressions?.metrics?.data.metrics?.[1765255052]?.objectiveProgress.progress;
         let highestStreak = progressions?.metrics?.data.metrics[1076064058].objectiveProgress.progress;
         return { flawless, highestStreak };
-    }
+    }*/
 
     async function getFavActivity(allActivities, group) {
         let favoriteActivity = null;
@@ -584,24 +585,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
             })
         }
-    }
-
-    async function getFavActivityImage(allActivities, mode) {
-        let mostPlayedActivity = { hash: null, timePlayed: 0 };
-        allActivities.forEach(activity => {
-            const hash = activity?.activityHash;
-            if (hash == null) return;
-            if (mode.hashes.includes(hash)) {
-                if (activity?.values?.activitySecondsPlayed?.basic?.value > mostPlayedActivity.timePlayed) {
-                    mostPlayedActivity = {
-                        hash: activity?.activityHash,
-                        timePlayed: activity?.values?.activitySecondsPlayed?.basic?.value
-                    };
-                }
-            }
-        });
-        const activity = await getItemManifest(mostPlayedActivity.hash, "DestinyActivityDefinition");
-        return API_CONFIG.BUNGIE_API + activity?.pgcrImage;
     }
 
     async function getMostUsedWeapons(membershipType, userId) {

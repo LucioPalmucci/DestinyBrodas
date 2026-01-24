@@ -7,19 +7,19 @@ import mote from '../../../assets/mote.png';
 export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
     return (
         <div className="bg-black/90 opacity-90 p-3 rounded w-fit min-w-60" onClick={onClose}>
-            <div className="flex items-stretch mb-2 justify-between w-full font-normal text-[0.7rem] h-20">
+            <div className="flex items-center mb-2 justify-between w-full font-normal text-[0.7rem] ">
                 <div className="flex flex-col h-full space-y-0.5 justify-center">
                     {(activity?.modeData?.favoriteActivity) && (
-                        <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]"/> {activity.modeData.favoriteActivity?.displayProperties?.name}</p>
+                        <p className="flex "><img src={favorite} alt="favorite" className="w-3 h-3 mr-1 mt-[1px]" /> {activity.modeData.favoriteActivity?.displayProperties?.name}</p>
                     )}
                     {activity?.modeData?.winDefeatRatio != null && (
                         <div>
-                        <p>Ratio: {activity.modeData.winDefeatRatio}% </p>
-                        <p className="pl-[16px] text-[0.58rem] opacity-70">G: {activity.modeData.wins}  |  P: {activity.modeData.defeats}</p>
+                            <p>Ratio: {activity.modeData.winDefeatRatio}% </p>
+                            <p className="pl-[16px] text-[0.58rem] opacity-70">G: {activity.modeData.wins}  |  P: {activity.modeData.defeats}</p>
                         </div>
                     )}
                     {activity?.modeData?.completions?.completitions != null || activity?.completions != null ? (
-                        <p className="flex items-center"> <img src={check} alt="check" className="w-3 h-3 mr-1"/> {activity?.modeData?.completions?.completitions ?? activity?.completions} {activity?.textCompletitions}</p>
+                        <p className="flex items-center"> <img src={check} alt="check" className="w-3 h-3 mr-1" /> {activity?.modeData?.completions?.completitions ?? activity?.completions} {activity?.textCompletitions}</p>
                     ) : null}
                     {activity?.modeData?.completions?.freshCompletitions != null && activity?.modeData?.completions?.checkpointCompletitions != null && (
                         <p className="pl-[16px] text-[0.58rem] opacity-70">Full: {activity.modeData.completions.freshCompletitions} | Check: {activity.modeData.completions.checkpointCompletitions}</p>
@@ -28,7 +28,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                         <p className="flex items-center"><i className='icon-kills mr-1 mb-0.5'></i>{activity.modeData.killsGamb} guardianes</p>
                     )}
                     {activity?.modeData?.motas != null && (
-                        <p className="flex items-center"><img src={mote} alt="mote" className="w-3 h-3 mr-1"/> {activity.modeData.motas}</p>
+                        <p className="flex items-center"><img src={mote} alt="mote" className="w-3 h-3 mr-1" /> {activity.modeData.motas}</p>
                     )}
                     {activity?.modeData?.kd != null && (
                         <p>KD: {activity.modeData.kd}</p>
@@ -48,7 +48,7 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     )}
                     {pvpWeapon && (
                         <p>
-                            Arma PVP:{" "}
+                            Más usada:{" "}
                             <i
                                 className={pvpWeapon.icon}
                                 title={pvpWeapon.name + "\n" + pvpWeapon.kills + " bajas"}
@@ -57,51 +57,51 @@ export default function ActivityPopUp({ activity, onClose, pvpWeapon }) {
                     )}
                 </div>
                 {activity.characterCompletions &&
-                    <div className="relative w-20 h-full">
+                    <div className="flex flex-col h-full space-y-0.5 justify-center ">
                         {(() => {
                             const chars = Array.isArray(activity.characterCompletions)
                                 ? activity.characterCompletions.slice(0, 3)
                                 : Object.values(activity.characterCompletions).slice(0, 3);
                             return (
-                                <div className="w-20 font-light h-full text-[0.65rem]">
-                                <div className="flex justify-center mb-1">
-                                    {chars[0] && (
-                                        <div className="flex flex-col items-center h-full">
-                                            <img
-                                                src={chars[0].classImg.link}
-                                                title={chars[0].totalCompletions || chars[0].completions}
-                                                className="w-5 h-5"
-                                                style={{ filter: chars[0].classImg.colore }}
-                                            />
-                                            <p>{(chars[0].percentage || 0)}%</p>
-                                        </div>
-                                    )}
+                                <div className="w-20 font-light h-full flex flex-col justify-center text-[0.65rem]">
+                                    <div className="flex justify-center mb-1">
+                                        {chars[0] && (
+                                            <div className="flex flex-col items-center">
+                                                <img
+                                                    src={chars[0].classImg.link}
+                                                    title={chars[0].totalCompletions || chars[0].completions}
+                                                    className="w-5 h-5"
+                                                    style={{ filter: chars[0].classImg.colore }}
+                                                />
+                                                <p>{(chars[0].percentage || 0)}%</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between">
+                                        {chars[1] ? (
+                                            <div className="flex flex-col items-center">
+                                                <img
+                                                    src={chars[1].classImg.link}
+                                                    title={chars[1].totalCompletions || chars[1].completions}
+                                                    className="w-5 h-5"
+                                                    style={{ filter: chars[1].classImg.colore }}
+                                                />
+                                                <p>{(chars[1].percentage || 0)}%</p>
+                                            </div>
+                                        ) : <div />}
+                                        {chars[2] ? (
+                                            <div className="flex flex-col items-center">
+                                                <img
+                                                    src={chars[2].classImg.link}
+                                                    title={chars[2].totalCompletions || chars[2].completions}
+                                                    className="w-5 h-5"
+                                                    style={{ filter: chars[2].classImg.colore }}
+                                                />
+                                                <p>{(chars[2].percentage || 0)}%</p>
+                                            </div>
+                                        ) : <div />}
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    {chars[1] ? (
-                                        <div className="flex flex-col items-center h-full">
-                                            <img
-                                                src={chars[1].classImg.link}
-                                                title={chars[1].totalCompletions || chars[1].completions}
-                                                className="w-5 h-5"
-                                                style={{ filter: chars[1].classImg.colore }}
-                                            />
-                                            <p>{(chars[1].percentage || 0)}%</p>
-                                        </div>
-                                    ) : <div /> }
-                                    {chars[2] ? (
-                                        <div className="flex flex-col items-center h-full">
-                                            <img
-                                                src={chars[2].classImg.link}
-                                                title={chars[2].totalCompletions || chars[2].completions}
-                                                className="w-5 h-5"
-                                                style={{ filter: chars[2].classImg.colore }}
-                                            />
-                                            <p>{(chars[2].percentage || 0)}%</p>
-                                        </div>
-                                    ) : <div /> }
-                                </div>
-                            </div>
                             );
                         })()}
                     </div>
