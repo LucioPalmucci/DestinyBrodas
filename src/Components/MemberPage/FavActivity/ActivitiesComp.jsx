@@ -39,28 +39,31 @@ const ActivitiesComp = ({ activities = [], tipo, pvpWeapon }) => {
                         onMouseLeave={() => setHoveredIndex(null)}
                     >
                         {activity.loading ? (
-                            <div className="w-19 h-19 rounded-lg flex justify-center bg-gray-300 items-center animate-pulse"></div>
+                            <div className="w-19 h-30 rounded-lg flex justify-center bg-gray-200 items-center shimmer-placeholder"></div>
                         ) : (
-                            <img src={activity.icon} alt={activity.name || activity.mode} className="w-19 h-19 rounded-lg" />
+                            <div className="flex flex-col items-center">
+                                <img src={activity.icon} alt={activity.name || activity.mode} className="w-19 h-19 rounded-lg" />
+                                <p className="text-lg">{activity.mode}</p>
+                                <p className="text-sm">{(Number(activity.percentage || 0).toFixed(1) + "%")}</p>
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        left: popupDirection === "right" ? "110px" : "auto",
+                                        right: popupDirection === "left" ? "110px" : "auto",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        zIndex: 50,
+                                        pointerEvents: "none",
+                                        display: hoveredIndex === index ? "block" : "none"
+                                    }}
+                                >
+                                    {hoveredIndex === index && !activity.loading && (
+                                        <ActivityPopUp activity={activity} onClose={() => setHoveredIndex(null)} pvpWeapon={pvpWeapon} />
+                                    )}
+                                </div>
+                            </div>
                         )}
-                        <p className="text-lg">{activity.mode}</p>
-                        <p className="text-sm">{!activity.loading ? (Number(activity.percentage || 0).toFixed(1) + "%") : "Cargando..."}</p>
-                        <div
-                            style={{
-                                position: "absolute",
-                                left: popupDirection === "right" ? "110px" : "auto",
-                                right: popupDirection === "left" ? "110px" : "auto",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                zIndex: 50,
-                                pointerEvents: "none",
-                                display: hoveredIndex === index ? "block" : "none"
-                            }}
-                        >
-                            {hoveredIndex === index && !activity.loading && (
-                                <ActivityPopUp activity={activity} onClose={() => setHoveredIndex(null)} pvpWeapon={pvpWeapon} />
-                            )}
-                        </div>
+
                     </div>
                 ))}
             </div>

@@ -569,3 +569,19 @@ title{
     position: relative;
     z-index: 2;
 }
+
+
+/* Brightness / shimmer placeholder: animates filter brightness rather than opacity */
+.shimmer-placeholder {
+    background-color: #999999; /* tailwind gray-200 equivalent */
+    border-radius: 0.5rem;
+    display: inline-block;
+    animation: brighten 1.8s ease-in-out infinite;
+    will-change: filter;
+}
+
+@keyframes brighten {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+}

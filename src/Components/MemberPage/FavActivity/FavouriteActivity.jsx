@@ -18,7 +18,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
 
-    const CACHE_TTL = 10 * 60 * 1000; // 1 minute
+    const CACHE_TTL = 1 //* 60 * 1000; // 1 minute
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats, loadCache, saveCache } = useBungieAPI();
@@ -322,7 +322,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 let page = 0;
                 let allCompetitiveChar = [];
                 while (true) {
-                    const activities = await getCharacterManyActivities(membershipType, userId, character.id, "69", page);
+                    let activities = await getCharacterManyActivities(membershipType, userId, character.id, "69", page);
                     if (!activities || activities.length === 0) break;
                     allCompetitiveChar = allCompetitiveChar.concat(activities);
                     page++;
@@ -399,6 +399,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
             }
         });
 
+        if (group.name == "Pruebas de Osiris") {
+            console.log("Processing PVP data for group:", progressions);
+            wins = progressions?.metrics?.data?.metrics?.[1365664208]?.objectiveProgress.progress;
+        }
         if(group.name == "Estandarte de Hierro") {
             wins = progressions.profileRecords.data.records?.[4159436958]?.objectives[0].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[1].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[2].progress || 0;
         }
