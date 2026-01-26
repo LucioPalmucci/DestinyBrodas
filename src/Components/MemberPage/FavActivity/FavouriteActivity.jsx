@@ -18,7 +18,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
 
-    const CACHE_TTL = 1//0 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats, loadCache, saveCache } = useBungieAPI();
@@ -54,7 +54,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     setModeDataPVE(cached.pve || []);
                     setModeDataPVP(cached.pvp || []);
                     setMostUsedWeaponPVP(cached.weapon || null);
-                    console.log("Loaded favourite activities from cache", cached);
                     return;
                 }
                 const manifestRes = await getManifest();
@@ -108,13 +107,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 const profileProgression = await getProfileGeneralProgressions(membershipType, userId);
                 let localPVE = [];
                 let localPVP = [];
-                const mazData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression, charactersData);
-                localPVE = upsertByMode(localPVE, mazData);
-                setModeDataPVE(localPVE);
 
-                const compData = await fetchAllCompetitiveMatches(membershipType, userId, allActivities, charactersData, profileProgression, modeGroups["Competitivo"]);
-                localPVP = upsertByMode(localPVP, compData);
-                setModeDataPVP(localPVP);
+                const opsFav = await getOpsData(allActivities, modeGroups["Operaciones"], charactersData);
+                localPVE = upsertByMode(localPVE, opsFav);
+                setModeDataPVE(localPVE);
 
                 const crisolData = await fetchPVPDATA(membershipType, userId, allActivities, modeGroups["Crisol"], 475207334, 1250683514, profileProgression, charactersData);
                 localPVP = upsertByMode(localPVP, crisolData);
@@ -128,10 +124,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 localPVP = upsertByMode(localPVP, pruebasData);
                 setModeDataPVP(localPVP);
 
-                const opsFav = await getOpsData(allActivities, modeGroups["Operaciones"], charactersData);
-                localPVE = upsertByMode(localPVE, opsFav);
-                setModeDataPVE(localPVE);
-
                 const gambitoData = await getGambitoData(membershipType, userId, allActivities, modeGroups["Gambito"], characterIds, profileProgression, charactersData);
                 localPVE = upsertByMode(localPVE, gambitoData);
                 setModeDataPVE(localPVE);
@@ -140,7 +132,14 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 localPVE = upsertByMode(localPVE, incursionesData);
                 setModeDataPVE(localPVE);
 
-                console.log("Fetched favourite activities from API", localPVE, localPVP, mostUsedWeapon);
+                const compData = await fetchAllCompetitiveMatches(membershipType, userId, allActivities, charactersData, profileProgression, modeGroups["Competitivo"]);
+                localPVP = upsertByMode(localPVP, compData);
+                setModeDataPVP(localPVP);
+
+                const mazData = await getEndGameData(membershipType, userId, allActivities, modeGroups["Mazmorras"], `62192879-bde5-45b6-9918-09166dc0c6d4`, false, characterIds, profileProgression, charactersData);
+                localPVE = upsertByMode(localPVE, mazData);
+                setModeDataPVE(localPVE);
+
                 try { saveCache(cacheKey, { pve: localPVE, pvp: localPVP, weapon: mostUsedWeapon }); } catch (e) { }
             } catch (error) {
                 console.error(error);
@@ -167,7 +166,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let characterCompletions = {};
         for (const character of charactersData) {
             characterCompletions[character.id] = {};
-            characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(mode, character) || mode.modeData.characterCompletions[character.id]?.completions || 0;
+            characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(mode, character) || mode.modeData?.characterCompletions?.[character.id]?.completions || 0;
             characterCompletions[character.id].percentage = mode.name == "Competitivo" ? mode.modeData.characterCompletions[character.id]?.percentage : ((characterCompletions[character.id].totalCompletions / mode.completions) * 100).toFixed(1) || 0;
             characterCompletions[character.id].character = character.class;
             characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
@@ -268,15 +267,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
     }
 
     async function fetchAllDungeonsActivities(membershipType, userId, characterIds, group, progressions, allActivities) {
-        /*if (progressions?.profileRecords?.data?.records) {
-            const records = progressions?.profileRecords?.data?.records;
-            const recordsArray = Object.values(records);
-            recordsArray.forEach(record => {
-                record.intervalObjectives?.forEach(objective => {
-                    console.log("Objective hash: ", objective.objectiveHash);
-                });
-            });
-        }*/
         let allDungeons = await Promise.all(
             characterIds.map(async (charId) => {
                 let page = 0;
@@ -295,8 +285,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
         allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-        //let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
-        let allClearedFreshDungeons = [];
+        let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
+        //let allClearedFreshDungeons = [];
+
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons?.filter(dungeon => dungeon.activityWasStartedFromBeginning == true).length || 0;
         const checkpointCompletitions = allClearedFreshDungeons.filter(dungeon => dungeon.activityWasStartedFromBeginning == false).length || 0;
@@ -315,7 +306,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 limit(async () => {
                     const acts = await getCarnageReport(dungeon.activityDetails.instanceId);
                     return {
-                        ...dungeon,
+                        dungeonHash: dungeon.activityDetails.directorActivityHash,
                         activityWasStartedFromBeginning: acts.activityWasStartedFromBeginning,
                     };
                 })
@@ -512,7 +503,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 };
             })
         );
-        console.log("Fetched Seal Data: ", progressions);
 
         SealData.forEach(async seal => {
             seal.completed = progressions.profileRecords.data.records?.[seal.completionRecordHash]?.objectives[0].complete;
@@ -579,7 +569,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
             const recordApi = await getItemManifest(record.recordHash, "DestinyRecordDefinition");
             if(recordApi.expirationInfo.hasExpiration == false) { //Si el triunfo da progresso al titulo, seguir
                 const recordProgress = progressions.profileRecords.data.records[record.recordHash];
-                console.log("Record progress state for seal: ", recordProgress.state);
                 if (recordProgress.state == 67) completedTriumphs ++;
             }
         }));

@@ -127,11 +127,12 @@ export const useBungieAPI = () => {
 
     const loadCache = (cacheKey, cacheTTL) => {
         try {
-            const raw = localStorage.getItem(cacheKey);
+            const raw = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
             if (!raw) return null;
             const parsed = JSON.parse(raw);
             if (Date.now() - parsed.ts > cacheTTL) {
-                localStorage.removeItem(cacheKey);
+                try { localStorage.removeItem(cacheKey); } catch (e) {}
+                try { sessionStorage.removeItem(cacheKey); } catch (e) {}
                 return null;
             }
             return parsed.data;
@@ -141,9 +142,49 @@ export const useBungieAPI = () => {
     };
 
     const saveCache = (cacheKey, data) => {
+        const payload = JSON.stringify({ ts: Date.now(), data });
         try {
-            localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+            localStorage.setItem(cacheKey, payload);
+            console.log('Cache saved to localStorage', { cacheKey });
+            return;
         } catch (e) {
+            console.error('Error saving to localStorage', e);
+            const isQuota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+            if (!isQuota) return;
+            // Evict oldest entries by timestamp until write succeeds
+            try {
+                const candidates = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    try {
+                        const v = JSON.parse(localStorage.getItem(k));
+                        if (v && v.ts) candidates.push({ k, ts: v.ts });
+                    } catch (err) { /* ignore non-json entries */ }
+                }
+                // Sort by oldest first
+                candidates.sort((a, b) => a.ts - b.ts);
+                for (const c of candidates) {
+                    try {
+                        localStorage.removeItem(c.k);
+                        // try writing after each eviction
+                        localStorage.setItem(cacheKey, payload);
+                        console.log('Cache saved after evicting', c.k);
+                        return;
+                    } catch (err2) {
+                        // continue evicting next oldest
+                        continue;
+                    }
+                }
+            } catch (evictErr) {
+                console.error('Error while evicting localStorage entries', evictErr);
+            }
+            // Fallback to sessionStorage
+            try {
+                sessionStorage.setItem(cacheKey, payload);
+                console.warn('Saved cache to sessionStorage as fallback', { cacheKey });
+            } catch (finalErr) {
+                console.error('Failed to save cache to sessionStorage', finalErr);
+            }
         }
     };
 
