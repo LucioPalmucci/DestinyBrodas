@@ -18,7 +18,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
 
-    const CACHE_TTL = 1 //* 60 * 1000; // 1 minute
+    const CACHE_TTL = 1//0 * 60 * 1000; // 10 minutes
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats, loadCache, saveCache } = useBungieAPI();
@@ -267,7 +267,16 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
     }
 
-    async function fetchAllDungeonsActivities(membershipType, userId, characterIds, group) {
+    async function fetchAllDungeonsActivities(membershipType, userId, characterIds, group, progressions, allActivities) {
+        /*if (progressions?.profileRecords?.data?.records) {
+            const records = progressions?.profileRecords?.data?.records;
+            const recordsArray = Object.values(records);
+            recordsArray.forEach(record => {
+                record.intervalObjectives?.forEach(objective => {
+                    console.log("Objective hash: ", objective.objectiveHash);
+                });
+            });
+        }*/
         let allDungeons = await Promise.all(
             characterIds.map(async (charId) => {
                 let page = 0;
@@ -400,7 +409,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
         });
 
         if (group.name == "Pruebas de Osiris") {
-            console.log("Processing PVP data for group:", progressions);
             wins = progressions?.metrics?.data?.metrics?.[1365664208]?.objectiveProgress.progress;
         }
         if(group.name == "Estandarte de Hierro") {
@@ -466,7 +474,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars, progressions, charsData) {
         let completions = 0, favoriteActivity = null;
         if (group.name === "Incursiones") completions = await fetchAllRaidActivities(userId, apikey);
-        else completions = await fetchAllDungeonsActivities(membershipType, userId, chars, group);
+        else completions = await fetchAllDungeonsActivities(membershipType, userId, chars, group, progressions, allActivities);
         favoriteActivity = await getFavActivity(allActivities, group);
 
         let seals = await fetchAllSeals(isRaid, progressions);
@@ -504,9 +512,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 };
             })
         );
+        console.log("Fetched Seal Data: ", progressions);
 
-        SealData.forEach(seal => {
+        SealData.forEach(async seal => {
             seal.completed = progressions.profileRecords.data.records?.[seal.completionRecordHash]?.objectives[0].complete;
+            if (seal.completed == null || seal.completed == undefined) seal.completed = await getSealTriumphs(seal, progressions);
         });
 
         return SealData;
@@ -560,6 +570,24 @@ export default function FavouriteActivity({ membershipType, userId }) {
         };
         let completeData = await buildModeData(group, allActivities, charactersData, progressions);
         return completeData;
+    }
+
+    async function getSealTriumphs(seal, progressions) {
+        const sealapi = await getItemManifest(seal.hash, "DestinyPresentationNodeDefinition");
+        let completedTriumphs = 0;
+        await Promise.all(sealapi.children.records.map(async record => {
+            const recordApi = await getItemManifest(record.recordHash, "DestinyRecordDefinition");
+            if(recordApi.expirationInfo.hasExpiration == false) { //Si el triunfo da progresso al titulo, seguir
+                const recordProgress = progressions.profileRecords.data.records[record.recordHash];
+                console.log("Record progress state for seal: ", recordProgress.state);
+                if (recordProgress.state == 67) completedTriumphs ++;
+            }
+        }));
+        if (completedTriumphs >= 10) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     async function characterClass(characterId, membershipType, userId) {
