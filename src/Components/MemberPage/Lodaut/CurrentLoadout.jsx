@@ -12,7 +12,7 @@ import bgStrand from "../../../assets/subClassBg/subclass-strand.png";
 import bgVoid from "../../../assets/subClassBg/subclass-void.png";
 import { API_CONFIG } from "../../../config";
 import "../../../index.css";
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import Spinner from "../../Spinner";
 import frasesES from "../frases/frasesArtefactoES";
 import CaruselArtefacto from "./CaruselArtefacto";

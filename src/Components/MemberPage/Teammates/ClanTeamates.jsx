@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
 import "../../../Index.css"; // Importar estilos globales
-import { useBungieAPI } from '../../APIservices/BungieAPIcache';
+import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
 export default function ClanTeammates({ userId, membershipType }) {

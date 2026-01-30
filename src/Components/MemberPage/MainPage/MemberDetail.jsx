@@ -4,7 +4,7 @@ import arrowLeft from '../../../assets/arrow-left-solid.svg';
 import copy from '../../../assets/copiar-archivo.png';
 import { API_CONFIG } from '../../../config';
 import '../../../index.css';
-import { useBungieAPI } from '../../APIservices/BungieAPIcache';
+import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { getTimeSinceLastConnection } from '../../LastConexion';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';

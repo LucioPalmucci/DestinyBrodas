@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_CONFIG } from '../../../config';
-import { useBungieAPI } from '../../APIservices/BungieAPIcache';
+import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 
 export default function TriumphScore({ membershipType, userId }) {
     const [triumphs, setTriumphs] = useState(null);

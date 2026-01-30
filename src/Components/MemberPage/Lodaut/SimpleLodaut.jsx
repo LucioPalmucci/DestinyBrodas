@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import inventory from "../../../assets/inventory.png";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import CurrentLoadout from "./CurrentLoadout";
 import StatPopup from "./StatPopup";
 

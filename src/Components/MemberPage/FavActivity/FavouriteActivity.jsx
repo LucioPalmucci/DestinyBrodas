@@ -9,7 +9,8 @@ import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
 import crucibleLogo from "../../../assets/cruciblelogo.png";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 import ActivitiesComp from "./ActivitiesComp";
 
 
@@ -21,7 +22,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
-    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats, loadCache, saveCache } = useBungieAPI();
+    const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
 
     //Armas e iconos
     const weaponTranslations = {
@@ -140,7 +141,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 localPVE = upsertByMode(localPVE, mazData);
                 setModeDataPVE(localPVE);
 
-                try { saveCache(cacheKey, { pve: localPVE, pvp: localPVP, weapon: mostUsedWeapon }); } catch (e) { }
+                try {
+                    saveCache(cacheKey, { pve: localPVE, pvp: localPVP, weapon: mostUsedWeapon });
+                } catch (e) {
+                    console.error('[CACHE] save error', e);
+                }
             } catch (error) {
                 console.error(error);
             }
@@ -285,8 +290,8 @@ export default function FavouriteActivity({ membershipType, userId }) {
         allDungeons.sort((a, b) => (b.period > a.period ? 1 : b.period < a.period ? -1 : 0));
         allDungeons = allDungeons.filter(dungeon => group.hashes.includes(dungeon.activityDetails.directorActivityHash));
         let allClearedDungeons = allDungeons.filter(dungeon => dungeon?.values?.completed?.basic?.value == 1);
-        let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
-        //let allClearedFreshDungeons = [];
+        //let allClearedFreshDungeons = await getAllFreshDungeons(membershipType, userId, allClearedDungeons, characterIds);
+        let allClearedFreshDungeons = [];
 
         const completitions = allClearedDungeons.length;
         const freshCompletitions = allClearedFreshDungeons?.filter(dungeon => dungeon.activityWasStartedFromBeginning == true).length || 0;
@@ -328,7 +333,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     page++;
                 }
                 characterCompletions[character.id] = {
-                    ...character,
+                    //...character,
                     completions: allCompetitiveChar.reduce(
                         (acc, activity) => acc + (activity?.values?.completed?.basic?.value || 0),
                         0
@@ -402,10 +407,10 @@ export default function FavouriteActivity({ membershipType, userId }) {
         if (group.name == "Pruebas de Osiris") {
             wins = progressions?.metrics?.data?.metrics?.[1365664208]?.objectiveProgress.progress;
         }
-        if(group.name == "Estandarte de Hierro") {
+        if (group.name == "Estandarte de Hierro") {
             wins = progressions.profileRecords.data.records?.[4159436958]?.objectives[0].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[1].progress + progressions.profileRecords.data.records?.[4159436958]?.objectives[2].progress || 0;
         }
-        if(group.name == "Crisol") {
+        if (group.name == "Crisol") {
             completions = progressions.profileRecords.data.records?.[4181381577]?.intervalObjectives[0].progress || 0;
             wins = progressions.profileRecords.data.records?.[3561485187]?.intervalObjectives[0].progress || 0;
         }
@@ -459,7 +464,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
             }
         });
         let favoriteActivityData = await getItemManifest(favoriteActivity.hash, "DestinyActivityDefinition");
-        return favoriteActivityData;
+
+        return {
+            completions: favoriteActivity.completions,
+            name: favoriteActivityData?.displayProperties?.name || "Desconocido",
+            pgcrImage: favoriteActivityData ? API_CONFIG.BUNGIE_API + favoriteActivityData.pgcrImage : null,
+            icon: favoriteActivityData ? API_CONFIG.BUNGIE_API + favoriteActivityData.displayProperties.icon : null,
+        } ;
     }
 
     async function getEndGameData(membershipType, userId, allActivities, group, apikey, isRaid, chars, progressions, charsData) {
@@ -567,9 +578,9 @@ export default function FavouriteActivity({ membershipType, userId }) {
         let completedTriumphs = 0;
         await Promise.all(sealapi.children.records.map(async record => {
             const recordApi = await getItemManifest(record.recordHash, "DestinyRecordDefinition");
-            if(recordApi.expirationInfo.hasExpiration == false) { //Si el triunfo da progresso al titulo, seguir
+            if (recordApi.expirationInfo.hasExpiration == false) { //Si el triunfo da progresso al titulo, seguir
                 const recordProgress = progressions.profileRecords.data.records[record.recordHash];
-                if (recordProgress.state == 67) completedTriumphs ++;
+                if (recordProgress.state == 67) completedTriumphs++;
             }
         }));
         if (completedTriumphs >= 10) {

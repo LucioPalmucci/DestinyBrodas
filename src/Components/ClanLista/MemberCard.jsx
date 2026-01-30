@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_CONFIG } from '../../config';
-import { useBungieAPI } from '../APIservices/BungieAPIcache';
+import { useBungieAPI } from '../APIservices/BungieAPIcalls';
 import { getTimeSinceLastConnection } from '../LastConexion';
 import '../Tabla.css';
 export default function MemberCard({ member }) {

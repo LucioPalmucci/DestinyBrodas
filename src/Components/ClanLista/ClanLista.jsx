@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useBungieAPI } from "../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../APIservices/BungieAPIcalls";
 import Spinner from '../Spinner';
 import '../Tabla.css';
 import MemberCard from './MemberCard';
@@ -25,7 +25,6 @@ export default function ClanLista() {
 
                 const manifest = await getManifest();
 
-                console.log("Manifest: ", manifest);
                 const membersWithLight = await lightLevel(clan);
                 setMembersLight(membersWithLight);
                 setOriginalMembers(membersWithLight); // Almacena los datos originales

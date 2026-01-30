@@ -7,7 +7,8 @@ import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
 //import "../../../index.css";
 import { API_CONFIG } from '../../../config';
-import { useBungieAPI } from '../../APIservices/BungieAPIcache';
+import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 import '../../Tab.css';
 import PopUp from './PopUp';
 
@@ -25,10 +26,21 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [activitiesPerPage] = useState(10);
     const popupRef = useRef(null);
+    const CACHE_TTL = 1//0 * 60 * 1000; // 10 minutes
+    const cacheKey = `ActHistory_${membershipType}_${userId}`;
     const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser } = useBungieAPI();
+
     useEffect(() => {
         const fetchActivityHistory = async () => {
-            if (isLoading) return; // Prevenir múltiples ejecuciones
+            const cached = loadCache(cacheKey, CACHE_TTL);
+            if (cached) {
+                setActivityDetails(cached);
+                setFilteredActivities(cached);
+                setCurrentActivityType('Todas');
+                setCurrentPage(1);
+                console.log('[CACHE] hit', cacheKey);
+            }
+            if (isLoading) return;
             setIsLoading(true);
             try {
                 const characterIds = await getCompsProfile(membershipType, userId);
@@ -92,6 +104,33 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 setFilteredActivities(details);
                 setCurrentActivityType('Todas');
                 setCurrentPage(1);
+                console.log('[CACHE] miss', details);
+                try {
+                    const detJSON = JSON.stringify(details.slice(0, 10) || {});
+                    const byteLength = (str) => {
+                        if (typeof TextEncoder !== 'undefined') {
+                            return new TextEncoder().encode(str).length;
+                        }
+                        return unescape(encodeURIComponent(str)).length;
+                    };
+
+                    const sizes = {
+                        details: {
+                            bytes: byteLength(detJSON),
+                            kb: (byteLength(detJSON) / 1024).toFixed(2),
+                            content: details.slice(0, 10)
+                        },
+                    };
+                    console.log('[CACHE] miss sizes', sizes);
+                } catch (e) {
+                    console.error('Error measuring data sizes', e);
+                }
+
+                try {
+                    saveCache(cacheKey, { details: details.slice(0, 10) });
+                } catch (e) {
+                    console.error('[CACHE] save error', e);
+                }
             } catch (error) {
                 console.error('Error fetching activity history:', error);
             } finally {
@@ -134,9 +173,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const fetchCarnageReport = async (instanceId) => {
         try {
             const carnageReportResponse = await getCarnageReport(instanceId);
-            const filteredEntries = carnageReportResponse.entries.filter(entry =>
+            /*const filteredEntries = carnageReportResponse.entries.filter(entry =>
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
-            );
+            );*/
+            const filteredEntries = carnageReportResponse.entries;
 
             const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -152,10 +192,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 membershipType: entry.player.destinyUserInfo.membershipType,
                 uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                honor: await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId),
-                guardinRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
-                emblemBig: await fetchEmblema(entry.player.emblemHash),
-                clan: await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
+                guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
+                emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
+                clan: entry.player.destinyUserInfo.membershipType != 0 ? await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,

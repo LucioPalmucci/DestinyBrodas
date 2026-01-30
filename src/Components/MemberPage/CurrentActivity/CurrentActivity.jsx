@@ -3,7 +3,7 @@ import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
 import { API_CONFIG } from "../../../config";
 import "../../../Index.css";
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 

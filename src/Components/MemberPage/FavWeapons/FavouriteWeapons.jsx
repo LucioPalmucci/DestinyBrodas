@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import crownIcon from "../../../assets/crown-solid.svg";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 
 const API_KEY = "f83a251bf2274914ab739f4781b5e710";
 

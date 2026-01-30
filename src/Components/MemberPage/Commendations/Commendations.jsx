@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import elogio from "../../../assets/elogio.png"; // Importar el icono de elogio
-import { useBungieAPI } from "../../APIservices/BungieAPIcache";
+import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 
 
 export default function Commendations({ membershipType, userId }) {

@@ -2,87 +2,16 @@ import axios from 'axios';
 import { useCallback, useRef, useState } from 'react';
 import { API_CONFIG } from '../../config'; // Asegúrate de que esta ruta sea correcta
 
-// Cache global para compartir entre todos los componentes
-const globalCache = new Map();
-const globalLoading = new Set();
-
-const TTL_CONFIG = 10 * 60 * 1000; // 10 minutos
-
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
 
 export const useBungieAPI = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [cacheStats, setCacheStats] = useState({ size: 0, loading: 0 });
-
     // Para cancelar requests si el componente se desmonta
     const abortControllerRef = useRef(new AbortController());
 
-    // Generar clave de cache de forma estable
-    const generateCacheKey = useCallback((type, ...params) => {
-        try {
-            const payload = { type, params };
-            return `${type}:${encodeURIComponent(JSON.stringify(payload.params))}`;
-        } catch (e) {
-            // Fallback simple
-            return `${type}:${params.join(':')}`;
-        }
-    }, []);
-
-    // Verificar si el cache es válido
-    const isCacheValid = useCallback((cacheKey, type) => {
-        const cached = globalCache.get(cacheKey);
-        if (!cached) return false;
-
-        const now = Date.now();
-        const ttl = TTL_CONFIG;
-
-        const ts = Number(cached.timestamp) || 0;
-        return ts > 0 && (now - ts) < ttl;
-    }, []);
-
     // Función genérica para hacer requests con cache
     const apiRequest = useCallback(async (type, url, params = [], customConfig = {}) => {
-        const cacheKey = generateCacheKey(type, url, ...params);
-
-        // Verificar cache
-        if (isCacheValid(cacheKey, type)) {
-            // actualizar stats para reflejar hit de cache
-            setCacheStats({
-                size: globalCache.size,
-                loading: globalLoading.size
-            });
-            // log debug detallado del hit
-            try {
-                const cached = globalCache.get(cacheKey);
-                const age = Date.now() - (cached?.timestamp || 0);
-                //console.debug('cache hit', { cacheKey, age, ttl: TTL_CONFIG, timestamp: cached?.timestamp });
-            } catch (e) {}
-            return globalCache.get(cacheKey).data;
-        }
-
-        // Verificar si ya se está cargando
-        if (globalLoading.has(cacheKey)) {
-            return new Promise((resolve, reject) => {
-                const checkLoading = () => {
-                    if (!globalLoading.has(cacheKey)) {
-                        if (isCacheValid(cacheKey, type)) {
-                            resolve(globalCache.get(cacheKey).data);
-                        } else {
-                            reject(new Error('Request failed'));
-                        }
-                    } else {
-                        setTimeout(checkLoading, 100);
-                    }
-                };
-                checkLoading();
-            });
-        }
-
-        // Marcar como cargando
-        globalLoading.add(cacheKey);
-        setLoading(true);
-
         try {
             const config = {
                 headers: {
@@ -94,20 +23,6 @@ export const useBungieAPI = () => {
 
             const response = await axios.get(url, config);
             const data = response.data;
-
-            // Guardar en cache
-            globalCache.set(cacheKey, {
-                data,
-                timestamp: Date.now()
-            });
-
-            //try { console.debug('cache set', { cacheKey, timestamp: Date.now() }); } catch (e) {}
-            // Actualizar stats
-            setCacheStats({
-                size: globalCache.size,
-                loading: globalLoading.size
-            });
-
             return data;
         } catch (error) {
             // Detectar cancelaciones (AbortController + Axios CanceledError)
@@ -120,73 +35,9 @@ export const useBungieAPI = () => {
             setError(error);
             throw error;
         } finally {
-            globalLoading.delete(cacheKey);
             setLoading(false);
         }
-    }, [generateCacheKey, isCacheValid]);
-
-    const loadCache = (cacheKey, cacheTTL) => {
-        try {
-            const raw = localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (Date.now() - parsed.ts > cacheTTL) {
-                try { localStorage.removeItem(cacheKey); } catch (e) {}
-                try { sessionStorage.removeItem(cacheKey); } catch (e) {}
-                return null;
-            }
-            return parsed.data;
-        } catch (e) {
-            return null;
-        }
-    };
-
-    const saveCache = (cacheKey, data) => {
-        const payload = JSON.stringify({ ts: Date.now(), data });
-        try {
-            localStorage.setItem(cacheKey, payload);
-            console.log('Cache saved to localStorage', { cacheKey });
-            return;
-        } catch (e) {
-            console.error('Error saving to localStorage', e);
-            const isQuota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
-            if (!isQuota) return;
-            // Evict oldest entries by timestamp until write succeeds
-            try {
-                const candidates = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const k = localStorage.key(i);
-                    try {
-                        const v = JSON.parse(localStorage.getItem(k));
-                        if (v && v.ts) candidates.push({ k, ts: v.ts });
-                    } catch (err) { /* ignore non-json entries */ }
-                }
-                // Sort by oldest first
-                candidates.sort((a, b) => a.ts - b.ts);
-                for (const c of candidates) {
-                    try {
-                        localStorage.removeItem(c.k);
-                        // try writing after each eviction
-                        localStorage.setItem(cacheKey, payload);
-                        console.log('Cache saved after evicting', c.k);
-                        return;
-                    } catch (err2) {
-                        // continue evicting next oldest
-                        continue;
-                    }
-                }
-            } catch (evictErr) {
-                console.error('Error while evicting localStorage entries', evictErr);
-            }
-            // Fallback to sessionStorage
-            try {
-                sessionStorage.setItem(cacheKey, payload);
-                console.warn('Saved cache to sessionStorage as fallback', { cacheKey });
-            } catch (finalErr) {
-                console.error('Failed to save cache to sessionStorage', finalErr);
-            }
-        }
-    };
+    }, []);
 
     // ========== MÉTODOS ESPECÍFICOS PARA DESTINY API ==========
 
@@ -422,52 +273,10 @@ export const useBungieAPI = () => {
         return response;
     }, [apiRequest]);
 
-    // ========== UTILIDADES ==========
-
-    // Limpiar cache
-    const clearCache = useCallback((type = null) => {
-        if (type) {
-            // Limpiar solo un tipo específico
-            for (const [key] of globalCache) {
-                if (key.startsWith(`${type}:`)) {
-                    globalCache.delete(key);
-                }
-            }
-        } else {
-            // Limpiar todo el cache
-            globalCache.clear();
-        }
-        setCacheStats({
-            size: globalCache.size,
-            loading: globalLoading.size
-        });
-    }, []);
-
-    // Obtener estadísticas del cache
-    const getCacheStatsDetailed = useCallback(() => {
-        const stats = {};
-        for (const [key] of globalCache) {
-            const type = key.split(':')[0];
-            stats[type] = (stats[type] || 0) + 1;
-        }
-        return {
-            totalEntries: globalCache.size,
-            byType: stats,
-            currentlyLoading: globalLoading.size
-        };
-    }, []);
-
-    // Limpiar al desmontar componente
-    const cleanup = useCallback(() => {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = new AbortController();
-    }, []);
-
     return {
         // Estados
         loading,
         error,
-        cacheStats,
 
         // Métodos de API
         getCompChars,
@@ -502,24 +311,6 @@ export const useBungieAPI = () => {
 
         // Método genérico
         apiRequest,
-
-        // Utilidades
-        clearCache,
-        getCacheStatsDetailed,
-        cleanup,
-
-        loadCache,
-        saveCache,
-
-        // Estados del cache
-        isCached: (type, ...params) => {
-            const cacheKey = generateCacheKey(type, ...params);
-            return isCacheValid(cacheKey, type);
-        },
-        isLoading: (type, ...params) => {
-            const cacheKey = generateCacheKey(type, ...params);
-            return globalLoading.has(cacheKey);
-        }
     };
 };
 
@@ -533,16 +324,5 @@ export const useBungieAPISimple = () => {
         getCompChars: api.getCompChars,
         getClanMembers: api.getClanMembers,
         getCommendations: api.getCommendations,
-        clearCache: api.clearCache
     };
-};
-
-// Exportar también funciones standalone para casos específicos
-export const BungieAPIUtils = {
-    clearAllCache: () => {
-        globalCache.clear();
-        globalLoading.clear();
-    },
-    getCacheSize: () => globalCache.size,
-    getLoadingCount: () => globalLoading.size
 };
