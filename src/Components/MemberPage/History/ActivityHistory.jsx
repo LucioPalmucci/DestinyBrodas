@@ -9,6 +9,7 @@ import skull from "../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
+import Spinner from '../../Spinner';
 import '../../Tab.css';
 import PopUp from './PopUp';
 
@@ -25,23 +26,25 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [activitiesPerPage] = useState(10);
+    const [fullLoaded, setFullLoaded] = useState(false);
     const popupRef = useRef(null);
-    const CACHE_TTL = 1//0 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
     const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
+            if (isLoading) return;
             const cached = loadCache(cacheKey, CACHE_TTL);
             if (cached) {
-                setActivityDetails(cached);
-                setFilteredActivities(cached);
+                const cachedData = Array.isArray(cached) ? cached : (cached?.details || []);
+                setActivityDetails(cachedData);
+                setFilteredActivities(cachedData);
                 setCurrentActivityType('Todas');
                 setCurrentPage(1);
-                console.log('[CACHE] hit', cacheKey);
-            }
-            if (isLoading) return;
-            setIsLoading(true);
+                setFullLoaded(false);
+                setIsLoading(false);
+            } else setIsLoading(true);
             try {
                 const characterIds = await getCompsProfile(membershipType, userId);
                 const allActivities = [];
@@ -104,9 +107,14 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 setFilteredActivities(details);
                 setCurrentActivityType('Todas');
                 setCurrentPage(1);
-                console.log('[CACHE] miss', details);
+                setFullLoaded(details.length >= 50);
+
                 try {
-                    const detJSON = JSON.stringify(details.slice(0, 10) || {});
+                    saveCache(cacheKey, details.slice(0, 10));
+                } catch (e) {
+                    console.error('[CACHE] save error', e);
+                }
+                /*try {
                     const byteLength = (str) => {
                         if (typeof TextEncoder !== 'undefined') {
                             return new TextEncoder().encode(str).length;
@@ -114,23 +122,37 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         return unescape(encodeURIComponent(str)).length;
                     };
 
-                    const sizes = {
-                        details: {
-                            bytes: byteLength(detJSON),
-                            kb: (byteLength(detJSON) / 1024).toFixed(2),
-                            content: details.slice(0, 10)
-                        },
-                    };
-                    console.log('[CACHE] miss sizes', sizes);
+                    // Medir cada item individualmente y adjuntar una vista previa del JSON
+                    const sizesPerItem = details.map((item, idx) => {
+                        try {
+                            const json = JSON.stringify(item);
+                            const bytes = byteLength(json);
+                            return {
+                                index: idx,
+                                bytes,
+                                kb: (bytes / 1024).toFixed(2),
+                                content: item,
+                            };
+                        } catch (err) {
+                            return {
+                                index: idx,
+                                error: 'stringify_error',
+                                message: err?.message || String(err)
+                            };
+                        }
+                    });
+
+                    /*try {
+                        /*const toSave = details || [];
+                        const toSaveJSON = JSON.stringify(toSave);
+                        const savedBytes = byteLength(toSaveJSON);
+                        console.log('[CACHE] will save', { items: toSave.length, bytes: savedBytes, kb: (savedBytes / 1024).toFixed(2) });
+                    } catch (e) {
+                        console.error('[CACHE] error measuring saved slice', e);
+                    }
                 } catch (e) {
                     console.error('Error measuring data sizes', e);
-                }
-
-                try {
-                    saveCache(cacheKey, { details: details.slice(0, 10) });
-                } catch (e) {
-                    console.error('[CACHE] save error', e);
-                }
+                }*/
             } catch (error) {
                 console.error('Error fetching activity history:', error);
             } finally {
@@ -177,6 +199,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
             );*/
             const filteredEntries = carnageReportResponse.entries;
+            if(filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
             const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -208,7 +231,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
             return { people, teams };
         } catch (error) {
             console.error('Error fetching carnage report:', error);
-            return { people, teams: [] }; // Valores por defecto en caso de error
+            return { people: [], teams: [] }; // Valores por defecto en caso de error
         }
     };
 
@@ -370,7 +393,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 <button onClick={() => filterActivities(activityDetails, 'PvP')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 'PvP' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
                 <button onClick={() => filterActivities(activityDetails, 'Gambito')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 'Gambito' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
             </div>
-            {isLoading ? (
+            {isLoading && !fullLoaded ? (
                 <div className="h-[450px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
             ) : (
                 <>
@@ -593,7 +616,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         )}
                     </div>
                 </>)}
-            {totalPages > 1 && (
+            {totalPages > 1 && fullLoaded ? (
                 <div className="flex justify-center items-center mt-6 space-x-1">
                     <button
                         onClick={() => handlePageChange(currentPage - 1)}
@@ -632,6 +655,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     >
                         {">"}
                     </button>
+                </div>
+            ) : (
+                <div className='mt-3'>
+                    <Spinner small={true} />
                 </div>
             )}
         </div>

@@ -19,7 +19,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
 
-    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
