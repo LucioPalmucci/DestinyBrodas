@@ -9,8 +9,10 @@ import { getTimeSinceLastConnection } from '../../LastConexion';
 import Spinner from '../../Spinner';
 import '../../Tabla.css';
 import FavouriteActivity from '../FavActivity/FavouriteActivity';
-import ActivityHistory from '../History/ActivityHistory';
+import FavouriteWeapons from '../FavWeapons/FavouriteWeapons';
+import SimpleLoadout from '../Lodaut/SimpleLodaut';
 import ReportLinks from './ReportLinks';
+
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
     const [memberDetail, setMemberDetail] = useState(null);
@@ -159,9 +161,9 @@ function MemberDetail() {
                             </div>
                         )}
                         {/*<TriumphScore userId={membershipId} membershipType={membershipType} />
-                        <Commendations userId={membershipId} membershipType={membershipType} />
+                        <Commendations userId={membershipId} membershipType={membershipType} />*/}
                         <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
-                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} />*/}
+                        <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div className='w-[60%] space-y-6'>
                         <div className='flex items-center'>
@@ -175,7 +177,7 @@ function MemberDetail() {
                             </div>
                             </div>
                         </div>
-                         <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                         {/*<ActivityHistory userId={membershipId} membershipType={membershipType} />*/}
                     </div>
                 </div>
             </div>

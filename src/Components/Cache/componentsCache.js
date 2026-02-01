@@ -31,7 +31,7 @@ export const saveCache = (key, data) => {
             JSON.stringify({ ts: Date.now(), data })
         );
         const payload = JSON.stringify({ ts: Date.now(), data });
-        console.log('CACHE SIZE:', (payload.length / 1024).toFixed(2), 'KB');
+        console.log('CACHE SIZE:', (payload.length / 1024).toFixed(2), 'KB', key);
     } catch (e) {
         console.error('[CACHE][UTIL] save failed', e);
         throw e;

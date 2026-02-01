@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import crownIcon from "../../../assets/crown-solid.svg";
 import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
-
-const API_KEY = "f83a251bf2274914ab739f4781b5e710";
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 
 const DestinyTopWeapons = ({ userId, membershipType }) => {
     const [weapons, setWeapons] = useState({ pve: [], pvp: [] });
@@ -12,8 +11,17 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     const [page, setPage] = useState("pve");
     const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities } = useBungieAPI();
 
+    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const cacheKey = `favWeapons_${membershipType}_${userId}`;
+
     useEffect(() => {
         const fetchTopWeapons = async () => {
+            const cached = loadCache(cacheKey, CACHE_TTL);
+            if (cached) {
+                setWeapons(cached);
+                setLoading(false);
+                return;
+            }
             setLoading(true);
 
             try {
@@ -68,6 +76,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                     pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8),
                     pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8),
                 });
+                saveCache(cacheKey, { pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8), pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8) });
+
             } catch (error) {
                 console.error("Error fetching weapons:", error);
             } finally {
