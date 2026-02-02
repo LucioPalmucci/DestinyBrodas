@@ -1,17 +1,30 @@
 import { useEffect, useState } from 'react';
 import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { loadCache, saveCache } from '../../Cache/componentsCache';
 
 export default function TriumphScore({ membershipType, userId }) {
     const [triumphs, setTriumphs] = useState(null);
     const { getAllSeals } = useBungieAPI();
 
-    useEffect(() => {
-        const fetchTriumphs = async () => {
+    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const cacheKey = `TriumphScore_${membershipType}_${userId}`;
 
+    useEffect(() => {
+        const cached = loadCache(cacheKey, CACHE_TTL);
+        if (cached) {
+            setTriumphs(cached);
+            return;
+        }
+        const fetchTriumphs = async () => {
             const response = await getAllSeals(membershipType, userId);
 
             setTriumphs({
+                Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
+                Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
+            });
+
+            saveCache(cacheKey, {
                 Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
                 Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
             });

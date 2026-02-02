@@ -4,6 +4,7 @@ import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
 import "../../../Index.css"; // Importar estilos globales
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
 export default function ClanTeammates({ userId, membershipType }) {
@@ -13,7 +14,16 @@ export default function ClanTeammates({ userId, membershipType }) {
     const popupRef = useRef(null);
     const { getCompChars, getClanMembers, getRecentActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
 
+    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const cacheKey = `ClanTeammates_${membershipType}_${userId}`;
+
     useEffect(() => {
+        const cached = loadCache(cacheKey, CACHE_TTL);
+        if (cached) {
+            setJugadoresClan(cached);
+            setLoading(false);
+            return;
+        }
         const fectchClanTeammates = async () => {
             setLoading(true);
             try {
@@ -21,7 +31,6 @@ export default function ClanTeammates({ userId, membershipType }) {
                 let clanMemmbersIDs = [];
 
                 const clan = await getClanMembers();
-
 
                 clan.forEach(member => {
                     if (member.destinyUserInfo.membershipId === userId) return;
@@ -85,6 +94,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                     jugador.numero = idx + 1;
                 });
                 setJugadoresClan(jugadoresClan);
+                saveCache(cacheKey, jugadoresClan);
             } catch (error) {
                 console.error('Error al cargar los compañeros de clan:', error);
             } finally {

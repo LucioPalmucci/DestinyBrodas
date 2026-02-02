@@ -4,6 +4,7 @@ import orbit from "../../../assets/orbit.png";
 import { API_CONFIG } from "../../../config";
 import "../../../Index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 
@@ -16,8 +17,17 @@ export default function CurrentActivity({ type, id, isOnline }) {
     const [numColumns, setColums] = useState(0);
     const { getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
 
+    const cacheKey = `CurrentActivity_${type}_${id}`;
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     useEffect(() => {
         const fetchActivity = async () => {
+            const cached = loadCache(cacheKey, CACHE_TTL);
+            if (cached) {
+                setActivity(cached.activity);
+                setPartyMembers(cached.partyMembers);
+                setColums(cached.numColumns);
+                return;
+            }
             try {
                 const characterIds = await getCompChars(type, id);
                 const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
@@ -76,7 +86,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                     oponentes = null;
                 }
 
-                setActivity({
+                const activity = {
                     date: minutesAgo,
                     name: name,
                     type: tipo,
@@ -93,14 +103,23 @@ export default function CurrentActivity({ type, id, isOnline }) {
                     imagen: actividadImg && actividadImg.includes(orbit) ? actividadImg : API_CONFIG.BUNGIE_API + actividadImg,
                     logo: actividadLogo,
                     tieneIcono: tieneIcono,
-                });
+                };
+
+                setActivity(activity);
 
                 const partyMembersDetails = await fetchPartyMembersDetails(partyResponse.partyMembers, activity);
+                console.log("Miembros de la party con detalles:", partyMembersDetails);
                 setPartyMembers(partyMembersDetails);
 
-                if (partyMembers.length > 1) {
-                    setColums(2)
-                } else setColums(1);
+                let cols = 1;
+                if (partyMembers.length > 1) cols = 2;
+                setColums(cols);
+
+                saveCache(cacheKey, {
+                    activity: activity,
+                    partyMembers: partyMembersDetails,
+                    numColumns: numColumns
+                });
 
             } catch (error) {
                 //console.error(`Error fetching current activity:`, error);

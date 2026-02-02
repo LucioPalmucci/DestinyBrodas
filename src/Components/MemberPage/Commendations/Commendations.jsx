@@ -1,18 +1,27 @@
 import { useEffect, useState } from "react";
 import elogio from "../../../assets/elogio.png"; // Importar el icono de elogio
 import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
-
+import { loadCache, saveCache } from "../../Cache/componentsCache";
 
 export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
     const { getCommendations } = useBungieAPI();
 
+    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const cacheKey = `Commendations_${membershipType}_${userId}`;
+
     useEffect(() => {
         const fetchGeneralStats = async () => {
+            const cached = loadCache(cacheKey, CACHE_TTL);
+            if (cached) {
+                setCommendations(cached);
+                return;
+            }
             try {
                 const commendationsData = await getCommendations(membershipType, userId);
                 if (commendationsData) {
                     setCommendations(commendationsData);
+                    saveCache(cacheKey, commendationsData);
                 }
             } catch (error) {
                 setError(error);
