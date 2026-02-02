@@ -14,7 +14,7 @@ export default function ClanTeammates({ userId, membershipType }) {
     const popupRef = useRef(null);
     const { getCompChars, getClanMembers, getRecentActivities, getCarnageReport, getItemManifest, getManifest, getCommendations, getCompsProfile } = useBungieAPI();
 
-    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const CACHE_TTL = 150 * 60 * 1000; // 15 minutes
     const cacheKey = `ClanTeammates_${membershipType}_${userId}`;
 
     useEffect(() => {

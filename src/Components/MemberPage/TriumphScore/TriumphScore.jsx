@@ -7,7 +7,7 @@ export default function TriumphScore({ membershipType, userId }) {
     const [triumphs, setTriumphs] = useState(null);
     const { getAllSeals } = useBungieAPI();
 
-    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const CACHE_TTL = 150 * 60 * 1000; // 15 minutes
     const cacheKey = `TriumphScore_${membershipType}_${userId}`;
 
     useEffect(() => {

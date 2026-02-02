@@ -11,7 +11,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
     const [page, setPage] = useState("pve");
     const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities } = useBungieAPI();
 
-    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 100 * 60 * 1000; // 10 minutes
     const cacheKey = `favWeapons_${membershipType}_${userId}`;
 
     useEffect(() => {

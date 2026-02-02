@@ -28,7 +28,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [activitiesPerPage] = useState(10);
     const [fullLoaded, setFullLoaded] = useState(false);
     const popupRef = useRef(null);
-    const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 100 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
     const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser } = useBungieAPI();
 
@@ -44,6 +44,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 setCurrentPage(1);
                 setFullLoaded(false);
                 setIsLoading(false);
+                console.log('Loaded activity history from cache:', cachedData);
             } else setIsLoading(true);
             try {
                 const characterIds = await getCompsProfile(membershipType, userId);
@@ -75,11 +76,10 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
                     const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
                     const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
-                    const activityMode = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
-                    let datosDelModo;
-                    let modeHash = activityMode.directActivityModeHash || activityMode.activityTypeHash;
-                    if (!modeHash) datosDelModo = null;
-                    else datosDelModo = await fetchActivityDetails(modeHash, "DestinyActivityModeDefinition");
+                    const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
+                    let datosDelModo, datosDelTipo;
+                    datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
+                    if(activityInfo.directActivityModeHash) datosDelModo = await fetchActivityDetails(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
 
                     const clase = getUserClass(carnageReport)
                     let activityType;
@@ -91,12 +91,20 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         activityType = "Gambito";
                     } else activityType = "PvE";
 
+                    let actIcon = null;
+                    if(!activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+                    else actIcon = datosDelModo?.displayProperties?.icon || datosDelTipo?.displayProperties?.icon;
+
                     return {
-                        activityName: activityType == "PvE" ? activityMain?.displayProperties?.name : activityMode?.displayProperties?.name,
-                        activityIcon: !activityMode?.displayProperties?.icon.includes("missing_icon") ? activityMode?.displayProperties?.icon : datosDelModo?.displayProperties?.icon,
+                        activityName: activityType == "PvE" ? activityMain?.displayProperties?.name : activityInfo?.displayProperties?.name,
+                        activityMode: datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name,
+                        activityIcon: actIcon,
                         clase: clase || null,
                         pgcrImage: activityMain?.pgcrImage || null,
                         instanceId: activity.activityDetails.instanceId,
+                        kills: carnageReport.people.find(person => person.membershipId == userId)?.kills || 0,
+                        deaths: carnageReport.people.find(person => person.membershipId == userId)?.deaths || 0,
+                        kd: carnageReport.people.find(person => person.membershipId == userId)?.kd || 0,
                         activityType,
                         date,
                         duration,
@@ -108,51 +116,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 setCurrentActivityType('Todas');
                 setCurrentPage(1);
                 setFullLoaded(details.length >= 50);
-
                 try {
                     saveCache(cacheKey, details.slice(0, 10));
                 } catch (e) {
                     console.error('[CACHE] save error', e);
                 }
-                /*try {
-                    const byteLength = (str) => {
-                        if (typeof TextEncoder !== 'undefined') {
-                            return new TextEncoder().encode(str).length;
-                        }
-                        return unescape(encodeURIComponent(str)).length;
-                    };
-
-                    // Medir cada item individualmente y adjuntar una vista previa del JSON
-                    const sizesPerItem = details.map((item, idx) => {
-                        try {
-                            const json = JSON.stringify(item);
-                            const bytes = byteLength(json);
-                            return {
-                                index: idx,
-                                bytes,
-                                kb: (bytes / 1024).toFixed(2),
-                                content: item,
-                            };
-                        } catch (err) {
-                            return {
-                                index: idx,
-                                error: 'stringify_error',
-                                message: err?.message || String(err)
-                            };
-                        }
-                    });
-
-                    /*try {
-                        /*const toSave = details || [];
-                        const toSaveJSON = JSON.stringify(toSave);
-                        const savedBytes = byteLength(toSaveJSON);
-                        console.log('[CACHE] will save', { items: toSave.length, bytes: savedBytes, kb: (savedBytes / 1024).toFixed(2) });
-                    } catch (e) {
-                        console.error('[CACHE] error measuring saved slice', e);
-                    }
-                } catch (e) {
-                    console.error('Error measuring data sizes', e);
-                }*/
             } catch (error) {
                 console.error('Error fetching activity history:', error);
             } finally {
@@ -199,7 +167,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
             );*/
             const filteredEntries = carnageReportResponse.entries;
-            if(filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
+            if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
             const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -397,15 +365,15 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 <div className="h-[450px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
             ) : (
                 <>
-                    {currentActivities.length > 0 && (
-                        <div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
+                    {/*currentActivities.length > 0 && (
+                        {<div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
                             <p className='w-[15%]'>Fecha/Hora</p>
                             <p className='w-[12%]'>Clase</p>
                             <p className='w-[26%] '>Actividad</p>
                             <p className='w-[9.5%]'>Duración</p>
                             <p className='w-[8%]'>Completado</p>
                         </div>
-                    )}
+                    )*/}
                     <div>
                         {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
                             const hasPoints = activity.people.some(person => person.points > 0);
@@ -431,23 +399,44 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             }
 
                             return (
-                                <div className={`bg-gray-300 hover:bg-white border-1`} key={uniqueId}>
-                                    <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[45px]'>
-                                        <div key={uniqueId} className={`px-10 text-sm text-start justify-between flex items-center`}>
-                                            <p className='w-[15%]'>{activity.date}</p>
-                                            <div className='w-[11%] flex items-center'>
-                                                <img className='w-6 h-6' src={activity.clase?.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
-                                                <div className='w-1'></div>
-                                                <p>{activity.clase?.name}</p>
+                                <div className={`bg-gray-300 hover:bg-white transition-colors mb-1 cursor-pointer hover:bg-white/30`} key={uniqueId}>
+                                    <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[90px]'>
+                                        <div key={uniqueId} className={`px-10 text-[1.1rem] text-start justify-between flex items-center`}>
+                                            {/*<p className='w-[15%]'>{activity.date}</p>*/}
+                                            <div className='flex items-center justify-between w-[60%] text-start'>
+                                                <div className='flex items-center w-[25%]'>
+                                                    <img className='w-12 h-12' src={activity.clase?.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
+                                                    <div className='w-1'></div>
+                                                    <p>{activity.clase?.name}</p>
+                                                </div>
+                                                <div className='flex items-center text-start w-[50%]'>
+                                                    {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-12 h-12' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                                    <div className='w-1.5'></div>
+                                                    <div className='flex flex-col'>
+                                                        <p>{activity.activityMode}</p>
+                                                        <p>{activity.activityName}</p>
+                                                    </div>
+                                                </div>
+                                                <p className='w-[25%]'>{activity.duration}</p>
                                             </div>
-                                            <div className='w-[30%] flex items-center'>
-                                                {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-6 h-6' style={{ filter: "brightness(0) contrast(100%)" }} />}
-                                                <div className='w-1.5'></div>
-                                                {activity.activityName}
-                                            </div>
-                                            <p className='w-[10%]'>{activity.duration}</p>
-                                            <div className='w-[8%] flex justify-center mr-1'>
-                                                <img src={symbol} className='w-6 h-6' />
+                                            <div className='flex items-center justify-between w-[40%] text-start'>
+                                                <div className='flex items-center w-[30%]'>
+                                                    <i className='icon-kills3' style={{ filter: "invert(100%)" }}></i>
+                                                    <div className='w-1'></div>
+                                                    <p>{activity.kills}</p>
+                                                </div>
+                                                <div className='flex items-center w-[30%]'>
+                                                    <img src={skull} className="mr-2" width={30} height={30} />
+                                                    <p>{activity.deaths}</p>
+                                                </div>
+                                                <div className='flex items-center w-[30%]'>
+                                                    <p className='py-2'>KD</p>
+                                                    <div className='w-1'></div>
+                                                    <p>{activity.kd}</p>
+                                                </div>
+                                                <div className='w-12 flex items-center mr-1'>
+                                                    <img src={symbol} className='w-12 h-12' />
+                                                </div>
                                             </div>
                                         </div>
                                     </button>

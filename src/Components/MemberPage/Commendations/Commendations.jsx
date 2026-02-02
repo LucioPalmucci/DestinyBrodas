@@ -7,7 +7,7 @@ export default function Commendations({ membershipType, userId }) {
     const [honor, setCommendations] = useState(null);
     const { getCommendations } = useBungieAPI();
 
-    const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+    const CACHE_TTL = 150 * 60 * 1000; // 15 minutes
     const cacheKey = `Commendations_${membershipType}_${userId}`;
 
     useEffect(() => {

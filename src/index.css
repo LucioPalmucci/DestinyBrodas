@@ -219,6 +219,17 @@ body {
     vertical-align: middle;
 }
 
+.icon-kills3::before {
+    content: "";
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    background-image: url('/kill-tracker.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
 .icon-precision::before {
     content: "\E142";
     font-family: "Destiny Symbols Common 2";

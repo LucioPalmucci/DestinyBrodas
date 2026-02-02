@@ -18,7 +18,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
     const { getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
 
     const cacheKey = `CurrentActivity_${type}_${id}`;
-    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    const CACHE_TTL = 50 * 60 * 1000; // 5 minutes
     useEffect(() => {
         const fetchActivity = async () => {
             const cached = loadCache(cacheKey, CACHE_TTL);
