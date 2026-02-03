@@ -22,28 +22,42 @@ function MemberDetail() {
     const { membershipType, membershipId } = useParams();
     const [memberDetail, setMemberDetail] = useState(null);
     const [userMemberships, setUserMemberships] = useState(null);
+    const [apiUnavailable, setApiUnavailable] = useState(false);
     const [emblemIndicators, setEmblemIndicators] = useState(null);
     const [activity, setActivity] = useState(null);
     const [member, setMember] = useState(null);
     const [currentLight, setCurrentLight] = useState(null);
     const [guardianRank, setGuardianRank] = useState(null);
     const [emblemBackgroundPath, setEmblem] = useState(null);
+    const [showApiModal, setShowApiModal] = useState(false);
     const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [classImg, setClassImg] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [cl, setClass] = useState(null);
     const { getClanMembers, getCompsProfile, getUserMembershipsById, getItemManifest, getCompChars } = useBungieAPI();
 
     useEffect(() => {
         const fetchData = async () => {
-            const response = await getClanMembers();
-            response.forEach((member) => {
-                if (member.destinyUserInfo.membershipId === membershipId) {
-                    setMember(member);
+            try {
+                const response = await getClanMembers();
+                response.forEach((member) => {
+                    if (member.destinyUserInfo.membershipId === membershipId) {
+                        setMember(member);
+                    }
+                })
+            } catch (error) {
+                console.error('Error fetching clan members:', error);
+                const status = error?.response?.status ?? error?.status;
+                if (status === 503) {
+                    setApiUnavailable(true);
+                    setShowApiModal(true);
+                } else {
+                    setError('Error al cargar los detalles del miembro.');
                 }
-            })
-        };
+            }
+        }
 
         fetchData();
     }, [location.search]);
@@ -53,7 +67,6 @@ function MemberDetail() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-
 
     useEffect(() => {
         const fetchMemberDetail = async () => {
@@ -71,6 +84,7 @@ function MemberDetail() {
                 setMemberDetail(responseProfile);
                 setUserMemberships(membershipsResponse);
                 setGuardianRank(guardianRankResponse);
+                setClass(mostRecentCharacter.classHash);
                 setCurrentLight(mostRecentCharacter.light);
                 setEmblem(mostRecentCharacter.emblemBackgroundPath);
                 const clase = mostRecentCharacter.classType;
@@ -101,7 +115,14 @@ function MemberDetail() {
 
             } catch (error) {
                 console.error('Error fetching member details:', error);
-                setError('Error fetching member details.');
+                const status = error?.response?.status ?? error?.status;
+                if (status === 503) {
+                    setApiUnavailable(true);
+                    setError('Servidor en mantenimiento');
+                    setShowApiModal(true);
+                } else {
+                    setError('Error al cargar los detalles del miembro.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -174,20 +195,34 @@ function MemberDetail() {
                     <div className='w-[60%] space-y-6'>
                         <div className='flex items-center'>
                             <div className='flex space-x-6 w-full'>
-                             <div className='space-y-6 w-full'>
-                                <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
-                                <ClanTeammates userId={membershipId} membershipType={membershipType} />
-                            </div>
-                            <div className='w-full'>
-                                <FavouriteActivity userId={membershipId} membershipType={membershipType} />
-                            </div>
+                                <div className='space-y-6 w-full'>
+                                    <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
+                                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
+                                </div>
+                                <div className='w-full'>
+                                    <FavouriteActivity userId={membershipId} membershipType={membershipType} />
+                                </div>
                             </div>
                         </div>
-                         <ActivityHistory userId={membershipId} membershipType={membershipType} />
+                        <ActivityHistory userId={membershipId} membershipType={membershipType} currentClass={cl} />
                     </div>
                 </div>
             </div>
+            {apiUnavailable && showApiModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black opacity-50" onClick={() => setShowApiModal(false)} />
+                    <div className="relative bg-white rounded-lg p-6 max-w-xl mx-4 text-center shadow-lg">
+                        <h2 className="text-2xl font-bold mb-2">La API de Bungie está en mantenimiento</h2>
+                        <p>Algunas funcionalidades pueden no estar disponibles temporalmente.</p>
+                        <p className="mb-4">Visita la página oficial de <a className="text-blue-500 underline" href="https://x.com/BNGServerStatus" target="_blank" rel="noopener noreferrer">Twitter de Bungie</a> para ver el estado del servidor.</p>
+                        <div className="flex justify-center cursor-pointer">
+                            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2 cursor-pointer" onClick={() => setShowApiModal(false)}>Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+        
     );
 }
 
