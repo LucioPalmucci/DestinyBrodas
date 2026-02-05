@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import circleEmpty from "../../../assets/circle-empty.svg";
 import circleSolid from "../../../assets/circle-solid.svg";
-import Completed from "../../../assets/Completed.png";
+import completed from "../../../assets/completed.png";
 import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
@@ -14,11 +14,12 @@ import '../../Tab.css';
 import PopUp from './PopUp';
 
 
-const ActivityHistory = ({ userId, membershipType }) => {
+const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [activityDetails, setActivityDetails] = useState([]);
     const [expandedIndex, setExpandedIndex] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
-    const [currentActivityType, setCurrentActivityType] = useState('Todas');
+    const [currentActivityType, setCurrentActivityType] = useState([]);
+    const [currentActivityClass, setCurrentActivityClass] = useState([]);
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
@@ -27,10 +28,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [activitiesPerPage] = useState(10);
     const [fullLoaded, setFullLoaded] = useState(false);
+    const [rawActivities, setRawActivities] = useState([]); // lista completa sin paginar
     const popupRef = useRef(null);
-    const CACHE_TTL = 100 * 60 * 1000; // 10 minutes
+    const CACHE_TTL = 1//00 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
-    const { getCompsProfile, getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser } = useBungieAPI();
+    const { getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -40,84 +42,42 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 const cachedData = Array.isArray(cached) ? cached : (cached?.details || []);
                 setActivityDetails(cachedData);
                 setFilteredActivities(cachedData);
-                setCurrentActivityType('Todas');
+                setCurrentActivityType(null);
+                setCurrentActivityClass(currentClass);
                 setCurrentPage(1);
                 setFullLoaded(false);
                 setIsLoading(false);
                 console.log('Loaded activity history from cache:', cachedData);
             } else setIsLoading(true);
             try {
-                const characterIds = await getCompsProfile(membershipType, userId);
+                const characters = await getCompChars(membershipType, userId);
                 const allActivities = [];
+                setCurrentActivityClass(currentClass);
+                setCurrentActivityType(null);
+                console.log(`Fetching activities for character ..`, characters);
 
-                //Todos los personajes del usuario
-                for (const characterId of characterIds.profile.data.characterIds) {
+                // Todos los personajes del usuario: `characters` es un objeto con keys = characterId
+                const characterList = Object.values(characters);
+                for (const char of characterList) {
                     try {
-                        const responseActs = await getRecentActivities(membershipType, userId, characterId, 50);
-                        allActivities.push(...responseActs);
+                        const responseActs = await getRecentActivities(membershipType, userId, char.characterId, 50);
+                        const tagged = (responseActs || []).map(act => ({ ...act, claseHash: char.classHash }));
+                        allActivities.push(...tagged);
                     } catch (error) {
-                        console.error(`Error fetching activities for character ${characterId}:`, error);
+                        console.error(`Error fetching activities for character ${char?.characterId}:`, error);
                     }
                 }
 
-                const sortedActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
-                const recentActivities = sortedActivities.slice(0, 50);
-
-                const details = await Promise.all(recentActivities.map(async (activity) => {
-                    const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
-                    const date = new Date(activity.period).toLocaleString('es-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
-                    const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
-                    const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
-                    const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
-                    let datosDelModo, datosDelTipo;
-                    datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
-                    if(activityInfo.directActivityModeHash) datosDelModo = await fetchActivityDetails(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
-
-                    const clase = getUserClass(carnageReport)
-                    let activityType;
-                    if (activity.activityDetails.modes.includes(7)) {
-                        activityType = "PvE";
-                    } else if (activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
-                        activityType = "PvP";
-                    } else if (activity.activityDetails.modes.includes(63)) {
-                        activityType = "Gambito";
-                    } else activityType = "PvE";
-
-                    let actIcon = null;
-                    if(!activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
-                    else actIcon = datosDelModo?.displayProperties?.icon || datosDelTipo?.displayProperties?.icon;
-
-                    return {
-                        activityName: activityType == "PvE" ? activityMain?.displayProperties?.name : activityInfo?.displayProperties?.name,
-                        activityMode: datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name,
-                        activityIcon: actIcon,
-                        clase: clase || null,
-                        pgcrImage: activityMain?.pgcrImage || null,
-                        instanceId: activity.activityDetails.instanceId,
-                        kills: carnageReport.people.find(person => person.membershipId == userId)?.kills || 0,
-                        deaths: carnageReport.people.find(person => person.membershipId == userId)?.deaths || 0,
-                        kd: carnageReport.people.find(person => person.membershipId == userId)?.kd || 0,
-                        activityType,
-                        date,
-                        duration,
-                        ...carnageReport,
-                    };
-                }));
-                setActivityDetails(details);
-                setFilteredActivities(details);
-                setCurrentActivityType('Todas');
+                const recentActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
+                setRawActivities(recentActivities);              // guardar lista completa
+                setFilteredActivities(recentActivities);         // lista filtrada (sin paginar)
+                const details = await getSomeActivities(recentActivities, currentClass, 1, null);
+                console.log('Fetched activity details:', details);
+                setActivityDetails(details);                      // página 1 (detallada)
                 setCurrentPage(1);
-                setFullLoaded(details.length >= 50);
+                setFullLoaded(true);
                 try {
-                    saveCache(cacheKey, details.slice(0, 10));
+                    saveCache(cacheKey, details);
                 } catch (e) {
                     console.error('[CACHE] save error', e);
                 }
@@ -131,6 +91,69 @@ const ActivityHistory = ({ userId, membershipType }) => {
             fetchActivityHistory();
         }
     }, [userId, membershipType]);
+
+    const getSomeActivities = async (activities, classHash, page, type) => {
+        console.log("Filtering activities for classHash:", classHash, "and type:", type, ",", page);
+        activities = activities.filter(act => act.claseHash === classHash);
+        activities = activities.filter(activity => type == null || activity.activityDetails.modes.includes(type));
+        activities = activities.slice((page - 1) * 10, page * 10);
+
+        const details = await Promise.all(activities.map(async (activity) => {
+            const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
+            const date = new Date(activity.period).toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
+            const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
+            //const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
+            const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
+            let datosDelModo, datosDelTipo;
+            datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
+            if (activityInfo.directActivityModeHash) datosDelModo = await fetchActivityDetails(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
+
+            let activityType;
+            if (activity.activityDetails.modes.includes(7)) {
+                activityType = "PvE";
+            } else if (activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
+                activityType = "PvP";
+            } else if (activity.activityDetails.modes.includes(63)) {
+                activityType = "Gambito";
+            } else activityType = "PvE";
+
+            let actIcon = null;
+            if (!activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+            else actIcon = datosDelModo?.displayProperties?.icon || datosDelTipo?.displayProperties?.icon;
+
+            if (actIcon == null || actIcon.includes("missing_icon")) {
+                const modoPorTipo = await fetchActivityDetails(datosDelTipo?.hash, "DestinyActivityModeDefinition");
+                actIcon = modoPorTipo?.displayProperties?.icon || null;
+            }
+            console.log("Activity fetched: ", activity);
+
+            return {
+                activityName: activityType == "PvE" || activityType == "Gambito" ? activityMain?.originalDisplayProperties?.name : activityInfo?.originalDisplayProperties?.name,
+                activityMode: datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name,
+                activityIcon: actIcon,
+                pgcrImage: activityMain?.pgcrImage || null,
+                difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name : activityInfo?.selectionScreenDisplayProperties?.name,
+                instanceId: activity.activityDetails.instanceId,
+                kills: activity.values.kills.basic.value || 0,
+                deaths: activity.values.deaths.basic.value || 0,
+                kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
+                symbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                activityType,
+                date,
+                duration,
+                //...carnageReport,
+            };
+        }));
+        return details;
+    }
 
     const formatDuration = (seconds) => {
         const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
@@ -157,6 +180,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
         return {
             icon: classIcons[user.class] || null,
             name: user.class || null,
+            hash: user.classHash,
         };
     }
 
@@ -178,6 +202,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                 name: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 emblem: entry.player.destinyUserInfo.iconPath,
                 class: entry.player.characterClass,
+                classHash: entry.player.classHash,
                 power: entry.player.lightLevel,
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 membershipType: entry.player.destinyUserInfo.membershipType,
@@ -203,16 +228,34 @@ const ActivityHistory = ({ userId, membershipType }) => {
         }
     };
 
-    const filterActivities = (activities, type) => {
-        let filtered;
-        if (type === "Todas") {
-            filtered = activities;
-        } else {
-            filtered = activities.filter(activity => activity.activityType === type);
-        }
-        setFilteredActivities(filtered);
+    const filterActivitiesMode = async (activities, type) => {
+        setIsLoading(true);
+        setFullLoaded(false);
         setCurrentActivityType(type);
-        setCurrentPage(1); // Reset to first page when filtering
+        const filtered = (rawActivities || []).filter(activity =>
+            (type == null || activity.activityType == type) && activity?.clase?.hash == currentActivityClass
+        );
+        setFilteredActivities(filtered);
+        setCurrentPage(1);
+        const details = await getSomeActivities(rawActivities, currentActivityClass, 1, type);
+        setActivityDetails(details);
+        setIsLoading(false);
+        setFullLoaded(true);
+    };
+
+    const filterActivitiesClass = async (activities, classHash) => {
+        setIsLoading(true);
+        setFullLoaded(false);
+        setCurrentActivityClass(classHash);
+        const filtered = (rawActivities || []).filter(activity =>
+            activity?.clase?.hash == classHash && (currentActivityType == null || activity.activityType == currentActivityType)
+        );
+        setFilteredActivities(filtered);
+        setCurrentPage(1);
+        const details = await getSomeActivities(rawActivities, classHash, 1, currentActivityType);
+        setActivityDetails(details);
+        setIsLoading(false);
+        setFullLoaded(true);
     };
 
     const toggleExpand = (index) => {
@@ -307,62 +350,66 @@ const ActivityHistory = ({ userId, membershipType }) => {
 
     const indexOfLastActivity = currentPage * activitiesPerPage;
     const indexOfFirstActivity = indexOfLastActivity - activitiesPerPage;
-    const currentActivities = filteredActivities.slice(indexOfFirstActivity, indexOfLastActivity);
+    let currentActivities = activityDetails;
+    const totalPages = 5 //Math.max(1, Math.ceil((filteredActivities || []).length / activitiesPerPage));
 
-    // Calcular número total de páginas
-    const totalPages = Math.ceil(filteredActivities.length / activitiesPerPage);
-
-    const handlePageChange = (pageNumber) => {
+    const handlePageChange = async (pageNumber) => {
+        if (pageNumber < 1 || pageNumber > totalPages) return;
         setCurrentPage(pageNumber);
-        setExpandedIndex(null); // Cerrar actividades expandidas al cambiar página
+        setIsLoading(true);
+        setFullLoaded(false);
+        const details = await getSomeActivities(rawActivities, currentActivityClass, pageNumber, currentActivityType);
+        setActivityDetails(details);
+        setFullLoaded(true);
+        setIsLoading(false);
+        setExpandedIndex(null);
     };
 
     const getPageNumbers = () => {
-        const pageNumbers = [];
-        const maxVisiblePages = 5;
+        const pages = [];
+        const maxVisible = 5;
 
-        if (totalPages <= maxVisiblePages) {
-            for (let i = 1; i <= totalPages; i++) {
-                pageNumbers.push(i);
-            }
-        } else {
-            // Lógica para mostrar ... entre páginas
-            if (currentPage <= 3) {
-                for (let i = 1; i <= 4; i++) {
-                    pageNumbers.push(i);
-                }
-                pageNumbers.push('...');
-                pageNumbers.push(totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pageNumbers.push(1);
-                pageNumbers.push('...');
-                for (let i = totalPages - 3; i <= totalPages; i++) {
-                    pageNumbers.push(i);
-                }
-            } else {
-                pageNumbers.push(1);
-                pageNumbers.push('...');
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    pageNumbers.push(i);
-                }
-                pageNumbers.push('...');
-                pageNumbers.push(totalPages);
-            }
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+            return pages;
         }
-        return pageNumbers;
+
+        const side = Math.floor((maxVisible - 1) / 2); // 2
+        let start = currentPage - side;
+        let end = currentPage + side;
+
+        if (start < 1) { start = 1; end = maxVisible; }
+        if (end > totalPages) { end = totalPages; start = totalPages - maxVisible + 1; }
+
+        if (start > 1) pages.push(1);
+        if (start > 2) pages.push('...');
+
+        for (let i = start; i <= end; i++) pages.push(i);
+
+        if (end < totalPages - 1) pages.push('...');
+        if (end < totalPages) pages.push(totalPages);
+
+        return pages;
     };
 
     return (
         <div>
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
-            <div className="flex mb-4">
-                <button onClick={() => filterActivities(activityDetails, 'Todas')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 'Todas' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
-                <button onClick={() => filterActivities(activityDetails, 'PvE')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 'PvE' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
-                <button onClick={() => filterActivities(activityDetails, 'PvP')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 'PvP' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
-                <button onClick={() => filterActivities(activityDetails, 'Gambito')} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 'Gambito' ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
+            <div className='mb-4 flex'>
+                <div className="flex mr-6">
+                    <button onClick={() => filterActivitiesMode(activityDetails, null)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === null ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
+                    <button onClick={() => filterActivitiesMode(activityDetails, 7)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 7 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
+                    <button onClick={() => filterActivitiesMode(activityDetails, 5)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 5 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
+                    <button onClick={() => filterActivitiesMode(activityDetails, 63)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 63 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
+                </div>
+                <div className='flex'>
+                    <button onClick={() => filterActivitiesClass(activityDetails, 3655393761)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityClass == 3655393761 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Titán</button>
+                    <button onClick={() => filterActivitiesClass(activityDetails, 671679327)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityClass == 671679327 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Cazador</button>
+                    <button onClick={() => filterActivitiesClass(activityDetails, 2271682572)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityClass == 2271682572 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Hechicero</button>
+                </div>
             </div>
             {isLoading && !fullLoaded ? (
-                <div className="h-[450px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
+                <div className="h-[900px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
             ) : (
                 <>
                     {/*currentActivities.length > 0 && (
@@ -376,13 +423,11 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     )*/}
                     <div>
                         {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
-                            const hasPoints = activity.people.some(person => person.points > 0);
+                            /*const hasPoints = activity.people.some(person => person.points > 0);
                             const hasMedals = activity.people.some(person => person.medals > 0);
 
                             const team0 = activity.people.filter(person => person.standing === 0);
                             const team1 = activity.people.filter(person => person.standing === 1);
-
-                            const uniqueId = activity.instanceId + index; // Unique ID for each activity
 
                             const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
                             const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
@@ -396,28 +441,29 @@ const ActivityHistory = ({ userId, membershipType }) => {
                             if (activity.teams.length > 0) {
                                 winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
                                 loserPoints = activity.teams[0].standing.basic.value == 1 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
-                            }
+                            }*/
+                            const uniqueId = activity.instanceId + index;
 
                             return (
-                                <div className={`bg-gray-300 hover:bg-white transition-colors mb-1 cursor-pointer hover:bg-white/30`} key={uniqueId}>
+                                <div className={`bg-gray-300 hover:bg-white transition-colors cursor-pointer hover:bg-white/30`} key={uniqueId}>
                                     <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[90px]'>
                                         <div key={uniqueId} className={`px-10 text-[1.1rem] text-start justify-between flex items-center`}>
                                             {/*<p className='w-[15%]'>{activity.date}</p>*/}
                                             <div className='flex items-center justify-between w-[60%] text-start'>
-                                                <div className='flex items-center w-[25%]'>
+                                                {/*<div className='flex items-center w-[25%]'>
                                                     <img className='w-12 h-12' src={activity.clase?.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
                                                     <div className='w-1'></div>
                                                     <p>{activity.clase?.name}</p>
-                                                </div>
-                                                <div className='flex items-center text-start w-[50%]'>
+                                                </div>*/}
+                                                <div className='flex items-center text-start w-[75%]'>
                                                     {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-12 h-12' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                                     <div className='w-1.5'></div>
-                                                    <div className='flex flex-col'>
+                                                    <div className='flex flex-col font-semibold'>
                                                         <p>{activity.activityMode}</p>
-                                                        <p>{activity.activityName}</p>
+                                                        <p className='text-[1.3rem]'>{activity.activityName}</p>
                                                     </div>
                                                 </div>
-                                                <p className='w-[25%]'>{activity.duration}</p>
+                                                <p className='w-[20%]'>{activity.duration}</p>
                                             </div>
                                             <div className='flex items-center justify-between w-[40%] text-start'>
                                                 <div className='flex items-center w-[30%]'>
@@ -435,7 +481,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                                                     <p>{activity.kd}</p>
                                                 </div>
                                                 <div className='w-12 flex items-center mr-1'>
-                                                    <img src={symbol} className='w-12 h-12' />
+                                                    <img src={activity.symbol} className='w-12 h-12' />
                                                 </div>
                                             </div>
                                         </div>
@@ -605,7 +651,7 @@ const ActivityHistory = ({ userId, membershipType }) => {
                         )}
                     </div>
                 </>)}
-            {totalPages > 1 && fullLoaded ? (
+            {fullLoaded ? (
                 <div className="flex justify-center items-center mt-6 space-x-1">
                     <button
                         onClick={() => handlePageChange(currentPage - 1)}
@@ -646,9 +692,13 @@ const ActivityHistory = ({ userId, membershipType }) => {
                     </button>
                 </div>
             ) : (
-                <div className='mt-3'>
-                    <Spinner small={true} />
-                </div>
+                totalPages <= 1 && fullLoaded ? (
+                    null
+                ) : (
+                    <div className='mt-3'>
+                        <Spinner small={true} />
+                    </div>
+                )
             )}
         </div>
     );
