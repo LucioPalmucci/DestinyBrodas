@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useBungieAPI } from "../APIservices/BungieAPIcalls";
+import ErrorAPI from '../ErrorAPI/ErrorAPI';
 import Spinner from '../Spinner';
 import '../Tabla.css';
 import MemberCard from './MemberCard';
@@ -7,31 +8,28 @@ import MemberCard from './MemberCard';
 export default function ClanLista() {
     const [members, setMembers] = useState([]);
     const [originalMembers, setOriginalMembers] = useState([]); // Nuevo estado para almacenar los datos originales
-    const [error, setError] = useState(null);
     const [membersWithLight, setMembersLight] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showError, setShowError] = useState(false);
     const [isConexionAscending, setConexionAscending] = useState(true);
     const [isRoleAscending, setIsRoleAscending] = useState(true);
     const [isPowerAscending, setIsPowerAscending] = useState(true);
     const [isNameAscending, setIsNameAscending] = useState(true);
     const [isJoinDateAscending, setIsJoinDateAscending] = useState(true);
     const [typeSort, setTypeSort] = useState("LastOnline");
-    const { getClanMembers, getManifest, getCompChars } = useBungieAPI();
+    const { getClanMembers, getCompChars } = useBungieAPI();
 
     useEffect(() => {
         const fetchClanMembers = async () => {
             try {
                 const clan = await getClanMembers();
-
-                const manifest = await getManifest();
-
                 const membersWithLight = await lightLevel(clan);
                 setMembersLight(membersWithLight);
                 setOriginalMembers(membersWithLight); // Almacena los datos originales
                 sortMembers(membersWithLight, typeSort, true);
             } catch (error) {
                 console.error(error);
-                setError('Error al cargar los miembros.');
+                setShowError(true);
             } finally {
                 setIsLoading(false);
             }
@@ -145,7 +143,7 @@ export default function ClanLista() {
         <div>
             <h1 className='text-2xl p-4'>Clan BRODAS</h1>
             <div className='justify-center items-center flex flex-col font-Inter'>
-                {error && <p>{error}</p>}
+                {showError && (<ErrorAPI isOpen={true} onClose={() => setShowError(false)}/>)}
                 <table className='text-start'>
                     <thead>
                         <tr>

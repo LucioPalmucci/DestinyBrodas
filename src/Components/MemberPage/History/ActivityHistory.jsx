@@ -33,7 +33,13 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const CACHE_TTL = 1//00 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
     const { getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
-
+    const logoHechicero = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`;
+    const logoTitan = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`;
+    const logoCazador = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`;
+    const colorTitan = "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)";
+    const colorCazador = "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)";
+    const colorHechicero = "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)";
+    const [hoveredClass, setHoveredClass] = useState(null);
     useEffect(() => {
         const fetchActivityHistory = async () => {
             if (isLoading) return;
@@ -110,7 +116,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 hour12: false
             }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
             const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
-            //const carnageReport = await fetchCarnageReport(activity.activityDetails.instanceId);
+            const carnageReport = await fetchCarnageReport(activity.activityDetails);
             const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
             let datosDelModo, datosDelTipo;
             datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
@@ -149,9 +155,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 activityType,
                 date,
                 duration,
-                //...carnageReport,
+                ...carnageReport,
             };
         }));
+        console.log("All activity details fetched: ", details);
         return details;
     }
 
@@ -184,9 +191,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         };
     }
 
-    const fetchCarnageReport = async (instanceId) => {
+    const fetchCarnageReport = async (activityDetails) => {
         try {
-            const carnageReportResponse = await getCarnageReport(instanceId);
+            console.log('Fetching carnage report for activity:', activityDetails);
+            const carnageReportResponse = await getCarnageReport(activityDetails.instanceId);
             /*const filteredEntries = carnageReportResponse.entries.filter(entry =>
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
             );*/
@@ -219,14 +227,36 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
                 assists: entry.values.assists.basic.value,
             })));
-            const teams = carnageReportResponse.teams;
 
-            return { people, teams };
+            let teams = [];
+            if (activityDetails.modes.includes(5) || activityDetails.modes.includes(63)) { //PvP o gambito
+                teams = buildTeamsData(people, carnageReportResponse);
+                return { teams };
+            } else return { people: people };
         } catch (error) {
             console.error('Error fetching carnage report:', error);
             return { people: [], teams: [] }; // Valores por defecto en caso de error
         }
     };
+
+    const buildTeamsData = (people, carnageReportResponse) => {
+        console.log("Building teams data from people:", carnageReportResponse);
+        const hasPoints = people.some(person => person.points > 0);
+        const hasMedals = people.some(person => person.medals > 0);
+        const teamW = people.filter(person => person.standing === 0);
+        const teamL = people.filter(person => person.standing === 1);
+        const userInTeamW = people.some(person => person.standing === 0 && person.membershipId === userId);
+        const userInTeamL = people.some(person => person.standing === 1 && person.membershipId === userId);
+
+        let winnerPoints, loserPoints, winnerName, loserName;
+        winnerPoints = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
+        loserPoints = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
+        winnerName = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].teamName : carnageReportResponse.teams[1]?.teamName;
+        loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamName : carnageReportResponse.teams[1]?.teamName;
+        let teamsPeople = { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
+
+        return { teamsPeople, hasPoints, hasMedals };
+    }
 
     const filterActivitiesMode = async (activities, type) => {
         setIsLoading(true);
@@ -403,51 +433,60 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                     <button onClick={() => filterActivitiesMode(activityDetails, 63)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 63 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
                 </div>
                 <div className='flex'>
-                    <button onClick={() => filterActivitiesClass(activityDetails, 3655393761)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityClass == 3655393761 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Titán</button>
-                    <button onClick={() => filterActivitiesClass(activityDetails, 671679327)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityClass == 671679327 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Cazador</button>
-                    <button onClick={() => filterActivitiesClass(activityDetails, 2271682572)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityClass == 2271682572 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Hechicero</button>
+                    <button
+                        title='Titán'
+                        onClick={() => filterActivitiesClass(activityDetails, 3655393761)}
+                        onMouseEnter={() => setHoveredClass(3655393761)}
+                        onMouseLeave={() => setHoveredClass(null)}
+                        className={`px-4 py-2 cursor-pointer rounded-s-md bg-gray-300`}
+                    >
+                        <img
+                            className='w-8 h-8'
+                            src={logoTitan}
+                            style={{ filter: `${(currentActivityClass == 3655393761 || hoveredClass == 3655393761) ? colorTitan : "brightness(0) contrast(100%)"}` }}
+                        />
+                    </button>
+                    <button
+                        title="Cazador"
+                        onClick={() => filterActivitiesClass(activityDetails, 671679327)}
+                        onMouseEnter={() => setHoveredClass(671679327)}
+                        onMouseLeave={() => setHoveredClass(null)}
+                        className={`px-4 py-2 cursor-pointer bg-gray-300`}
+                    >
+                        <img
+                            className='w-8 h-8'
+                            src={logoCazador}
+                            style={{ filter: `${(currentActivityClass == 671679327 || hoveredClass == 671679327) ? colorCazador : "brightness(0) contrast(100%)"}` }}
+                        />
+                    </button>
+                    <button
+                        title="Hechicero"
+                        onClick={() => filterActivitiesClass(activityDetails, 2271682572)}
+                        onMouseEnter={() => setHoveredClass(2271682572)}
+                        onMouseLeave={() => setHoveredClass(null)}
+                        className={`px-4 py-2 cursor-pointer rounded-e-md bg-gray-300`}
+                    >
+                        <img
+                            className='w-8 h-8'
+                            src={logoHechicero}
+                            style={{ filter: `${(currentActivityClass == 2271682572 || hoveredClass == 2271682572) ? colorHechicero : "brightness(0) contrast(100%)"}` }}
+                        />
+                    </button>
                 </div>
             </div>
             {isLoading && !fullLoaded ? (
                 <div className="h-[900px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
             ) : (
                 <>
-                    {/*currentActivities.length > 0 && (
-                        {<div className={`py-2 px-10 text-sm text-start font-semibold justify-between flex items-center border-1`}>
-                            <p className='w-[15%]'>Fecha/Hora</p>
-                            <p className='w-[12%]'>Clase</p>
-                            <p className='w-[26%] '>Actividad</p>
-                            <p className='w-[9.5%]'>Duración</p>
-                            <p className='w-[8%]'>Completado</p>
-                        </div>
-                    )*/}
                     <div>
                         {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
-                            /*const hasPoints = activity.people.some(person => person.points > 0);
-                            const hasMedals = activity.people.some(person => person.medals > 0);
-
-                            const team0 = activity.people.filter(person => person.standing === 0);
-                            const team1 = activity.people.filter(person => person.standing === 1);
-
-                            const userInTeam0 = activity.people.some(person => person.standing === 0 && person.membershipId === userId);
-                            const userInTeam1 = activity.people.some(person => person.standing === 1 && person.membershipId === userId);
-
-                            const userCompleted = activity.people.some(person => person.membershipId === userId && person.completed === 1);
-                            let symbol;
-                            if (!userCompleted || userInTeam1) symbol = NotCompleted;
-                            else symbol = Completed;
-
-                            let winnerPoints, loserPoints;
-                            if (activity.teams.length > 0) {
-                                winnerPoints = activity.teams[0].standing.basic.value == 0 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
-                                loserPoints = activity.teams[0].standing.basic.value == 1 ? activity.teams[0].score.basic.value : activity.teams[1]?.score.basic.value;
-                            }*/
+                            /**/
                             const uniqueId = activity.instanceId + index;
 
                             return (
-                                <div className={`bg-gray-300 hover:bg-white transition-colors cursor-pointer hover:bg-white/30`} key={uniqueId}>
-                                    <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[90px]'>
-                                        <div key={uniqueId} className={`px-10 text-[1.1rem] text-start justify-between flex items-center`}>
+                                <div className={`bg-gray-300 transition-colors cursor-pointer hover:bg-[#C1C7CE] hover`} key={uniqueId}>
+                                    <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
+                                        <div key={uniqueId} className={`px-6 text-[1.1rem] text-start justify-between flex items-center`}>
                                             {/*<p className='w-[15%]'>{activity.date}</p>*/}
                                             <div className='flex items-center justify-between w-[60%] text-start'>
                                                 {/*<div className='flex items-center w-[25%]'>
@@ -455,33 +494,35 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <div className='w-1'></div>
                                                     <p>{activity.clase?.name}</p>
                                                 </div>*/}
-                                                <div className='flex items-center text-start w-[75%]'>
-                                                    {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-12 h-12' style={{ filter: "brightness(0) contrast(100%)" }} />}
+                                                <div className='flex items-center text-start'>
+                                                    {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-13 h-13' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                                     <div className='w-1.5'></div>
-                                                    <div className='flex flex-col font-semibold'>
+                                                    <div className='flex flex-col leading-6 font-semibold'>
                                                         <p>{activity.activityMode}</p>
-                                                        <p className='text-[1.3rem]'>{activity.activityName}</p>
+                                                        <p className='text-[1.4rem]'>{activity.activityName}</p>
                                                     </div>
                                                 </div>
-                                                <p className='w-[20%]'>{activity.duration}</p>
                                             </div>
                                             <div className='flex items-center justify-between w-[40%] text-start'>
-                                                <div className='flex items-center w-[30%]'>
+                                                <div>
+                                                    <p className='w-[20%]'>{activity.duration}</p>
+                                                </div>
+                                                <div className='flex items-center w-fit'>
                                                     <i className='icon-kills3' style={{ filter: "invert(100%)" }}></i>
                                                     <div className='w-1'></div>
                                                     <p>{activity.kills}</p>
                                                 </div>
-                                                <div className='flex items-center w-[30%]'>
+                                                <div className='flex items-center w-fit'>
                                                     <img src={skull} className="mr-2" width={30} height={30} />
                                                     <p>{activity.deaths}</p>
                                                 </div>
-                                                <div className='flex items-center w-[30%]'>
+                                                <div className='flex items-center w-fit'>
                                                     <p className='py-2'>KD</p>
                                                     <div className='w-1'></div>
                                                     <p>{activity.kd}</p>
                                                 </div>
-                                                <div className='w-12 flex items-center mr-1'>
-                                                    <img src={activity.symbol} className='w-12 h-12' />
+                                                <div className='w-10 flex items-center mr-1'>
+                                                    <img src={activity.symbol} className='w-10 h-10' />
                                                 </div>
                                             </div>
                                         </div>
