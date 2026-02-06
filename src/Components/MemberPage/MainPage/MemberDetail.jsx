@@ -26,6 +26,7 @@ function MemberDetail() {
     const [emblemIndicators, setEmblemIndicators] = useState(null);
     const [activity, setActivity] = useState(null);
     const [member, setMember] = useState(null);
+    const [charId, setCharId] = useState(null);
     const [currentLight, setCurrentLight] = useState(null);
     const [guardianRank, setGuardianRank] = useState(null);
     const [emblemBackgroundPath, setEmblem] = useState(null);
@@ -82,6 +83,7 @@ function MemberDetail() {
                 setUserMemberships(membershipsResponse);
                 setGuardianRank(guardianRankResponse);
                 setClass(mostRecentCharacter.classHash);
+                setCharId(mostRecentCharacter.characterId);
                 setCurrentLight(mostRecentCharacter.light);
                 setEmblem(mostRecentCharacter.emblemBackgroundPath);
                 const clase = mostRecentCharacter.classType;
@@ -159,7 +161,7 @@ function MemberDetail() {
                             </div>
                         </div>
                         <div className="flex-shrink-0">
-                            <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} />
+                            <ReportLinks type={membershipType} id={membershipId} nombre={userMemberships?.bungieNetUser?.uniqueName} clase={charId} />
                         </div>
                     </div>
                     <div className='flex w-full space-x-6 mr-0 justify-center'>

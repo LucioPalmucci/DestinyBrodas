@@ -62,7 +62,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 setCurrentActivityType(null);
                 console.log(`Fetching activities for character ..`, characters);
 
-                // Todos los personajes del usuario: `characters` es un objeto con keys = characterId
                 const characterList = Object.values(characters);
                 for (const char of characterList) {
                     try {
@@ -75,11 +74,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 }
 
                 const recentActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
-                setRawActivities(recentActivities);              // guardar lista completa
-                setFilteredActivities(recentActivities);         // lista filtrada (sin paginar)
+                setRawActivities(recentActivities);
+                setFilteredActivities(recentActivities);
                 const details = await getSomeActivities(recentActivities, currentClass, 1, null);
                 console.log('Fetched activity details:', details);
-                setActivityDetails(details);                      // página 1 (detallada)
+                setActivityDetails(details);
                 setCurrentPage(1);
                 setFullLoaded(true);
                 try {
@@ -99,7 +98,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     }, [userId, membershipType]);
 
     const getSomeActivities = async (activities, classHash, page, type) => {
-        console.log("Filtering activities for classHash:", classHash, "and type:", type, ",", page);
         activities = activities.filter(act => act.claseHash === classHash);
         activities = activities.filter(activity => type == null || activity.activityDetails.modes.includes(type));
         activities = activities.slice((page - 1) * 10, page * 10);
@@ -132,14 +130,26 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else activityType = "PvE";
 
             let actIcon = null;
-            if (!activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
-            else actIcon = datosDelModo?.displayProperties?.icon || datosDelTipo?.displayProperties?.icon;
+            let orden = 2;
+            if (orden == 1) {
+                if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+                else if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
+                else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
+            }
+            else if (orden == 2) {
+                if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
+                else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+
+                else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
+            }
+            else activityMain?.displayProperties?.icon || null;
 
             if (actIcon == null || actIcon.includes("missing_icon")) {
                 const modoPorTipo = await fetchActivityDetails(datosDelTipo?.hash, "DestinyActivityModeDefinition");
+                console.log("Fetching icon from activity type mode:", datosDelTipo?.hash, modoPorTipo);
                 actIcon = modoPorTipo?.displayProperties?.icon || null;
             }
-            console.log("Activity fetched: ", activity);
+            if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
             return {
                 activityName: activityType == "PvE" || activityType == "Gambito" ? activityMain?.originalDisplayProperties?.name : activityInfo?.originalDisplayProperties?.name,
@@ -155,6 +165,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 activityType,
                 date,
                 duration,
+                hash: activity.activityDetails.referenceId,
                 ...carnageReport,
             };
         }));
@@ -198,6 +209,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             /*const filteredEntries = carnageReportResponse.entries.filter(entry =>
                 entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
             );*/
+            console.log('Carnage report response:', carnageReportResponse);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
@@ -229,10 +241,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             })));
 
             let teams = [];
+            const hasPoints = people.some(person => person.points > 0);
+            const hasMedals = people.some(person => person.medals > 0);
             if (activityDetails.modes.includes(5) || activityDetails.modes.includes(63)) { //PvP o gambito
                 teams = buildTeamsData(people, carnageReportResponse);
-                return { teams };
-            } else return { people: people };
+                return { teams, hasPoints, hasMedals };
+            } else return { people: people, hasPoints, hasMedals };
         } catch (error) {
             console.error('Error fetching carnage report:', error);
             return { people: [], teams: [] }; // Valores por defecto en caso de error
@@ -240,9 +254,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     };
 
     const buildTeamsData = (people, carnageReportResponse) => {
-        console.log("Building teams data from people:", carnageReportResponse);
-        const hasPoints = people.some(person => person.points > 0);
-        const hasMedals = people.some(person => person.medals > 0);
         const teamW = people.filter(person => person.standing === 0);
         const teamL = people.filter(person => person.standing === 1);
         const userInTeamW = people.some(person => person.standing === 0 && person.membershipId === userId);
@@ -251,11 +262,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         let winnerPoints, loserPoints, winnerName, loserName;
         winnerPoints = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
         loserPoints = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
-        winnerName = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].teamName : carnageReportResponse.teams[1]?.teamName;
-        loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamName : carnageReportResponse.teams[1]?.teamName;
-        let teamsPeople = { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
+        winnerName = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
+        loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
 
-        return { teamsPeople, hasPoints, hasMedals };
+        return { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
     }
 
     const filterActivitiesMode = async (activities, type) => {
@@ -484,28 +494,22 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                             const uniqueId = activity.instanceId + index;
 
                             return (
-                                <div className={`bg-gray-300 transition-colors cursor-pointer hover:bg-[#C1C7CE] hover`} key={uniqueId}>
+                                <div className={`transition-colors cursor-pointer hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
                                     <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
                                         <div key={uniqueId} className={`px-6 text-[1.1rem] text-start justify-between flex items-center`}>
-                                            {/*<p className='w-[15%]'>{activity.date}</p>*/}
                                             <div className='flex items-center justify-between w-[60%] text-start'>
-                                                {/*<div className='flex items-center w-[25%]'>
-                                                    <img className='w-12 h-12' src={activity.clase?.icon} style={{ filter: "brightness(0) contrast(100%)" }} />
-                                                    <div className='w-1'></div>
-                                                    <p>{activity.clase?.name}</p>
-                                                </div>*/}
                                                 <div className='flex items-center text-start'>
                                                     {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-13 h-13' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                                     <div className='w-1.5'></div>
-                                                    <div className='flex flex-col leading-6 font-semibold'>
+                                                    <div className='flex flex-col leading-6'>
                                                         <p>{activity.activityMode}</p>
-                                                        <p className='text-[1.4rem]'>{activity.activityName}</p>
+                                                        <p className='text-[1.4rem font-semibold'>{activity.activityName}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className='flex items-center justify-between w-[40%] text-start'>
                                                 <div>
-                                                    <p className='w-[20%]'>{activity.duration}</p>
+                                                    <p className='w-fit'>{activity.duration}</p>
                                                 </div>
                                                 <div className='flex items-center w-fit'>
                                                     <i className='icon-kills3' style={{ filter: "invert(100%)" }}></i>
@@ -513,7 +517,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <p>{activity.kills}</p>
                                                 </div>
                                                 <div className='flex items-center w-fit'>
-                                                    <img src={skull} className="mr-2" width={30} height={30} />
+                                                    <img src={skull} className="mr-2" width={27} height={27} />
                                                     <p>{activity.deaths}</p>
                                                 </div>
                                                 <div className='flex items-center w-fit'>
@@ -530,29 +534,29 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                     <div className={`transition-all duration-500 ease-in-out overflow-visible ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
                                         {expandedIndex === (uniqueId) && (
                                             <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}>
-                                                {activity.teams.length > 0 ? (
+                                                {activity.teams != null ? (
                                                     <div className='justify-between space-y-4 w-full text-black '>
                                                         <div>
                                                             <h3 className='text-lg font-bold flex items-center justify-between'>
                                                                 <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 1</p>
                                                                 <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
-                                                                    {winnerPoints}
-                                                                    <img className='w-4 h-4 ml-2' src={userInTeam0 ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
+                                                                    {activity.teams.teamW.points}
+                                                                    <img className='w-4 h-4 ml-2' src={activity.teams.teamW.user ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
                                                                 </span>
                                                             </h3>
                                                             <table className='tablapartida'>
                                                                 <thead>
                                                                     <tr>
                                                                         <th className='py-2'>Nombre</th>
-                                                                        {hasPoints && <th className='py-2'>Puntos</th>}
+                                                                        {activity.hasPoints && <th className='py-2'>Puntos</th>}
                                                                         <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
                                                                         <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                                         <th className='py-2'>KD</th>
-                                                                        {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
+                                                                        {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {team0.map((person, idx) => {
+                                                                    {activity.teams.teamW.people.map((person, idx) => {
                                                                         const personIndex = `team0-${idx}`;
                                                                         return (
                                                                             <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
@@ -573,11 +577,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                                                         </div>
                                                                                     )}
                                                                                 </td>
-                                                                                {hasPoints && <td className='py-2' >{person.points}</td>}
+                                                                                {activity.hasPoints && <td className='py-2' >{person.points}</td>}
                                                                                 <td className='py-2'>{person.kills}</td>
                                                                                 <td className='py-2'>{person.deaths}</td>
                                                                                 <td className='py-2'>{person.kd}</td>
-                                                                                {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                                {activity.hasMedals && <td className='py-2'>{person.medals}</td>}
                                                                             </tr>
                                                                         );
                                                                     })}
@@ -588,23 +592,23 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                             <h3 className='text-lg font-bold flex items-center justify-between'>
                                                                 <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 2</p>
                                                                 <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
-                                                                    {loserPoints}
-                                                                    <img className='w-4 h-4 ml-2' src={userInTeam1 ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
+                                                                    {activity.teams.teamL.points}
+                                                                    <img className='w-4 h-4 ml-2' src={activity.teams.teamL.user ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
                                                                 </span>
                                                             </h3>
                                                             <table className='tablapartida'>
                                                                 <thead>
                                                                     <tr>
                                                                         <th className='py-2'>Nombre</th>
-                                                                        {hasPoints && <th className='py-2'>Puntos</th>}
+                                                                        {activity.hasPoints && <th className='py-2'>Puntos</th>}
                                                                         <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
                                                                         <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                                         <th className='py-2'>KD</th>
-                                                                        {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
+                                                                        {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {team1.map((person, idx) => {
+                                                                    {activity.teams.teamL.people.map((person, idx) => {
                                                                         const personIndex = `team1-${idx}`;
                                                                         return (
                                                                             <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
@@ -625,11 +629,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                                                         </div>
                                                                                     )}
                                                                                 </td>
-                                                                                {hasPoints && <td className='py-2'>{person.points}</td>}
+                                                                                {activity.hasPoints && <td className='py-2'>{person.points}</td>}
                                                                                 <td className='py-2'>{person.kills}</td>
                                                                                 <td className='py-2'>{person.deaths}</td>
                                                                                 <td className='py-2'>{person.kd}</td>
-                                                                                {hasMedals && <td className='py-2'>{person.medals}</td>}
+                                                                                {activity.hasMedals && <td className='py-2'>{person.medals}</td>}
                                                                             </tr>
                                                                         );
                                                                     })}
@@ -642,11 +646,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                         <thead >
                                                             <tr>
                                                                 <th className='py-2'>Nombre</th>
-                                                                {hasPoints && <th className='py-2'>Puntos</th>}
+                                                                {activity.hasPoints && <th className='py-2'>Puntos</th>}
                                                                 <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
                                                                 <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
                                                                 <th className='py-2'>KD</th>
-                                                                {hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
+                                                                {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -671,11 +675,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                                                 </div>
                                                                             )}
                                                                         </td>
-                                                                        {hasPoints && <td>{person.points}</td>}
+                                                                        {activity.hasPoints && <td>{person.points}</td>}
                                                                         <td>{person.kills}</td>
                                                                         <td>{person.deaths}</td>
                                                                         <td>{person.kd}</td>
-                                                                        {hasMedals && <td>{person.medals}</td>}
+                                                                        {activity.hasMedals && <td>{person.medals}</td>}
                                                                     </tr>
                                                                 );
                                                             })}
