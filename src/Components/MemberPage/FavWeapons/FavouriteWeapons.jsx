@@ -79,7 +79,8 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 saveCache(cacheKey, { pve: pveWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8), pvp: pvpWeapons.sort((a, b) => b.kills - a.kills).slice(0, 8) });
 
             } catch (error) {
-                console.error("Error fetching weapons:", error);
+                const staleCache = loadCache(cacheKey, null);
+                if (staleCache) setWeapons(staleCache);
             } finally {
                 setLoading(false);
             }
@@ -90,7 +91,7 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
 
     return (
         <div>
-            {loading ? (
+            {loading && !weapons ? (
                 <div className="py-4 p-6 rounded-lg h-96 flex justify-center bg-gray-300 items-center animate-pulse"></div>
             ) : (
                 <div className="py-4 p-6 rounded-lg h-96 bg-gray-300">
@@ -106,9 +107,9 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                             initial={{ opacity: 0, x: page === "pve" ? -10 : 10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 0 }}
-                            className={`mt-4 ${weapons[page].length > 5 ? 'grid grid-cols-2 grid-rows-4 grid-flow-col gap-3.5' : 'space-y-3'}`}
+                            className={`mt-4 ${weapons?.[page]?.length > 5 ? 'grid grid-cols-2 grid-rows-4 grid-flow-col gap-3.5' : 'space-y-3'}`}
                         >
-                            {weapons[page].map((weapon, index) => (
+                            {weapons?.[page]?.map((weapon, index) => (
                                 <li
                                     key={index}
                                     className="flex text-start"

@@ -40,27 +40,19 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const colorCazador = "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)";
     const colorHechicero = "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)";
     const [hoveredClass, setHoveredClass] = useState(null);
+
     useEffect(() => {
         const fetchActivityHistory = async () => {
             if (isLoading) return;
             const cached = loadCache(cacheKey, CACHE_TTL);
             if (cached) {
-                const cachedData = Array.isArray(cached) ? cached : (cached?.details || []);
-                setActivityDetails(cachedData);
-                setFilteredActivities(cachedData);
-                setCurrentActivityType(null);
-                setCurrentActivityClass(currentClass);
-                setCurrentPage(1);
-                setFullLoaded(false);
-                setIsLoading(false);
-                console.log('Loaded activity history from cache:', cachedData);
+                setUpByCache(cached);
             } else setIsLoading(true);
             try {
                 const characters = await getCompChars(membershipType, userId);
                 const allActivities = [];
                 setCurrentActivityClass(currentClass);
                 setCurrentActivityType(null);
-                console.log(`Fetching activities for character ..`, characters);
 
                 const characterList = Object.values(characters);
                 for (const char of characterList) {
@@ -69,7 +61,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         const tagged = (responseActs || []).map(act => ({ ...act, claseHash: char.classHash }));
                         allActivities.push(...tagged);
                     } catch (error) {
-                        console.error(`Error fetching activities for character ${char?.characterId}:`, error);
+                        if (error.status == 503 || error.status == 500) throw error;
                     }
                 }
 
@@ -87,7 +79,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                     console.error('[CACHE] save error', e);
                 }
             } catch (error) {
-                console.error('Error fetching activity history:', error);
+                const staleCache = loadCache(cacheKey, null);
+                if (staleCache) setUpByCache(staleCache);
             } finally {
                 setIsLoading(false);
             }
@@ -114,7 +107,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 hour12: false
             }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
             const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
-            const carnageReport = await fetchCarnageReport(activity.activityDetails);
+            const carnageReport = await fetchCarnageReport(activity);
             const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
             let datosDelModo, datosDelTipo;
             datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
@@ -152,7 +145,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
             return {
-                activityName: activityType == "PvE" || activityType == "Gambito" ? activityMain?.originalDisplayProperties?.name : activityInfo?.originalDisplayProperties?.name,
+                activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name,
                 activityIcon: actIcon,
                 pgcrImage: activityMain?.pgcrImage || null,
@@ -161,10 +154,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                symbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                completed: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                modeNumbers: activity.activityDetails.modes,
                 activityType,
                 date,
                 duration,
+                durationInSeconds: activity.values.activityDurationSeconds.basic.value,
                 hash: activity.activityDetails.referenceId,
                 ...carnageReport,
             };
@@ -202,14 +197,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         };
     }
 
-    const fetchCarnageReport = async (activityDetails) => {
+    const fetchCarnageReport = async (activity) => {
         try {
-            console.log('Fetching carnage report for activity:', activityDetails);
-            const carnageReportResponse = await getCarnageReport(activityDetails.instanceId);
-            /*const filteredEntries = carnageReportResponse.entries.filter(entry =>
-                entry.player.destinyUserInfo.membershipType !== 0 //Filtra las personas con platraforma 0 (?)
-            );*/
-            console.log('Carnage report response:', carnageReportResponse);
+            const carnageReportResponse = await getCarnageReport(activity.activityDetails.instanceId);
+            if (activity.activityDetails.modes.includes(5)) console.log('Carn:', carnageReportResponse, "Act ", activity);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
@@ -218,7 +209,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
                 deaths: entry.values.deaths.basic.value,
                 medals: entry.extended?.values?.allMedalsEarned?.basic?.value || 0,
-                points: entry.values.score.basic.value,
+                score: entry.values.score.basic.value == 0 ? entry.extended?.scoreboardValues?.player_score?.basic?.value : entry.values.score.basic.value,
                 name: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 emblem: entry.player.destinyUserInfo.iconPath,
                 class: entry.player.characterClass,
@@ -236,20 +227,27 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,
                 weapons: await getWeaponDetails(entry.extended?.weapons) || null,
-                timePlayedSeconds: entry.values.timePlayedSeconds.basic.displayValue,
+                timePlayed: entry.values.timePlayedSeconds.basic.displayValue,
+                timePlayedSeconds: entry.values.timePlayedSeconds.basic.value,
                 assists: entry.values.assists.basic.value,
             })));
 
-            let teams = [];
-            const hasPoints = people.some(person => person.points > 0);
+            let teams = [], mvp = null;
+            const hasPoints = people.some(person => person.score > 0);
             const hasMedals = people.some(person => person.medals > 0);
-            if (activityDetails.modes.includes(5) || activityDetails.modes.includes(63)) { //PvP o gambito
+            const full = carnageReportResponse.activityWasStartedFromBeginning;
+            if ((activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(63)) && (!activity.activityDetails.modes.includes(48) && !activity.activityDetails.modes.includes(57))) {
+                //PvP o gambito pero no todos contra todos
                 teams = buildTeamsData(people, carnageReportResponse);
-                return { teams, hasPoints, hasMedals };
-            } else return { people: people, hasPoints, hasMedals };
+                mvp = getMVP(teams, "pvp");
+                return { teams, mvp, hasPoints, hasMedals, full };
+            } else {
+                mvp = getMVP(people, "pve");
+                return { people: people, mvp, hasPoints, hasMedals, full };
+            }
         } catch (error) {
             console.error('Error fetching carnage report:', error);
-            return { people: [], teams: [] }; // Valores por defecto en caso de error
+            return { people: [], teams: [], full: false }; // Valores por defecto en caso de error
         }
     };
 
@@ -266,6 +264,14 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
 
         return { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
+    }
+
+    const getMVP = (teams, mode) => {
+        if (mode === "pvp") {
+            return teams.teamW.people.sort((a, b) => b.score - a.score)[0] || teams.sort((a, b) => b.score - a.score)[0]; // La segunda es para modos sin equipos, donde se elige al que más puntuación tenga
+        } else if (mode === "pve") {
+            //
+        }
     }
 
     const filterActivitiesMode = async (activities, type) => {
@@ -351,6 +357,18 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             };
         }));
         return weaponD;
+    }
+
+    const setUpByCache = (cached) => {
+        const cachedData = Array.isArray(cached) ? cached : (cached?.details || []);
+        setActivityDetails(cachedData);
+        setFilteredActivities(cachedData);
+        setCurrentActivityType(null);
+        setCurrentActivityClass(currentClass);
+        setCurrentPage(1);
+        setFullLoaded(false);
+        setIsLoading(false);
+        console.log('Loaded activity history from cache:', cachedData);
     }
 
     const fetchActivityDetails = async (activityHash, type) => {
@@ -526,7 +544,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <p>{activity.kd}</p>
                                                 </div>
                                                 <div className='w-10 flex items-center mr-1'>
-                                                    <img src={activity.symbol} className='w-10 h-10' />
+                                                    <img src={activity.completed} className='w-10 h-10' />
                                                 </div>
                                             </div>
                                         </div>

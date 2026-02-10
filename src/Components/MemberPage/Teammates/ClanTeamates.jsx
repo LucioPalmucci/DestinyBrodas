@@ -96,7 +96,8 @@ export default function ClanTeammates({ userId, membershipType }) {
                 setJugadoresClan(jugadoresClan);
                 saveCache(cacheKey, jugadoresClan);
             } catch (error) {
-                console.error('Error al cargar los compañeros de clan:', error);
+                const staleCached = loadCache(cacheKey, null);
+                if (staleCached) setJugadoresClan(staleCached);
             } finally {
                 setLoading(false);
             }
@@ -202,7 +203,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                     </div>
                 </div>
             ) : (
-                <div className="h-[370px] text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover relative" style={{ backgroundImage: `url(${tower})` }}>
+                <div className="h-[300px] text-white p-6 px-3 rounded-lg space-x-6 content-fit justify-between shadow-lg object-fill bg-center bg-cover relative" style={{ backgroundImage: `url(${tower})` }}>
                     <div className="absolute inset-0 bg-black/40 rounded-lg w-full"></div>
                     <div className="relative z-10 flex flex-col h-full">
                         <div className="bg-black/25 p-2 rounded-lg w-fit">

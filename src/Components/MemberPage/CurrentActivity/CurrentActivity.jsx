@@ -23,9 +23,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
         const fetchActivity = async () => {
             const cached = loadCache(cacheKey, CACHE_TTL);
             if (cached) {
-                setActivity(cached.activity);
-                setPartyMembers(cached.partyMembers);
-                setColums(cached.numColumns);
+                setUpCache(cached);
                 return;
             }
             try {
@@ -122,7 +120,8 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
             } catch (error) {
-                //console.error(`Error fetching current activity:`, error);
+                const staleCached = loadCache(cacheKey, null);
+                if (staleCached) setUpCache(staleCached);
             }
         };
 
@@ -133,6 +132,12 @@ export default function CurrentActivity({ type, id, isOnline }) {
         return () => clearInterval(interval);
 
     }, [partyMembers.length]);
+
+    const setUpCache = (cached) => {
+        setActivity(cached.activity);
+        setPartyMembers(cached.partyMembers);
+        setColums(cached.numColumns);
+    }
 
     const fetchActivityDetails = async (activityHash, type, Subclase) => {
         try {

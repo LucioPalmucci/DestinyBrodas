@@ -24,11 +24,14 @@ export default function Commendations({ membershipType, userId }) {
                     saveCache(cacheKey, commendationsData);
                 }
             } catch (error) {
-                setError(error);
+                const staleCached = loadCache(cacheKey, null);
+                if (staleCached) {
+                    setCommendations(staleCached);
+                }
             }
         }
         fetchGeneralStats();
-    }, [])
+    }, [membershipType, userId]);
 
     return (
         <div className="bg-gray-300 p-6 font-Lato rounded-lg h-[162px] py-4 pb-10 space-y-2 items-center">

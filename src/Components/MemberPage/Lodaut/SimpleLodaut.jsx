@@ -25,10 +25,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
         const fetchSimpleLoadout = async () => {
             const cached = loadCache(cacheKey, CACHE_TTL);
             if (cached) {
-                setItems(cached.items);
-                setTotalStats(cached.totalStats);
-                setBackground(cached.background);
-                setSuperAbility(cached.superAbility);
+                setUpCache(cached);
                 return;
             }
             try {
@@ -93,12 +90,19 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 }
 
             } catch (error) {
-                console.error("Error loading loadout:", error);
+                const staleCached = loadCache(cacheKey, null);
+                if (staleCached) setUpCache(staleCached);
             }
         }
         fetchSimpleLoadout();
     }, []);
 
+    const setUpCache = (cached) => {
+        setItems(cached.items);
+        setTotalStats(cached.totalStats);
+        setBackground(cached.background);
+        setSuperAbility(cached.superAbility);
+    }
     const handleStatHover = (stat, event) => {
         const rect = event.target.getBoundingClientRect();
         setStatPopupPosition({

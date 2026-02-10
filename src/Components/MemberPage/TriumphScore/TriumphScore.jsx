@@ -17,17 +17,20 @@ export default function TriumphScore({ membershipType, userId }) {
             return;
         }
         const fetchTriumphs = async () => {
-            const response = await getAllSeals(membershipType, userId);
-
-            setTriumphs({
-                Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
-                Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
-            });
-
-            saveCache(cacheKey, {
-                Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
-                Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
-            });
+            try {
+                const response = await getAllSeals(membershipType, userId);
+                setTriumphs({
+                    Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
+                    Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
+                });
+                saveCache(cacheKey, {
+                    Total: response.profileRecords.data.lifetimeScore?.toLocaleString('en-US'),
+                    Active: response.profileRecords.data.activeScore.toLocaleString('en-US'),
+                });
+            } catch (error) {
+                const staleCached = loadCache(cacheKey, null);
+                if (staleCached) setTriumphs(staleCached);
+            }
         }
         fetchTriumphs();
     }, []);

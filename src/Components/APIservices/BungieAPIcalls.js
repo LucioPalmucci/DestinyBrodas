@@ -28,8 +28,8 @@ export const useBungieAPI = () => {
             // Detectar cancelaciones (AbortController + Axios CanceledError)
             const isAbort = error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED';
             if (isAbort) {
-                console.debug('Request cancelled', { cacheKey, reason: error?.message || error?.code });
-                return null;
+                console.debug('Request cancelled', { type, reason: error?.message || error?.code });
+                throw error;
             }
             console.error(`Error fetching ${type}:`, error);
             setError(error);

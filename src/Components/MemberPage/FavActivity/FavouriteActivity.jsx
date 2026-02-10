@@ -52,9 +52,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 // Try loading from cache first
                 const cached = loadCache(cacheKey, CACHE_TTL);
                 if (cached) {
-                    setModeDataPVE(cached.pve || []);
-                    setModeDataPVP(cached.pvp || []);
-                    setMostUsedWeaponPVP(cached.weapon || null);
+                    setUpCache(cached);
                     return;
                 }
                 const manifestRes = await getManifest();
@@ -147,12 +145,19 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     console.error('[CACHE] save error', e);
                 }
             } catch (error) {
-                console.error(error);
+                const staleCache = loadCache(cacheKey, null);
+                if (staleCache) setUpCache(staleCache);
             }
         };
 
         fetchGeneralStats();
     }, [membershipType, userId]);
+
+    const setUpCache = (cached) => {
+        setModeDataPVE(cached.pve || []);
+        setModeDataPVP(cached.pvp || []);
+        setMostUsedWeaponPVP(cached.weapon || null);
+    };
 
     async function buildModeData(mode, allActivities, charactersData, progressions) {
 
@@ -202,7 +207,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     };
 
-    async function activityHashes(mode, pvp, manifest) {
+    async function activityHashes(mode, pvp, manifest){
         const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
         const activityRes = await axios.get(activityUrl);
         const activityData = activityRes.data;
