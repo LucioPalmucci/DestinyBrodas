@@ -144,9 +144,17 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             }
             if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
+            let modeName = null;
+            if (activity.activityDetails.modes.includes(5) && !activity.activityDetails.modes.includes(84)) {
+                console.log('Activity Mode 5 Detalles:', activity, carnageReport);
+                modeName = datosDelModo?.displayProperties?.name + ": " + activityInfo?.originalDisplayProperties?.name;
+            } else {
+                modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
+            }
+
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
-                activityMode: datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name,
+                activityMode: modeName,
                 activityIcon: actIcon,
                 pgcrImage: activityMain?.pgcrImage || null,
                 difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name : activityInfo?.selectionScreenDisplayProperties?.name,
@@ -200,7 +208,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const fetchCarnageReport = async (activity) => {
         try {
             const carnageReportResponse = await getCarnageReport(activity.activityDetails.instanceId);
-            if (activity.activityDetails.modes.includes(5)) console.log('Carn:', carnageReportResponse, "Act ", activity);
+            //if (activity.activityDetails.modes.includes(7)) console.log('Carn:', carnageReportResponse, "Act ", activity);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
@@ -237,12 +245,14 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
             if ((activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(63)) && (!activity.activityDetails.modes.includes(48) && !activity.activityDetails.modes.includes(57))) {
-                //PvP o gambito pero no todos contra todos
                 teams = buildTeamsData(people, carnageReportResponse);
                 mvp = getMVP(teams, "pvp");
                 return { teams, mvp, hasPoints, hasMedals, full };
+            } else if((activity.activityDetails.modes.includes(48) || activity.activityDetails.modes.includes(57)) ) {
+                mvp = getMVP(people, "rumble");
+                return { people: people, mvp, hasPoints, hasMedals, full };
             } else {
-                mvp = getMVP(people, "pve");
+                mvp = getMVP(people, "pve", activity);
                 return { people: people, mvp, hasPoints, hasMedals, full };
             }
         } catch (error) {
@@ -266,14 +276,32 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         return { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
     }
 
-    const getMVP = (teams, mode) => {
+    const getMVP = (teams, mode, activity) => {
+        let mvp = null;
         if (mode === "pvp") {
-            return teams.teamW.people.sort((a, b) => b.score - a.score)[0] || teams.sort((a, b) => b.score - a.score)[0]; // La segunda es para modos sin equipos, donde se elige al que más puntuación tenga
+            mvp = teams.teamW.people.sort((a, b) => b.score - a.score)[0];
+        } else if (mode === "rumble") {
+            mvp = teams.sort((a, b) => b.score - a.score)[0];
         } else if (mode === "pve") {
-            //
+            teams.forEach(person => {
+                let timePlayedTotalPercentage = person.timePlayedSeconds / activity.values.activityDurationSeconds.basic.value;
+                if (timePlayedTotalPercentage > 0.85) { // 1. Solo se consideran para MVP los jugadores que han estado al menos el 85% del tiempo de la actividad
+                    if(mvp == null || mvp?.deaths > person.deaths) { // 2. De esos jugadores, el que menos muertes tenga es el MVP
+                        if(mvp == null || mvp?.kd < person.kd) { // 3. Si hay empate en muertes, desempata el KD
+                            mvp = person;
+                        }
+                    }
+                }
+            });
         }
+        return mvp = {
+            nombre: mvp?.name,
+            membershipId: mvp?.membershipId,
+            membershipType: mvp?.membershipType,
+            class: mvp?.class,
+            classHash: mvp?.classHash,
+        };
     }
-
     const filterActivitiesMode = async (activities, type) => {
         setIsLoading(true);
         setFullLoaded(false);

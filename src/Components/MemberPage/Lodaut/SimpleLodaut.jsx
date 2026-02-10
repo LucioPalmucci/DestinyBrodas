@@ -18,7 +18,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
     const [statPopupPosition, setStatPopupPosition] = useState(null);
     const [selectedStat, setSelectedStat] = useState(null);
 
-    const CACHE_TTL = 50 * 60 * 1000; // 5 minutes
+    const CACHE_TTL = 150 * 60 * 1000; // 5 minutes
     const cacheKey = `SLoadout_${membershipType}_${userId}`;
 
     useEffect(() => {
