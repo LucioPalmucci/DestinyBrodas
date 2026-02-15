@@ -3,19 +3,20 @@ import { useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
-import bungieLogo from "../../../assets/bungieLogo.png";
-import caretLeft from "../../../assets/caret-left-solid.svg";
-import caretRight from "../../../assets/caret-right-solid.svg";
-import info from "../../../assets/circle-info-solid.svg";
-import destinyLogo from "../../../assets/destinyLogo.png";
-import dungeonLogo from "../../../assets/dungeonLogo.png";
-import elogio from "../../../assets/elogio.png";
-import gun from "../../../assets/gun-solid.svg";
-import raidReportIcon from "../../../assets/raidreport.png";
-import skull from "../../../assets/skull-solid.svg";
-import suitcase from "../../../assets/suitcase-medical-solid.svg";
-import { API_CONFIG } from "../../../config";
-import "../../Tab.css";
+import bungieLogo from "../../../../assets/bungieLogo.png";
+import caretLeft from "../../../../assets/caret-left-solid.svg";
+import caretRight from "../../../../assets/caret-right-solid.svg";
+import info from "../../../../assets/circle-info-solid.svg";
+import destinyLogo from "../../../../assets/destinyLogo.png";
+import dungeonLogo from "../../../../assets/dungeonLogo.png";
+import elogio from "../../../../assets/elogio.png";
+import gun from "../../../../assets/gun-solid.svg";
+import raidReportIcon from "../../../../assets/raidreport.png";
+import skull from "../../../../assets/skull-solid.svg";
+import suitcase from "../../../../assets/suitcase-medical-solid.svg";
+import { API_CONFIG } from "../../../../config";
+import "../../../Tab.css";
+
 const CustomPrevArrow = ({ onClick }) => (
     <button
         onClick={onClick}
@@ -34,7 +35,7 @@ const CustomNextArrow = ({ onClick }) => (
     </button>
 );
 
-const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
+const PopUp = ({ jugador, setIsOpen }) => {
     const [activeTab, setActiveTab] = useState("details");
     const settings = {
         dots: false,
@@ -48,7 +49,6 @@ const PopUp = ({ jugador, setIsOpen, weaponDetails }) => {
         prevArrow: <CustomPrevArrow />,
         nextArrow: <CustomNextArrow />,
     };
-
 
     if (!jugador || !jugador.name) return null;
 

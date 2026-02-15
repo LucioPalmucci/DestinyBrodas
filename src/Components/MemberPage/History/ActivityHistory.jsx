@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import circleEmpty from "../../../assets/circle-empty.svg";
-import circleSolid from "../../../assets/circle-solid.svg";
 import completed from "../../../assets/completed.png";
-import medal from "../../../assets/medal-solid.svg";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
 //import "../../../index.css";
@@ -11,7 +8,9 @@ import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import Spinner from '../../Spinner';
 import '../../Tab.css';
-import PopUp from './PopUp';
+import Crucible from './PopUps/Crucible';
+import Pve from './PopUps/Pve';
+import Rumble from './PopUps/Rumble';
 
 
 const ActivityHistory = ({ userId, membershipType, currentClass }) => {
@@ -101,9 +100,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
                 hour12: false
             }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
             const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
@@ -155,6 +151,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
+                activityTypePVP: activityInfo?.originalDisplayProperties?.name,
                 activityIcon: actIcon,
                 pgcrImage: activityMain?.pgcrImage || null,
                 difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name : activityInfo?.selectionScreenDisplayProperties?.name,
@@ -240,7 +237,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 assists: entry.values.assists.basic.value,
             })));
 
-            let teams = [], mvp = null;
+            let teams = [], mvp = null, firstPlace = null, secondPlace = null;
             const hasPoints = people.some(person => person.score > 0);
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
@@ -250,7 +247,9 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 return { teams, mvp, hasPoints, hasMedals, full };
             } else if((activity.activityDetails.modes.includes(48) || activity.activityDetails.modes.includes(57)) ) {
                 mvp = getMVP(people, "rumble");
-                return { people: people, mvp, hasPoints, hasMedals, full };
+                firstPlace = people.sort((a, b) => b.score - a.score)[0];
+                secondPlace = people.sort((a, b) => b.score - a.score)[1];
+                return { people: people, mvp, hasPoints, hasMedals, full, firstPlace, secondPlace };
             } else {
                 mvp = getMVP(people, "pve", activity);
                 return { people: people, mvp, hasPoints, hasMedals, full };
@@ -411,29 +410,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         }
     };
 
-    const handlePlayerClick = (person, personIndex) => {
-        if (jugadorSelected === personIndex) {
-
-            setJugadorSelected(null); // Cerrar si ya está abierto
-        } else {
-            setJugadorSelected(personIndex); // Abrir el popup para este jugador
-        }
-    };
-
-    // Cerrar popup al hacer click fuera
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (popupRef.current && !popupRef.current.contains(event.target)) {
-                setJugadorSelected(null);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
     const indexOfLastActivity = currentPage * activitiesPerPage;
     const indexOfFirstActivity = indexOfLastActivity - activitiesPerPage;
     let currentActivities = activityDetails;
@@ -536,9 +512,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 <>
                     <div>
                         {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
-                            /**/
                             const uniqueId = activity.instanceId + index;
-
                             return (
                                 <div className={`transition-colors cursor-pointer hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
                                     <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
@@ -577,164 +551,21 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                             </div>
                                         </div>
                                     </button>
-                                    <div className={`transition-all duration-500 ease-in-out overflow-visible ${expandedIndex === (uniqueId) ? 'max-h-screen' : 'max-h-0'}`}>
-                                        {expandedIndex === (uniqueId) && (
-                                            <div className='mt-2 p-6 bg-center bg-cover' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}>
+                                    {expandedIndex === (uniqueId) && (
+                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
+                                            <div className='bg-center flex bg-cover rounded-lg w-4xl max-h-screen overflow-y-auto p-6 justify-center' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} onClick={(e) => e.stopPropagation()}>
                                                 {activity.teams != null ? (
-                                                    <div className='justify-between space-y-4 w-full text-black '>
-                                                        <div>
-                                                            <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                                <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 1</p>
-                                                                <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
-                                                                    {activity.teams.teamW.points}
-                                                                    <img className='w-4 h-4 ml-2' src={activity.teams.teamW.user ? circleSolid : circleEmpty} style={{ filter: "invert(35%) sepia(92%) saturate(749%) hue-rotate(90deg) brightness(92%) contrast(92%)" }} />
-                                                                </span>
-                                                            </h3>
-                                                            <table className='tablapartida'>
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th className='py-2'>Nombre</th>
-                                                                        {activity.hasPoints && <th className='py-2'>Puntos</th>}
-                                                                        <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                                                        <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                                                        <th className='py-2'>KD</th>
-                                                                        {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {activity.teams.teamW.people.map((person, idx) => {
-                                                                        const personIndex = `team0-${idx}`;
-                                                                        return (
-                                                                            <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
-                                                                                <td className='py-2 text-xs w-fit'>
-                                                                                    <button onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handlePlayerClick(person, personIndex);
-                                                                                    }} className='flex items-center text-start cursor-pointer'>
-                                                                                        <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                                        <div className='flex flex-col justify-start ml-1'>
-                                                                                            <p>{person.name}</p>
-                                                                                            <p>{person.class} - {person.power}</p>
-                                                                                        </div>
-                                                                                    </button>
-                                                                                    {jugadorSelected === personIndex && (
-                                                                                        <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-visible">
-                                                                                            <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
-                                                                                        </div>
-                                                                                    )}
-                                                                                </td>
-                                                                                {activity.hasPoints && <td className='py-2' >{person.points}</td>}
-                                                                                <td className='py-2'>{person.kills}</td>
-                                                                                <td className='py-2'>{person.deaths}</td>
-                                                                                <td className='py-2'>{person.kd}</td>
-                                                                                {activity.hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                                            </tr>
-                                                                        );
-                                                                    })}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                        <div>
-                                                            <h3 className='text-lg font-bold flex items-center justify-between'>
-                                                                <p className='px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>Equipo 2</p>
-                                                                <span className='flex items-center px-1 rounded' style={{ backgroundColor: "rgba(255, 255, 255, 0.7)" }}>
-                                                                    {activity.teams.teamL.points}
-                                                                    <img className='w-4 h-4 ml-2' src={activity.teams.teamL.user ? circleSolid : circleEmpty} style={{ filter: "invert(12%) sepia(100%) saturate(7481%) hue-rotate(1deg) brightness(92%) contrast(92%)" }} />
-                                                                </span>
-                                                            </h3>
-                                                            <table className='tablapartida'>
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th className='py-2'>Nombre</th>
-                                                                        {activity.hasPoints && <th className='py-2'>Puntos</th>}
-                                                                        <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                                                        <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                                                        <th className='py-2'>KD</th>
-                                                                        {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {activity.teams.teamL.people.map((person, idx) => {
-                                                                        const personIndex = `team1-${idx}`;
-                                                                        return (
-                                                                            <tr key={idx} className={`text-start ${person.membershipId === userId ? "font-bold" : ""} relative`}>
-                                                                                <td className='py-2 text-xs w-fit'>
-                                                                                    <button onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        handlePlayerClick(person, personIndex);
-                                                                                    }} className='flex items-center text-start cursor-pointer'>
-                                                                                        <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                                        <div className='flex flex-col justify-center ml-1'>
-                                                                                            <p>{person.name}</p>
-                                                                                            <p>{person.class} - {person.power}</p>
-                                                                                        </div>
-                                                                                    </button>
-                                                                                    {jugadorSelected === personIndex && (
-                                                                                        <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-visible">
-                                                                                            <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
-                                                                                        </div>
-                                                                                    )}
-                                                                                </td>
-                                                                                {activity.hasPoints && <td className='py-2'>{person.points}</td>}
-                                                                                <td className='py-2'>{person.kills}</td>
-                                                                                <td className='py-2'>{person.deaths}</td>
-                                                                                <td className='py-2'>{person.kd}</td>
-                                                                                {activity.hasMedals && <td className='py-2'>{person.medals}</td>}
-                                                                            </tr>
-                                                                        );
-                                                                    })}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
+                                                    <Crucible activity={activity} userId={userId} />
                                                 ) : (
-                                                    <table className='min-w-full tablapartida text-black'>
-                                                        <thead >
-                                                            <tr>
-                                                                <th className='py-2'>Nombre</th>
-                                                                {activity.hasPoints && <th className='py-2'>Puntos</th>}
-                                                                <th className='py-2' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></th>
-                                                                <th className='py-2' title='Muertes'><img src={skull} className="mr-2" width={15} height={15} /></th>
-                                                                <th className='py-2'>KD</th>
-                                                                {activity.hasMedals && <th className='py-2' title='medallas'><img src={medal} className="mr-2" width={15} height={15} /></th>}
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {activity.people.map((person, idx) => {
-                                                                const personIndex = `single-${idx}`;
-                                                                return (
-                                                                    <tr key={idx} className={`text-start text-sm ${person.membershipId == userId ? "font-bold" : ""} relative`}>
-                                                                        <td className='py-2 text-xs w-fit'>
-                                                                            <button onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handlePlayerClick(person, personIndex);
-                                                                            }} className='flex items-center text-start cursor-pointer'>
-                                                                                <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                                                <div className='flex flex-col justify-center ml-1'>
-                                                                                    <p>{person.name}</p>
-                                                                                    <p>{person.class} - {person.power}</p>
-                                                                                </div>
-                                                                            </button>
-                                                                            {jugadorSelected === personIndex && (
-                                                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
-                                                                                    <PopUp jugador={person} weaponDetails={weaponDetails} setIsOpen={setJugadorSelected} />
-                                                                                </div>
-                                                                            )}
-                                                                        </td>
-                                                                        {activity.hasPoints && <td>{person.points}</td>}
-                                                                        <td>{person.kills}</td>
-                                                                        <td>{person.deaths}</td>
-                                                                        <td>{person.kd}</td>
-                                                                        {activity.hasMedals && <td>{person.medals}</td>}
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                    </table>
+                                                    activity.activityType == "PvE" ? (
+                                                        <Pve activity={activity} userId={userId} />
+                                                     ) : (
+                                                        <Rumble activity={activity} userId={userId} />
+                                                    )
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         }) : (
