@@ -103,7 +103,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 hour12: false
             }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
             const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
-            const carnageReport = await fetchCarnageReport(activity);
             const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
             let datosDelModo, datosDelTipo;
             datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
@@ -135,14 +134,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
 
             if (actIcon == null || actIcon.includes("missing_icon")) {
                 const modoPorTipo = await fetchActivityDetails(datosDelTipo?.hash, "DestinyActivityModeDefinition");
-                console.log("Fetching icon from activity type mode:", datosDelTipo?.hash, modoPorTipo);
                 actIcon = modoPorTipo?.displayProperties?.icon || null;
             }
             if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
             let modeName = null;
             if (activity.activityDetails.modes.includes(5) && !activity.activityDetails.modes.includes(84)) {
-                console.log('Activity Mode 5 Detalles:', activity, carnageReport);
                 modeName = datosDelModo?.displayProperties?.name + ": " + activityInfo?.originalDisplayProperties?.name;
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
@@ -166,7 +163,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 duration,
                 durationInSeconds: activity.values.activityDurationSeconds.basic.value,
                 hash: activity.activityDetails.referenceId,
-                ...carnageReport,
             };
         }));
         console.log("All activity details fetched: ", details);
@@ -180,7 +176,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         return `${h}:${m}:${s}`;
     }
 
-    const getUserClass = (carnageReport) => {
+    /*const getUserClass = (carnageReport) => {
         const user = carnageReport.people.find(person => person.membershipId == userId);
         if (!user) return null;
 
@@ -200,12 +196,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             name: user.class || null,
             hash: user.classHash,
         };
-    }
+    }*/
 
     const fetchCarnageReport = async (activity) => {
         try {
             const carnageReportResponse = await getCarnageReport(activity.activityDetails.instanceId);
-            //if (activity.activityDetails.modes.includes(7)) console.log('Carn:', carnageReportResponse, "Act ", activity);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
 
@@ -245,7 +240,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 teams = buildTeamsData(people, carnageReportResponse);
                 mvp = getMVP(teams, "pvp");
                 return { teams, mvp, hasPoints, hasMedals, full };
-            } else if((activity.activityDetails.modes.includes(48) || activity.activityDetails.modes.includes(57)) ) {
+            } else if ((activity.activityDetails.modes.includes(48) || activity.activityDetails.modes.includes(57))) {
                 mvp = getMVP(people, "rumble");
                 firstPlace = people.sort((a, b) => b.score - a.score)[0];
                 secondPlace = people.sort((a, b) => b.score - a.score)[1];
@@ -285,8 +280,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             teams.forEach(person => {
                 let timePlayedTotalPercentage = person.timePlayedSeconds / activity.values.activityDurationSeconds.basic.value;
                 if (timePlayedTotalPercentage > 0.85) { // 1. Solo se consideran para MVP los jugadores que han estado al menos el 85% del tiempo de la actividad
-                    if(mvp == null || mvp?.deaths > person.deaths) { // 2. De esos jugadores, el que menos muertes tenga es el MVP
-                        if(mvp == null || mvp?.kd < person.kd) { // 3. Si hay empate en muertes, desempata el KD
+                    if (mvp == null || mvp?.deaths > person.deaths) { // 2. De esos jugadores, el que menos muertes tenga es el MVP
+                        if (mvp == null || mvp?.kd < person.kd) { // 3. Si hay empate en muertes, desempata el KD
                             mvp = person;
                         }
                     }
@@ -553,17 +548,15 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                     </button>
                                     {expandedIndex === (uniqueId) && (
                                         <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
-                                            <div className='bg-center flex bg-cover rounded-lg w-4xl max-h-screen overflow-y-auto p-6 justify-center' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} onClick={(e) => e.stopPropagation()}>
-                                                {activity.teams != null ? (
-                                                    <Crucible activity={activity} userId={userId} />
+                                            {activity.teams != null ? (
+                                                <Crucible activity={activity} userId={userId} />
+                                            ) : (
+                                                activity.activityType == "PvE" ? (
+                                                    <Pve activity={activity} userId={userId} />
                                                 ) : (
-                                                    activity.activityType == "PvE" ? (
-                                                        <Pve activity={activity} userId={userId} />
-                                                     ) : (
-                                                        <Rumble activity={activity} userId={userId} />
-                                                    )
-                                                )}
-                                            </div>
+                                                    <Rumble activity={activity} userId={userId} />
+                                                )
+                                            )}
                                         </div>
                                     )}
                                 </div>
