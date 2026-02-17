@@ -15,7 +15,7 @@ import raidReportIcon from "../../../../assets/raidreport.png";
 import skull from "../../../../assets/skull-solid.svg";
 import suitcase from "../../../../assets/suitcase-medical-solid.svg";
 import { API_CONFIG } from "../../../../config";
-import "../../../Tab.css";
+import "../../../CSS/Tab.css";
 
 const CustomPrevArrow = ({ onClick }) => (
     <button

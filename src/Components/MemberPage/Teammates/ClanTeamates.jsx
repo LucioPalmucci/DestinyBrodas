@@ -2,9 +2,10 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
-import "../../../Index.css"; // Importar estilos globales
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
+import "../../CSS/index.css"; // Importar estilos globales
+import "../../CSS/player.css";
 import PopUpClanTeammates from "./PopUpClanTeammates";
 
 export default function ClanTeammates({ userId, membershipType }) {
@@ -175,7 +176,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                             <div key={idx} className="relative w-full">
                                 <a
                                     key={idx}
-                                    className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 shadow-inner hover:scale-105 hover:shadow-lg hover:bg-black/40 clan-member-idle clan-member-shimmer"
+                                    className="flex items-center gap-2 bg-black/25 p-2 rounded-lg w-full cursor-pointer transition-all duration-200 shadow-inner hover:scale-105 hover:shadow-lg hover:bg-black/40 clan-member-shimmer clan-member-idle"
                                     onClick={() => setJugadorSelected(idx)}
                                 >
                                     <p className="text-lg font-semibold min-w-[2ch] text-center">{jugador.numero}.</p>

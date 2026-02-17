@@ -6,7 +6,6 @@ const usePlayersBasicData = () => {
 
     const fetchCarnageReport = useCallback(async (activity, userId) => {
         try {
-            console.log("Fetching carnage report for activity:", activity);
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30);

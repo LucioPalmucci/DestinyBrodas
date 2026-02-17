@@ -1,0 +1,36 @@
+th, td{
+    padding: 10px;
+    padding-left: 20px;
+}
+
+table{
+    font-size: 0.85rem;
+}
+th{
+    text-align: left;
+    background-color: #e0dfdf;
+}
+
+tr{
+    background-color: rgb(240, 238, 238);
+}
+
+title{
+    text-align: center;
+}
+
+.tablapartida td, .tablapartida th{
+    background: transparent;
+    padding: 5px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin: 10px;
+}
+
+.tablapartida tbody tr {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+.tablapartida thead tr {
+    text-align: left;
+    background-color: rgba(255, 255, 255, 0.8);
+}

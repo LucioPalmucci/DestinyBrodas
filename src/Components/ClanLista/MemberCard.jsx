@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { API_CONFIG } from '../../config';
 import { useBungieAPI } from '../APIservices/BungieAPIcalls';
+import '../CSS/Tabla.css';
 import { getTimeSinceLastConnection } from '../LastConexion';
-import '../Tabla.css';
 export default function MemberCard({ member }) {
     const [pveWeapon, setPveWeapon] = useState(null);
     const [pvpWeapon, setPvpWeapon] = useState(null);

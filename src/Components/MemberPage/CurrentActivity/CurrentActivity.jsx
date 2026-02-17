@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import circleSolid from "../../../assets/circle-solid.svg";
 import orbit from "../../../assets/orbit.png";
 import { API_CONFIG } from "../../../config";
-import "../../../Index.css";
 import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import { loadCache, saveCache } from "../../Cache/componentsCache";
+import "../../CSS/Index.css";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 

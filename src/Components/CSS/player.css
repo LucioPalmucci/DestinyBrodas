@@ -1,0 +1,125 @@
+.animation-opacity{
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.animation-opacity.show {
+    opacity: 1;
+}
+
+@keyframes backgroundFade {
+    0% {
+        background-color: transparent;
+    }
+    100% {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes idleGlow {
+    0% {
+        background-color: rgba(0, 0, 0, 0.25);
+        box-shadow: 
+            0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    50% {
+        background-color: rgba(30, 41, 59, 0.4);
+        box-shadow: 
+            0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+            0 0 20px rgba(59, 130, 246, 0.15);
+    }
+    100% {
+        background-color: rgba(0, 0, 0, 0.25);
+        box-shadow: 
+            0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+}
+
+.clan-member-idle:hover {
+    cursor: pointer;
+    animation: idleGlow 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.clan-member-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.clan-member-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent; /* asegurar que no bloquee visualmente */
+    background-size: 200% 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.clan-member-shimmer:hover::before {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    pointer-events: none;
+    animation: shimmer 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+
+.clan-member-shimmer:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    background-size: 200% 100%;
+    pointer-events: none;
+    animation: shimmer 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+
+/* Brightness placeholder: animación SOLO en hover */
+.shimmer-placeholder {
+    background-color: #999999; /* tailwind gray-200 equivalent */
+    border-radius: 0.5rem;
+    display: inline-block;
+    will-change: filter;
+}
+
+.shimmer-placeholder:hover {
+    animation: brighten 1.8s ease-in-out infinite;
+}
+
+@keyframes brighten {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.12); }
+    100% { filter: brightness(1); }
+}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import medal from "../../../../assets/medal-solid.svg";
 import skull from "../../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../../config';
+import '../../../CSS/mvp.css';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
@@ -21,7 +22,6 @@ export default function Rumble({ activity, userId }) {
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
-
             setJugadorSelected(null); // Cerrar si ya está abierto
         } else {
             setJugadorSelected(personIndex); // Abrir el popup para este jugador
@@ -42,80 +42,118 @@ export default function Rumble({ activity, userId }) {
         };
     }, []);
 
-    return (
-        !actComplete ? (
-            <div className="h-[400px] bg-gray-300 flex w-4xl justify-center items-center p-2 text-xl font-semibold text-black rounded-lg animate-pulse"/>
-        ) : (
-            <div className='bg-center flex bg-cover rounded-lg w-4xl max-h-screen p-6 overflow-y-auto justify-center' style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} onClick={(e) => e.stopPropagation()}>
-                <div className='flex flex-col justify-center space-y-4 text-black'>
-                    <div className='flex justify-center items-center w-full'>
-                        {actComplete.firstPlace && (
-                            <div className='flex flex-col items-center'>
-                                <p>{actComplete.firstPlace.name}</p>
-                                <p>{actComplete.firstPlace.score}</p>
-                            </div>)}
-                        {actComplete.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${actComplete.activityIcon}`} className='w-20 h-20 mx-8' style={{ filter: "brightness(0) contrast(100%)" }} />}
-                        {actComplete.secondPlace && (
-                            <div className='flex flex-col items-center'>
-                                <p>{actComplete.secondPlace.name}</p>
-                                <p>{actComplete.secondPlace.score}</p>
-                            </div>)}
-                    </div>
-                    <div className='flex justify-center items-center w-full space-x-10'>
+    return !actComplete ? (
+        <div className="h-[400px] bg-gray-300 flex w-4xl justify-center items-center p-2 text-xl text-white rounded-lg animate-pulse" />
+    ) : (
+        <div
+            className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
+            style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className='flex flex-col justify-center space-y-4'>
+                <div className='flex justify-center items-center w-full'>
+                    {actComplete.firstPlace && (
                         <div className='flex flex-col items-center'>
-                            <p>{actComplete.activityTypePVP}: {actComplete.activityName}</p>
+                            <p>{actComplete.firstPlace.name}</p>
+                            <p>{actComplete.firstPlace.score}</p>
                         </div>
+                    )}
+                    {actComplete.activityIcon && (
+                        <img
+                            src={`${API_CONFIG.BUNGIE_API}${actComplete.activityIcon}`}
+                            className='w-20 h-20 mx-8'
+                            style={{ filter: "brightness(0) contrast(100%)" }}
+                        />
+                    )}
+                    {actComplete.secondPlace && (
                         <div className='flex flex-col items-center'>
-                            <p>{actComplete.date}, {actComplete.duration}</p>
+                            <p>{actComplete.secondPlace.name}</p>
+                            <p>{actComplete.secondPlace.score}</p>
                         </div>
-                        <div className='w-10 flex items-center mr-1'>
-                            <img src={actComplete.completed} className='w-7 h-7' />
-                        </div>
+                    )}
+                </div>
+
+                <div className='flex justify-center items-center w-full space-x-10'>
+                    <div className='flex flex-col items-center'>
+                        <p>{actComplete.activityTypePVP}: {actComplete.activityName}</p>
                     </div>
-                    <div className='w-170 tablapartida text-black'>
-                        <div className='w-full'>
-                            <div className='flex items-center text-center  pb-1'>
-                                <div className='w-50'></div>
-                                {actComplete.hasPoints && <div className='w-20'>Puntos</div>}
-                                <div className='w-20' title='Bajas'><i className='icon-kills2' style={{ filter: "invert(100%)" }}></i></div>
-                                <div className='w-20 flex justify-center items-center' title='Muertes'><img src={skull} width={15} height={15} /></div>
+                    <div className='flex flex-col items-center'>
+                        <p>{actComplete.date}, {actComplete.duration}</p>
+                    </div>
+                    <div className='w-10 flex items-center mr-1'>
+                        <img src={actComplete.completed} className='w-7 h-7' style={{ filter: 'brightness(0) invert(1)' }} />
+                    </div>
+                </div>
+
+                <div className='w-170'>
+                    <div className='w-full'>
+                        <div className='flex items-center text-center pb-1 space-x-4'>
+                            <div className='w-50'></div>
+                            <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center  text-sm'>
+                                {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
+                                <div className='w-20 flex justify-center items-center' title='Muertes'>
+                                    <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
+                                </div>
                                 <div className='w-20'>KD</div>
-                                {actComplete.hasMedals && <div className='w-20 flex justify-center items-center' title='medallas'><img src={medal} className="" width={15} height={15} /></div>}
+                                {actComplete.hasMedals && (
+                                    <div className='w-20 flex justify-center items-center' title='medallas'>
+                                        <img src={medal} style={{ filter: 'brightness(0) invert(1)' }} width={15} height={15} />
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className='w-full'>
-                            {actComplete.people.map((person, idx) => {
-                                const personIndex = `single-${idx}`;
-                                return (
-                                    <div key={idx} className={`flex items-center text-start text-sm ${person.membershipId == actComplete.mvp.membershipId ? "font-bold " : ""} relative`}>
-                                        <div className='py-2 text-xs w-50'>
-                                            <button onClick={(e) => {
+                    </div>
+
+                    <div className='w-full'>
+                        {actComplete.people.map((person, idx) => {
+                            const personIndex = `single-${idx}`;
+                            const isMvp = person.membershipId == actComplete.mvp.membershipId;
+                            return (
+                                <div key={idx} className={`flex items-center text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
+                                    <div className='py-2 text-xs w-50 dark'>
+                                        <button
+                                            onClick={(e) => {
                                                 e.stopPropagation();
                                                 handlePlayerClick(person, personIndex);
-                                            }} className='flex items-center text-start cursor-pointer'>
-                                                <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" className='rounded' />
-                                                <div className='flex flex-col justify-center ml-1'>
-                                                    <p>{person.name}</p>
-                                                    <div className='flex items-center'><img src={person.classSymbol} className="w-4 h-4 mr-1" style={{ filter: 'brightness(0) saturate(100%)' }} alt="class" />{person.class} - {person.power}</div>
+                                            }}
+                                            data-effect={`${isMvp ? 'wave' : ''}`}
+                                            className={`flex items-center text-start gap-1.5 rounded-lg w-full h-[50px] p-2 transition-all duration-200 hover:scale-105 clan-member-shimmer clan-member-idle ${isMvp ? 'mvp-button' : ''}`}
+                                        >
+                                            {isMvp && <span className="shimmer"></span>}
+                                            <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
+                                            <div className='flex flex-col justify-center'>
+                                                <div className='flex'>
+                                                    <p>{person.uniqueName}</p>
+                                                    <p style={{ color: '#479ce4' }}>{person.uniqueNameCode}</p>
                                                 </div>
-                                            </button>
-                                            {jugadorSelected === personIndex && (
-                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
-                                                    <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                                <div className='flex items-center'>
+                                                    <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
+                                                    {person.class} - {person.power}
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        </button>
+
+                                        {jugadorSelected === personIndex && (
+                                            <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                                <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg'>
                                         {actComplete.hasPoints && <div className='w-20 text-center'>{person.score}</div>}
                                         <div className='w-20 text-center'>{person.kills}</div>
                                         <div className='w-20 text-center'>{person.deaths}</div>
                                         <div className='w-20 text-center'>{person.kd}</div>
                                         {actComplete.hasMedals && <div className='w-20 text-center'>{person.medals}</div>}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
-        ))
+        </div>
+    );
 }

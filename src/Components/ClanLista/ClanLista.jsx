@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useBungieAPI } from "../APIservices/BungieAPIcalls";
+import Spinner from '../CSS/Spinner';
+import '../CSS/Tabla.css';
 import ErrorAPI from '../ErrorAPI/ErrorAPI';
-import Spinner from '../Spinner';
-import '../Tabla.css';
 import MemberCard from './MemberCard';
 
 export default function ClanLista() {

@@ -6,7 +6,7 @@ import "slick-carousel/slick/slick.css";
 import caretLeft from "../../../assets/caret-left-solid.svg";
 import caretRight from "../../../assets/caret-right-solid.svg";
 import { API_CONFIG } from "../../../config";
-import "../../../index.css";
+import "../../CSS/index.css";
 import PopUpTeammate from "./PopUpTeammate";
 
 const CustomPrevArrow = ({ onClick }) => (
