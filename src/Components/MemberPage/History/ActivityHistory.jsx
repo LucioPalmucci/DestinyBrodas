@@ -156,7 +156,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                completed: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                completed: activity.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
+                completedSymbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
                 date,
@@ -541,22 +542,31 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <p>{activity.kd}</p>
                                                 </div>
                                                 <div className='w-10 flex items-center mr-1'>
-                                                    <img src={activity.completed} className='w-10 h-10' />
+                                                    <img src={activity.completedSymbol} className='w-10 h-10' />
                                                 </div>
                                             </div>
                                         </div>
                                     </button>
                                     {expandedIndex === (uniqueId) && (
                                         <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
-                                            {activity.teams != null ? (
-                                                <Crucible activity={activity} userId={userId} />
-                                            ) : (
-                                                activity.activityType == "PvE" ? (
-                                                    <Pve activity={activity} userId={userId} />
+                                            <div className="relative overflow-visible">
+                                                {activity.teams != null ? (
+                                                    <Crucible activity={activity} userId={userId} />
                                                 ) : (
-                                                    <Rumble activity={activity} userId={userId} />
-                                                )
-                                            )}
+                                                    activity.activityType == "PvE" ? (
+                                                        <Pve activity={activity} userId={userId} />
+                                                    ) : (
+                                                        <Rumble activity={activity} userId={userId} />
+                                                    )
+                                                )}
+                                                <button
+                                                    className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
+                                                    onClick={(e) => { e.stopPropagation(); setExpandedIndex(null); }}
+                                                    aria-label="Cerrar"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

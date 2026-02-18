@@ -4,7 +4,7 @@ import arrowLeft from '../../../assets/arrow-left-solid.svg';
 import copy from '../../../assets/copiar-archivo.png';
 import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
-import '../../CSS/index.css';
+import '../../CSS/Index.css';
 import Spinner from '../../CSS/Spinner';
 import '../../CSS/Tabla.css';
 import ErrorAPI from '../../ErrorAPI/ErrorAPI';

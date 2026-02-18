@@ -15,17 +15,17 @@ body {
 
 @font-face {
     font-family: "Destiny Symbols Common";
-    src: url(./assets/fonts/destiny_symbols_common.otf) format('opentype');
+    src: url(../../assets/fonts/destiny_symbols_common.otf) format('opentype');
 }
 
 @font-face {
     font-family: "Destiny Symbols Common 2";
-    src: url(./assets/fonts/icomoon.ttf) format('opentype');
+    src: url(../../assets/fonts/icomoon.ttf) format('opentype');
 }
 
 @font-face {
     font-family: "Destiny Symbols Common Braytech";
-    src: url(./assets/fonts/Braytech-Symbols.353470fdcd26b36f49c0.woff2) format('opentype');
+    src: url(../../assets/fonts/Braytech-Symbols.353470fdcd26b36f49c0.woff2) format('opentype');
 }
 
 .titulo {
@@ -463,6 +463,32 @@ title {
 
 .slick-next {
     right: -14px !important;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 1000ms ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pop-in {
+  transform: scale(0.5);
+  transform-origin: center;
+  opacity: 0;
+  animation: popIn 1000ms cubic-bezier(.2,.9,.3,1) 150ms forwards;
+}
+
+@keyframes popIn {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @import "tailwindcss";
