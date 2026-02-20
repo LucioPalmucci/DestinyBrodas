@@ -144,14 +144,14 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
-
+            if( activity.activityDetails.referenceId == 2489241976) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
                 activityTypePVP: activityInfo?.originalDisplayProperties?.name,
                 activityIcon: actIcon,
                 pgcrImage: activityMain?.pgcrImage || null,
-                difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name : activityInfo?.selectionScreenDisplayProperties?.name,
+                difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name || "Estándar" : activityInfo?.selectionScreenDisplayProperties?.name || "Estándar",
                 instanceId: activity.activityDetails.instanceId,
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
@@ -160,10 +160,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 completedSymbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
+                activityTypeHash: activityInfo.activityTypeHash || null,
                 date,
                 duration,
                 durationInSeconds: activity.values.activityDurationSeconds.basic.value,
                 hash: activity.activityDetails.referenceId,
+                difficultyCollection: activityInfo.difficultyTierCollectionHash
             };
         }));
         console.log("All activity details fetched: ", details);

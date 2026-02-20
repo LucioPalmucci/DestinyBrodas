@@ -18,7 +18,6 @@ export default function Rumble({ activity, userId }) {
     const scoreFirstPlace = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
     const scoreSecondPlace = useCountUp(actComplete?.secondPlace?.score ?? 0, 1000);
 
-
     useEffect(() => {
         (async () => {
             const data = await fetchPlayersBasicData(activity, userId);
@@ -26,23 +25,6 @@ export default function Rumble({ activity, userId }) {
             setActComplete(completeAct);
         })();
     }, [activity, userId, fetchPlayersBasicData]);
-
-    useEffect(() => {
-        if (!actComplete) return;
-        const measure = () => {
-            const els = document.querySelectorAll('.member-left');
-            let max = 0;
-            els.forEach(el => {
-                const w = el.scrollWidth;
-                if (w > max) max = w;
-            });
-            if (max) setLeftWidth(max);
-        };
-        // measure after render
-        requestAnimationFrame(measure);
-        window.addEventListener('resize', measure);
-        return () => window.removeEventListener('resize', measure);
-    }, [actComplete, jugadorSelected]);
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -52,7 +34,6 @@ export default function Rumble({ activity, userId }) {
         }
     };
 
-    // Cerrar popup al hacer click fuera
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -70,7 +51,7 @@ export default function Rumble({ activity, userId }) {
         <div className="h-[600px] bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
     ) : (
         <div
-            className='h-[600px] bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
+            className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
             style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
