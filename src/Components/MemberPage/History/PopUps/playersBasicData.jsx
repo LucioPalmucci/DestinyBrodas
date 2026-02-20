@@ -10,7 +10,6 @@ const usePlayersBasicData = () => {
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30);
-            console.log("Carnage report response:", carnageReportResponse);
 
             const people = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -59,9 +58,12 @@ const usePlayersBasicData = () => {
                 return { people: people, mvp, hasPoints, hasMedals, full, firstPlace, secondPlace };
             } else {
                 mvp = getMVP(people, "pve", activity);
-                difficulty = await getDifficultyName(activity, carnageReportResponse);
-                difficultyColor = getDifficultyColor(difficulty);
-                if(hazanias.some(h => carnageReportResponse.selectedSkullHashes.includes(h))) feats = await getAllFeats(activity, carnageReportResponse);
+                const manifest = await getManifest();
+                if (carnageReportResponse.selectedSkullHashes && hazanias.some(h => carnageReportResponse.selectedSkullHashes.includes(h))) feats = await getAllFeats(activity, carnageReportResponse, manifest);
+                else {
+                    difficulty = await getDifficultyName(activity, carnageReportResponse, manifest);
+                    difficultyColor = getDifficultyColor(difficulty);
+                }
                 return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats };
             }
         } catch (error) {
@@ -215,9 +217,9 @@ const usePlayersBasicData = () => {
         } else return false;
     }
 
-    const getDifficultyName = async (activity, carnageReportResponse) => {
+    const getDifficultyName = async (activity, carnageReportResponse, manifest) => {
         let difficultyName = null;
-        const manifest = await getManifest();
+        console.log("Manifest obtenido: ", manifest);
         if (activity.difficultyCollection) {
             //const difficutyFamily = await getItemManifest(activity.difficultyCollection, "DestinyActivityDifficultyTierCollectionDefinition");
             //console.log("Dificultades obtenidas del endpoint: ", difficutyFamily);
@@ -253,8 +255,24 @@ const usePlayersBasicData = () => {
         return "";
     }
 
-    const getAllFeats = async (activity, carnageReportResponse) => {
-        console.log("Obteniendo hazañas para la actividad:", activity);
+    const getAllFeats = async (activity, carnageReportResponse, manifest) => {
+        let feats = [];
+        const diffUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivitySelectableSkullCollectionDefinition}`;
+        const diffRes = await axios.get(diffUrl);
+        const diffData = diffRes.data;
+
+        //const featsManifest = await getItemManifest(361405014, "DestinyActivitySelectableSkullCollectionDefinition");
+        console.log("Obtenienvidad:", diffData[361405014]);
+
+        diffData[361405014].selectableActivitySkulls.forEach(skull => {
+            if (carnageReportResponse.selectedSkullHashes.includes(skull.activitySkull.skullIdentifierHash)) {
+                feats.push({
+                    name: skull.activitySkull.displayProperties.name,
+                    icon: skull.activitySkull.displayProperties.icon,
+                });
+            }
+        });
+        return feats;
     }
     return fetchCarnageReport;
 

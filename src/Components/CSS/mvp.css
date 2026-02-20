@@ -140,6 +140,5 @@
 .dark .mvp-button {
     position: relative;
     isolation: isolate;
-    border-radius: 0.66em;
     overflow: visible;
 }

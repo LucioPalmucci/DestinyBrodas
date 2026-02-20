@@ -56,14 +56,14 @@ export default function Pve({ activity, userId }) {
         <div className="h-[600px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
     ) : (
         <div
-            className='h-[600px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
+            className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
             style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex items-center w-full justify-center text-xl'>
                     {actComplete.mvp && (
-                        <div className='dark flex flex-col justify-end items-end space-y-1 mt-2 w-fit'>
-                            <button className='flex flex-col items-center mvp-button bg-black/25 rounded-lg p-2' data-effect="wave">
+                        <div className='dark flex flex-col justify-end items-end space-y-1 mt-2 w-[28%]'>
+                            <button className='flex flex-col items-center mvp-button bg-black/25 rounded-lg p-2 px-3.5' data-effect="wave">
                                 <span className="shimmer"></span>
                                 <div className='flex'>
                                     <p>{actComplete.mvp.uniqueName}</p>
@@ -80,9 +80,11 @@ export default function Pve({ activity, userId }) {
                             />
                         </div>
                     )}
-                    <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg space-x-3 w-fit' title='fecha y hora de inicio'>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                    <div className='w-[28%] text-base'>
+                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='fecha y hora de inicio'>
+                            <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
+                            <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                        </div>
                     </div>
                 </div>
 
@@ -91,11 +93,23 @@ export default function Pve({ activity, userId }) {
                         <p>{actComplete.activityName}</p>
                     </div>
                     <div className='flex items-center bg-black/25 p-1 rounded-lg'>
-                        <img src={difficultyIcon} className='w-6.5 mr-1' style={{ filter: actComplete.difficultyColor}} />
-                        <p style={{ filter: actComplete.difficultyColor}}>{actComplete.difficulty}</p>
+                        {actComplete.feats && actComplete.feats.length > 0 ? (
+                            <div className='flex items-center space-x-2'>
+                                {actComplete.feats.map((feat, index) => (
+                                    <div key={index} className='flex items-center'>
+                                        <img src={`${API_CONFIG.BUNGIE_API}${feat.icon}`} className='w-7' title={feat.name} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className='flex items-center px-1'>
+                                <img src={difficultyIcon} className='w-6.5' style={{ filter: actComplete.difficultyColor }} />
+                                <p style={{ filter: actComplete.difficultyColor }}>{actComplete.difficulty}</p>
+                            </div>
+                        )}
                     </div>
-                    <div className='flex items-center bg-black/25 p-[7px] rounded-lg'>
-                        <img src={checkpoint} className='w-4.5 mr-1' ></img>
+                    <div className='flex items-center justify-center bg-black/25 p-[7px] rounded-lg px-1.5 pl-2'>
+                        <img src={checkpoint} className='w-5 mr-2 translate-y-[0px]' ></img>
                         <p>{actComplete.full ? "Fresh" : "Checkpoint"}</p>
                     </div>
                     <div className=' flex items-center bg-black/25 p-2 rounded-lg'>
@@ -105,12 +119,12 @@ export default function Pve({ activity, userId }) {
 
                 <div className='w-fit'>
                     <div className='w-full'>
-                        <div className='flex items-center text-center pb-1 space-x-4'>
-                            <div className='w-full'></div>
-                            <div className='w-[41%] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Completadas'>
+                        <div className='flex items-center text-center space-x-4 justify-end'>
+                            <div className=''></div>
+                            <div className='w-[53px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Completadas'>
                                 <img src={check} width={15} height={15} />
                             </div>
-                            <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[60%]'>
+                            <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[320px]'>
                                 {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
                                 <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                 <div className='w-20 flex justify-center items-center' title='Muertes'>
@@ -121,7 +135,7 @@ export default function Pve({ activity, userId }) {
                                 </div>
                                 <div className='w-20'>KD</div>
                             </div>
-                            <div className='w-[42%] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Tiempo de juego'>
+                            <div className='w-[95px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Tiempo de juego'>
                                 <i className='icon-clock' />
                             </div>
                         </div>
@@ -132,15 +146,15 @@ export default function Pve({ activity, userId }) {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             return (
-                                <div key={idx} className={`flex items-center text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
-                                    <div className='py-2 text-xs min-w-max w-full dark whitespace-nowrap dark'>
+                                <div key={idx} className={`flex items-end text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
+                                    <div className='py-1 text-xs min-w-max w-full dark whitespace-nowrap dark'>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handlePlayerClick(person, personIndex);
                                             }}
                                             data-effect={`${isMvp ? 'wave' : ''}`}
-                                            className={`bg-black/25 flex items-center text-start gap-1.5 rounded-lg w-full h-[50px] p-2 transition-all duration-200 hover:scale-105 clan-member-shimmer clan-member-idle ${isMvp ? 'mvp-button' : ''}`}
+                                            className={`bg-black/25 flex text-start gap-1.5 rounded-lg w-full h-[50px] p-2 transition-all duration-200 hover:scale-105 clan-member-shimmer clan-member-idle ${isMvp ? 'mvp-button' : ''}`}
                                         >
                                             {isMvp && <span className="shimmer"></span>}
                                             <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
@@ -163,7 +177,7 @@ export default function Pve({ activity, userId }) {
                                         )}
                                     </div>
                                     <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg text-center'>
-                                        <div className='w-20'>{person.completions}</div>
+                                        <div className='w-13'>{person.completions}</div>
                                     </div>
                                     <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg text-center'>
                                         {actComplete.hasPoints && <div className='w-20'>{person.score}</div>}
@@ -173,7 +187,7 @@ export default function Pve({ activity, userId }) {
                                         <div className='w-20'>{person.kd}</div>
                                     </div>
                                     <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg text-center justify-center items-center'>
-                                        <div className='w-20 flex items-center justify-center space-x-1' title={"Presente en el " + person.percentagePlayed + "% de la actividad"}>
+                                        <div className='w-24 flex items-center justify-center space-x-1' title={"Presente en el " + person.percentagePlayed + "% de la actividad"}>
                                             <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
                                                 <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
                                                 <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={person.dashoffset} />
