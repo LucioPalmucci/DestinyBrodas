@@ -68,7 +68,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 setRawActivities(recentActivities);
                 setFilteredActivities(recentActivities);
                 const details = await getSomeActivities(recentActivities, currentClass, 1, null);
-                console.log('Fetched activity details:', details);
                 setActivityDetails(details);
                 setCurrentPage(1);
                 setFullLoaded(true);
@@ -144,7 +143,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
-            if( activity.activityDetails.referenceId == 2489241976) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
+            if( activity.activityDetails.referenceId == 1871685525) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
@@ -165,7 +164,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 duration,
                 durationInSeconds: activity.values.activityDurationSeconds.basic.value,
                 hash: activity.activityDetails.referenceId,
-                difficultyCollection: activityInfo.difficultyTierCollectionHash
+                difficultyCollection: activityInfo.difficultyTierCollectionHash,
+                splitedInTeams: activityInfo.matchmaking?.maxParty > 1 && activityType != "PvE" ? true : false,
             };
         }));
         console.log("All activity details fetched: ", details);
@@ -179,126 +179,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         return `${h}:${m}:${s}`;
     }
 
-    /*const getUserClass = (carnageReport) => {
-        const user = carnageReport.people.find(person => person.membershipId == userId);
-        if (!user) return null;
-
-        const classIcons = {
-            "Hechicero": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-            "Hechicera": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-            "Warlock": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-            "Titán": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-            "Titan": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-            "Cazador": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-            "Cazadora": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-            "Hunter": `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-        };
-
-        return {
-            icon: classIcons[user.class] || null,
-            name: user.class || null,
-            hash: user.classHash,
-        };
-    }*/
-
-    const fetchCarnageReport = async (activity) => {
-        try {
-            const carnageReportResponse = await getCarnageReport(activity.activityDetails.instanceId);
-            const filteredEntries = carnageReportResponse.entries;
-            if (filteredEntries.length > 30) filteredEntries.splice(30); //limitar a 30 jugadores para no saturar el caché
-
-            const people = await Promise.all(filteredEntries.map(async (entry) => ({
-                kills: entry.values.kills.basic.value,
-                kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
-                deaths: entry.values.deaths.basic.value,
-                medals: entry.extended?.values?.allMedalsEarned?.basic?.value || 0,
-                score: entry.values.score.basic.value == 0 ? entry.extended?.scoreboardValues?.player_score?.basic?.value : entry.values.score.basic.value,
-                name: entry.player.destinyUserInfo.bungieGlobalDisplayName,
-                emblem: entry.player.destinyUserInfo.iconPath,
-                class: entry.player.characterClass,
-                classHash: entry.player.classHash,
-                power: entry.player.lightLevel,
-                membershipId: entry.player.destinyUserInfo.membershipId,
-                membershipType: entry.player.destinyUserInfo.membershipType,
-                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
-                uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
-                guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
-                emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
-                clan: entry.player.destinyUserInfo.membershipType != 0 ? await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
-                standing: entry.standing,
-                completed: entry.values.completed.basic.value,
-                values: entry.extended?.values,
-                weapons: await getWeaponDetails(entry.extended?.weapons) || null,
-                timePlayed: entry.values.timePlayedSeconds.basic.displayValue,
-                timePlayedSeconds: entry.values.timePlayedSeconds.basic.value,
-                assists: entry.values.assists.basic.value,
-            })));
-
-            let teams = [], mvp = null, firstPlace = null, secondPlace = null;
-            const hasPoints = people.some(person => person.score > 0);
-            const hasMedals = people.some(person => person.medals > 0);
-            const full = carnageReportResponse.activityWasStartedFromBeginning;
-            if ((activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(63)) && (!activity.activityDetails.modes.includes(48) && !activity.activityDetails.modes.includes(57))) {
-                teams = buildTeamsData(people, carnageReportResponse);
-                mvp = getMVP(teams, "pvp");
-                return { teams, mvp, hasPoints, hasMedals, full };
-            } else if ((activity.activityDetails.modes.includes(48) || activity.activityDetails.modes.includes(57))) {
-                mvp = getMVP(people, "rumble");
-                firstPlace = people.sort((a, b) => b.score - a.score)[0];
-                secondPlace = people.sort((a, b) => b.score - a.score)[1];
-                return { people: people, mvp, hasPoints, hasMedals, full, firstPlace, secondPlace };
-            } else {
-                mvp = getMVP(people, "pve", activity);
-                return { people: people, mvp, hasPoints, hasMedals, full };
-            }
-        } catch (error) {
-            console.error('Error fetching carnage report:', error);
-            return { people: [], teams: [], full: false }; // Valores por defecto en caso de error
-        }
-    };
-
-    const buildTeamsData = (people, carnageReportResponse) => {
-        const teamW = people.filter(person => person.standing === 0);
-        const teamL = people.filter(person => person.standing === 1);
-        const userInTeamW = people.some(person => person.standing === 0 && person.membershipId === userId);
-        const userInTeamL = people.some(person => person.standing === 1 && person.membershipId === userId);
-
-        let winnerPoints, loserPoints, winnerName, loserName;
-        winnerPoints = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
-        loserPoints = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
-        winnerName = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
-        loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
-
-        return { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
-    }
-
-    const getMVP = (teams, mode, activity) => {
-        let mvp = null;
-        if (mode === "pvp") {
-            mvp = teams.teamW.people.sort((a, b) => b.score - a.score)[0];
-        } else if (mode === "rumble") {
-            mvp = teams.sort((a, b) => b.score - a.score)[0];
-        } else if (mode === "pve") {
-            teams.forEach(person => {
-                let timePlayedTotalPercentage = person.timePlayedSeconds / activity.values.activityDurationSeconds.basic.value;
-                if (timePlayedTotalPercentage > 0.85) { // 1. Solo se consideran para MVP los jugadores que han estado al menos el 85% del tiempo de la actividad
-                    if (mvp == null || mvp?.deaths > person.deaths) { // 2. De esos jugadores, el que menos muertes tenga es el MVP
-                        if (mvp == null || mvp?.kd < person.kd) { // 3. Si hay empate en muertes, desempata el KD
-                            mvp = person;
-                        }
-                    }
-                }
-            });
-        }
-        return mvp = {
-            nombre: mvp?.name,
-            membershipId: mvp?.membershipId,
-            membershipType: mvp?.membershipType,
-            class: mvp?.class,
-            classHash: mvp?.classHash,
-        };
-    }
     const filterActivitiesMode = async (activities, type) => {
         setIsLoading(true);
         setFullLoaded(false);
@@ -393,7 +273,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setCurrentPage(1);
         setFullLoaded(false);
         setIsLoading(false);
-        console.log('Loaded activity history from cache:', cachedData);
     }
 
     const fetchActivityDetails = async (activityHash, type) => {
@@ -552,7 +431,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                     {expandedIndex === (uniqueId) && (
                                         <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
                                             <div className="relative overflow-visible">
-                                                {activity.teams != null ? (
+                                                {activity.splitedInTeams == true ? (
                                                     <Crucible activity={activity} userId={userId} />
                                                 ) : (
                                                     activity.activityType == "PvE" ? (

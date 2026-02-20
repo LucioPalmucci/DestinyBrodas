@@ -69,7 +69,7 @@ export default function Rumble({ activity, userId }) {
                         </div>
                     )}
                     {actComplete.activityIcon && (
-                        <div className='w-28 h-28 mx-8 bg-black/25 rounded-lg'>
+                        <div className='w-30 h-30 mx-8 bg-black/25 rounded-lg p-1'>
                             <img
                                 src={`${API_CONFIG.BUNGIE_API}${actComplete.activityIcon}`}
                                 className=' pop-in'

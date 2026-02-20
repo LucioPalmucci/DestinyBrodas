@@ -28,7 +28,6 @@ export default function Pve({ activity, userId }) {
             const data = await fetchPlayersBasicData(activity, userId);
             const completeAct = { ...activity, ...data };
             setActComplete(completeAct);
-            console.log("ACTIVITY COMPLETE: ", completeAct);
         })();
     }, [activity, userId, fetchPlayersBasicData]);
 
@@ -53,7 +52,7 @@ export default function Pve({ activity, userId }) {
     }, []);
 
     return !actComplete ? (
-        <div className="h-[600px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
+        <div className="h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
     ) : (
         <div
             className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
@@ -146,15 +145,15 @@ export default function Pve({ activity, userId }) {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             return (
-                                <div key={idx} className={`flex items-end text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
-                                    <div className='py-1 text-xs min-w-max w-full dark whitespace-nowrap dark'>
+                                <div key={idx} className={`flex items-end text-start space-x-4 text-sm py-2 ${isMvp ? "font-bold " : ""} relative`}>
+                                    <div className=' text-xs min-w-max w-full dark whitespace-nowrap dark'>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handlePlayerClick(person, personIndex);
                                             }}
                                             data-effect={`${isMvp ? 'wave' : ''}`}
-                                            className={`bg-black/25 flex text-start gap-1.5 rounded-lg w-full h-[50px] p-2 transition-all duration-200 hover:scale-105 clan-member-shimmer clan-member-idle ${isMvp ? 'mvp-button' : ''}`}
+                                            className={`bg-black/25 flex text-start p-2 gap-1.5 rounded-lg w-full transition-all duration-200 hover:scale-105 clan-member-shimmer clan-member-idle ${isMvp ? 'mvp-button' : ''}`}
                                         >
                                             {isMvp && <span className="shimmer"></span>}
                                             <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />

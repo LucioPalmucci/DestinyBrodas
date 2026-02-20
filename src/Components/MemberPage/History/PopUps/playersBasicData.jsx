@@ -73,24 +73,24 @@ const usePlayersBasicData = () => {
     }, [getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser]);
 
     const buildTeamsData = (people, carnageReportResponse, userId) => {
-        const teamW = people.filter(person => person.standing === 0);
-        const teamL = people.filter(person => person.standing === 1);
-        const userInTeamW = people.some(person => person.standing === 0 && person.membershipId === userId);
-        const userInTeamL = people.some(person => person.standing === 1 && person.membershipId === userId);
+        const teamAstanding = carnageReportResponse.teams.find(team => team.teamId == 19).standing.basic.value;
+        const teamBstanding = carnageReportResponse.teams.find(team => team.teamId == 20)?.standing.basic.value;
+        const userStanding = people.find(person => person.membershipId === userId)?.standing;
 
-        let winnerPoints, loserPoints, winnerName, loserName;
-        winnerPoints = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
-        loserPoints = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].score.basic.value : carnageReportResponse.teams[1]?.score.basic.value;
-        winnerName = carnageReportResponse.teams[0].standing.basic.value == 0 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
-        loserName = carnageReportResponse.teams[0].standing.basic.value == 1 ? carnageReportResponse.teams[0].teamId : carnageReportResponse.teams[1]?.teamId;
-
-        return { teamW: { people: teamW, user: userInTeamW, points: winnerPoints, name: winnerName }, teamL: { people: teamL, user: userInTeamL, points: loserPoints, name: loserName } };
+        let alphaPoints, bravoPoints, peopleA, peopleB;
+        alphaPoints = carnageReportResponse.teams.find(team => team.teamId == 19).score.basic.value;
+        bravoPoints = carnageReportResponse.teams.find(team => team.teamId == 20)?.score.basic.value;
+        peopleA = people.filter(person => person.standing === teamAstanding);
+        peopleB = people.filter(person => person.standing === teamBstanding);
+        
+        return { teamA: { people: peopleA, score: alphaPoints, name: "Alpha", standing: teamAstanding }, teamB: { people: peopleB, score: bravoPoints, name: "Bravo", standing: teamBstanding } , userStanding: userStanding };
     }
 
     const getMVP = (teams, mode, activity) => {
         let mvp = null;
         if (mode === "pvp") {
-            mvp = teams.teamW.people.sort((a, b) => b.score - a.score)[0];
+            const winningTeam = teams.teamA.standing == 0 ? teams.teamA : teams.teamB;
+            mvp = winningTeam?.people.sort((a, b) => b.score - a.score)[0];
         } else if (mode === "rumble") {
             mvp = teams.sort((a, b) => b.score - a.score)[0];
         } else if (mode === "pve") {
@@ -213,13 +213,12 @@ const usePlayersBasicData = () => {
             activity.activityTypeHash == 904017341 || activity.activityTypeHash == 3340296467 || activity.activityTypeHash == 4088006058
             || activity.activityTypeHash == 2490937569 || activity.activityTypeHash == 248695599;
         if (isFormPortal) {
-            return people.some(person => person.score > 0);
+            return people.some(person => person.score);
         } else return false;
     }
 
     const getDifficultyName = async (activity, carnageReportResponse, manifest) => {
         let difficultyName = null;
-        console.log("Manifest obtenido: ", manifest);
         if (activity.difficultyCollection) {
             //const difficutyFamily = await getItemManifest(activity.difficultyCollection, "DestinyActivityDifficultyTierCollectionDefinition");
             //console.log("Dificultades obtenidas del endpoint: ", difficutyFamily);
@@ -234,7 +233,6 @@ const usePlayersBasicData = () => {
         if ((difficultyName == null || difficultyName == "") && activity.difficulty || difficultyName.includes(activity.activityMode)) {
             difficultyName = activity.difficulty;
         }
-        console.log("Dificultad obtenida: ", difficultyName);
         return difficultyName;
     }
 
@@ -260,9 +258,7 @@ const usePlayersBasicData = () => {
         const diffUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivitySelectableSkullCollectionDefinition}`;
         const diffRes = await axios.get(diffUrl);
         const diffData = diffRes.data;
-
         //const featsManifest = await getItemManifest(361405014, "DestinyActivitySelectableSkullCollectionDefinition");
-        console.log("Obtenienvidad:", diffData[361405014]);
 
         diffData[361405014].selectableActivitySkulls.forEach(skull => {
             if (carnageReportResponse.selectedSkullHashes.includes(skull.activitySkull.skullIdentifierHash)) {
