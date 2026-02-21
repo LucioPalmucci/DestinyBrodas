@@ -143,7 +143,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
-            if( activity.activityDetails.referenceId == 1871685525) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
+            let activityCompleted = false; //Hay veces que la api no registra bien las actividades completadas, por eso se usa la razón.
+            if (activity.values.completed) activityCompleted = activity.values.completed.basic.value == 1 || activity.values.completionReason.basic.value == 0 ? true : false;
+
+            if (activity.activityDetails.referenceId == 3817322389) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
@@ -155,8 +158,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                completed: activity.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
-                completedSymbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                completed: activityCompleted ? "Completado" : "Abandonado",
+                completedSymbol: activityCompleted ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,

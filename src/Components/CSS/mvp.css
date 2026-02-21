@@ -1,19 +1,17 @@
+.theme-shimmer-dorado {
+    /* brillo */
+    --shimmer-hue-1: 38deg;
+    --shimmer-sat-1: 60%;
+    --shimmer-lit-1: 79%;
 
-:root {
-    /* amarillo brillante */
-    --shimmer-hue-1: 58deg;
-    --shimmer-sat-1: 100%;
-    --shimmer-lit-1: 88%;
+    --shimmer-hue-2: 38deg;
+    --shimmer-sat-2: 58%;
+    --shimmer-lit-2: 45%;
 
-    /* amarillo principal */
-    --shimmer-hue-2: 56deg;
-    --shimmer-sat-2: 100%;
-    --shimmer-lit-2: 78%;
-
-    /* amarillo profundo */
-    --shimmer-hue-3: 54deg;
-    --shimmer-sat-3: 100%;
-    --shimmer-lit-3: 68%;
+    /* profundo */
+    --shimmer-hue-3: 38deg;
+    --shimmer-sat-3: 55%;
+    --shimmer-lit-3: 35%;
 
     --glow-hue: 58deg;
     --shadow-hue: 52deg;
@@ -24,7 +22,20 @@
             1.176 26.9%, 1.057 32.6%, 1.007 35.5%, 0.984, 0.968, 0.956, 0.949 42%,
             0.946 44.1%, 0.95 46.5%, 0.998 57.2%, 1.007, 1.011 63.3%, 1.012 68.3%,
             0.998 84%, 1);
+}
 
+.theme-shimmer-gris {
+    --shimmer-hue-1: 0deg;
+    --shimmer-sat-1: 0%;
+    --shimmer-lit-1: 60%;
+
+    --shimmer-hue-2: 0deg;
+    --shimmer-sat-2: 0%;
+    --shimmer-lit-2: 45%;
+
+    --shimmer-hue-3: 0deg;
+    --shimmer-sat-3: 0%;
+    --shimmer-lit-3: 35%;
 }
 
 @property --mask {
@@ -54,18 +65,18 @@
 
 .shimmer::before {
     box-shadow:
-        0 0 2px 0px hsl(var(--shimmer-hue-1) 30% 90%),
-        0 0 4px 1px hsl(var(--shimmer-hue-1) 40% 75%),
-        0 0 8px 2px hsl(var(--shimmer-hue-2) 60% 65%),
-        0 0 12px 3px hsl(var(--shimmer-hue-2) 60% 55%);
+        0 0 2px 0px hsl(var(--shimmer-hue-1) var(--shimmer-sat-1) var(--shimmer-lit-1)),
+        0 0 4px 1px hsl(var(--shimmer-hue-1) var(--shimmer-sat-1) var(--shimmer-lit-1)),
+        0 0 8px 2px hsl(var(--shimmer-hue-2) var(--shimmer-sat-2) var(--shimmer-lit-2)),
+        0 0 12px 3px hsl(var(--shimmer-hue-2) var(--shimmer-sat-2) var(--shimmer-lit-2));
     z-index: -1;
 }
 
 .shimmer::after {
     box-shadow:
-        inset 0 0 0 1px hsl(var(--shimmer-hue-2) 80% 85%),
-        inset 0 0 2px 0px hsl(var(--shimmer-hue-2) 90% 75%),
-        inset 0 0 6px 1px hsl(var(--shimmer-hue-2) 90% 65%);
+        inset 0 0 0 1px hsl(var(--shimmer-hue-2) var(--shimmer-sat-2) var(--shimmer-lit-2)),
+        inset 0 0 2px 0px hsl(var(--shimmer-hue-2) var(--shimmer-sat-2) var(--shimmer-lit-2)),
+        inset 0 0 6px 1px hsl(var(--shimmer-hue-2) var(--shimmer-sat-2) var(--shimmer-lit-2));
     z-index: 2;
 }
 
@@ -141,4 +152,117 @@
     position: relative;
     isolation: isolate;
     overflow: visible;
+}
+
+.mvp-tag {
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #2c1e0e;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    justify-items: center;
+    transition: transform 0.2s;
+}
+
+.mvp-tag::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 240, 0.7) 50%,
+            rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-20deg);
+    animation: shine 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shine {
+    0% {
+        left: -150%;
+    }
+
+    20% {
+        left: 100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+
+}
+
+.mvp-completed {
+    background: linear-gradient(135deg, #f3de9f, #dbb159, #b3842f);
+    padding-left: 3px;
+    padding: 2px;
+    font-size: 0.58rem;
+}
+.mvp-abandoned {
+    background: linear-gradient(135deg, #a7a6a4, #b8b7b7, #727271);
+    padding: 3px 5px;
+    font-size: 0.58rem;
+}
+
+.mvp-abandoned::after , .mvp-completed::after {
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0) 30%,
+            rgba(255, 250, 210, 0.9) 50%,
+            rgba(255, 255, 255, 0) 70%);
+    transform: skewX(0deg);
+    animation: shineSlow 4s infinite;
+}
+
+@keyframes shineSlow {
+    0% {
+        left: -150%;
+        top: 0;
+    }
+
+    30% {
+        left: 100%;
+        top: 0;
+    }
+
+    100% {
+        left: 100%;
+        top: 0;
+    }
+}
+
+@keyframes shineFast {
+    0% {
+        left: -150%;
+    }
+
+    15% {
+        left: 100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+@keyframes rotateGlow {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.mvp-tag span {
+    z-index: 2;
+}
+
+.mvp-tag span {
+    padding-left: 2px;
 }

@@ -328,7 +328,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                                         </div>
                                     }
                                 </div>
-                                <div className={`${activity.PVPoPVE === "PVP" ? "flex-row" : "flex-col"} w-full flex gap-3 h-full`}>
+                                <div className={`${activity.PVPoPVE === "PVP" ? "flex-row" : "flex-col"} w-full flex mb-1 h-full`}>
                                     <div className={`bg-black/25 rounded-lg ${activity.PVPoPVE === "PVP" ? "w-70" : "w-fit"} flex flex-col`}>
                                         <div className="p-2">
                                             {activity.PVPoPVE === "PVP" ? (

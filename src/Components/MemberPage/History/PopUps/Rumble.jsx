@@ -1,6 +1,7 @@
 import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from 'react';
+import abandonaLeft from '../../../../assets/abandonaLeft.png';
 import medal from "../../../../assets/medal-solid.svg";
 import skull from "../../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../../config';
@@ -104,31 +105,33 @@ export default function Rumble({ activity, userId }) {
 
                 <div className='w-fit'>
                     <div className='w-full'>
-                        <div className='flex items-center text-center pb-1 space-x-4'>
-                            <div className='w-full'></div>
-                            <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem]'>
-                                {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
-                                <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
-                                <div className='w-20 flex justify-center items-center' title='Muertes'>
-                                    <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
-                                </div>
-                                <div className='w-20'>KD</div>
-                                {actComplete.hasMedals && (
-                                    <div className='w-20 flex justify-center items-center' title='medallas'>
-                                        <img src={medal} style={{ filter: 'brightness(0) invert(1)' }} width={15} height={15} />
+                        {actComplete.people.some(person => person.completed == 1) && (
+                            <div className='flex items-center text-center pb-1 space-x-4'>
+                                <div className='w-full'></div>
+                                <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem]'>
+                                    {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                    <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
+                                    <div className='w-20 flex justify-center items-center' title='Muertes'>
+                                        <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
                                     </div>
-                                )}
+                                    <div className='w-20'>KD</div>
+                                    {actComplete.hasMedals && (
+                                        <div className='w-20 flex justify-center items-center' title='medallas'>
+                                            <img src={medal} style={{ filter: 'brightness(0) invert(1)' }} width={15} height={15} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className='w-full'>
-                        {actComplete.people.map((person, idx) => {
+                        {actComplete.people.filter(person => person.completed == 1 || person.membershipId == userId).map((person, idx) => {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             return (
                                 <div key={idx} className={`flex items-center text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
-                                    <div className='py-2 text-xs min-w-max w-full dark whitespace-nowrap dark'>
+                                    <div className={`py-2 text-xs min-w-max w-full dark whitespace-nowrap ${isMvp ? "theme-shimmer-dorado " : ""}`}>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -149,6 +152,11 @@ export default function Rumble({ activity, userId }) {
                                                     {person.class} - {person.power}
                                                 </div>
                                             </div>
+                                            {isMvp && (
+                                                <div className={`absolute top-4 -left-10 mvp-tag rounded-md ${actComplete.completed == "Completado" ? "mvp-completed" : "mvp-abandoned"}`} title={actComplete.mvp.message}>
+                                                    <span>MVP</span>
+                                                </div>
+                                            )}
                                         </button>
 
                                         {jugadorSelected === personIndex && (
@@ -167,6 +175,37 @@ export default function Rumble({ activity, userId }) {
                                 </div>
                             );
                         })}
+                    </div>
+                    <div className='w-full mx-6'>
+                        {actComplete.people.some(person => person.completed == 0 && person.membershipId != userId) && (
+                            <div className="flex items-center justify-start">
+                                <img src={abandonaLeft} width={25} height={25} title='Dejó la actividad' className='mr-2 opacity-70'></img>
+                                <div className='flex flex-wrap gap-4'>
+                                    {actComplete.people.filter(person => person.completed == 0 && person.membershipId != userId).map((person, idx) => {
+                                        return (
+                                            <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
+                                                <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
+                                                <div className='flex flex-col justify-start items-start ml-2'>
+                                                    <div className='flex'>
+                                                        {person.uniqueName.length > 12
+                                                            ? person.uniqueName.slice(0, 12) + "..."
+                                                            : person.uniqueName
+                                                        }
+                                                        <span style={{ color: '#479ce4' }}>
+                                                            {person.uniqueNameCode}
+                                                        </span>
+                                                    </div>
+                                                    <div className='flex items-center justify-start'>
+                                                        <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
+                                                        {person.class} - {person.power}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

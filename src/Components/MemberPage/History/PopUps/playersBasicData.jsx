@@ -10,8 +10,9 @@ const usePlayersBasicData = () => {
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
             const filteredEntries = carnageReportResponse.entries;
             if (filteredEntries.length > 30) filteredEntries.splice(30);
+            console.log("Carnage report response: ", carnageReportResponse);
 
-            const people = await Promise.all(filteredEntries.map(async (entry) => ({
+            const peopleRaw = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
                 deaths: entry.values.deaths.basic.value,
@@ -23,18 +24,19 @@ const usePlayersBasicData = () => {
                 classHash: entry.player.classHash,
                 classSymbol: getUserClassSymbol(entry.player.classHash),
                 power: entry.player.lightLevel,
+                characterId: entry.characterId,
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 membershipType: entry.player.destinyUserInfo.membershipType,
                 uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
-                guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
-                emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
-                clan: entry.player.destinyUserInfo.membershipType != 0 ? await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
+                //honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
+                //guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
+                //emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
+                //clan: entry.player.destinyUserInfo.membershipType != 0 ? await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,
-                weapons: await getWeaponDetails(entry.extended?.weapons) || null,
+                //weapons: await getWeaponDetails(entry.extended?.weapons) || null,
                 timePlayed: entry.values.timePlayedSeconds.basic.displayValue,
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.value,
                 percentagePlayed: Math.trunc((entry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100),
@@ -42,6 +44,9 @@ const usePlayersBasicData = () => {
                 assists: entry.values.assists.basic.value,
                 completions: activity.activityType == "PvE" ? await getCompletionsPlayer(activity.hash, entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
             })));
+
+            const people = getReformedPeople(peopleRaw, activity, carnageReportResponse, userId);
+
 
             let teams = [], mvp = null, firstPlace = null, secondPlace = null, difficultyColor = null, difficulty = null, feats = null;
             const hasPoints = getScore(activity, people);
@@ -75,15 +80,58 @@ const usePlayersBasicData = () => {
     const buildTeamsData = (people, carnageReportResponse, userId) => {
         const teamAstanding = carnageReportResponse.teams.find(team => team.teamId == 19).standing.basic.value;
         const teamBstanding = carnageReportResponse.teams.find(team => team.teamId == 20)?.standing.basic.value;
-        const userStanding = people.find(person => person.membershipId === userId)?.standing;
 
         let alphaPoints, bravoPoints, peopleA, peopleB;
         alphaPoints = carnageReportResponse.teams.find(team => team.teamId == 19).score.basic.value;
         bravoPoints = carnageReportResponse.teams.find(team => team.teamId == 20)?.score.basic.value;
         peopleA = people.filter(person => person.standing === teamAstanding);
         peopleB = people.filter(person => person.standing === teamBstanding);
-        
-        return { teamA: { people: peopleA, score: alphaPoints, name: "Alpha", standing: teamAstanding }, teamB: { people: peopleB, score: bravoPoints, name: "Bravo", standing: teamBstanding } , userStanding: userStanding };
+
+        return {
+            teamA: { people: peopleA, score: alphaPoints, name: "Alpha", standing: teamAstanding },
+            teamB: { people: peopleB, score: bravoPoints, name: "Bravo", standing: teamBstanding }
+        };
+    }
+
+    const getReformedPeople = (peopleRaw, activity) => {
+        const people = Object.values(
+            peopleRaw.reduce((acc, p) => {
+                const key = p.membershipId;
+
+                if (!acc[key]) {
+                    acc[key] = { ...p, characterIds: [p.characterId] };
+                } else {
+                    acc[key].kills += p.kills;
+                    acc[key].deaths += p.deaths;
+                    acc[key].medals += p.medals;
+                    acc[key].score += p.score;
+                    acc[key].assists += p.assists;
+                    acc[key].completed += p.completed;
+                    acc[key].timePlayedSeconds += p.timePlayedSeconds;
+                    acc[key].characterIds.push(p.characterId);
+                }
+                return acc;
+            }, {})
+        ).map((p) => {
+            const percentagePlayed = activity.durationInSeconds
+                ? Math.trunc((p.timePlayedSeconds / activity.durationInSeconds) * 100)
+                : 0;
+
+            const totalSeconds = Math.max(0, Math.floor(p.timePlayedSeconds || 0));
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+
+            const timePlayed = h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
+            return {
+                ...p,
+                percentagePlayed,
+                dashoffset: 2 * Math.PI * 6.5 * (1 - percentagePlayed / 100),
+                kd: p.deaths > 0 ? (p.kills / p.deaths).toFixed(1) : p.kills,
+                timePlayed,
+            };
+        });
+        return people;
     }
 
     const getMVP = (teams, mode, activity) => {
@@ -115,6 +163,7 @@ const usePlayersBasicData = () => {
             classHash: mvp?.classHash,
             uniqueName: mvp?.uniqueName,
             uniqueNameCode: mvp?.uniqueNameCode,
+            message: mode === "pve" ? "El que murió menos veces" : "El que tuvo mejor puntuación",
         };
     }
 
@@ -262,10 +311,12 @@ const usePlayersBasicData = () => {
 
         diffData[361405014].selectableActivitySkulls.forEach(skull => {
             if (carnageReportResponse.selectedSkullHashes.includes(skull.activitySkull.skullIdentifierHash)) {
-                feats.push({
-                    name: skull.activitySkull.displayProperties.name,
-                    icon: skull.activitySkull.displayProperties.icon,
-                });
+                if (skull.activitySkull.skullIdentifierHash != 790421403) { //Si no es hazaña: vacia
+                    feats.push({
+                        name: skull.activitySkull.displayProperties.name,
+                        icon: skull.activitySkull.displayProperties.icon,
+                    });
+                }
             }
         });
         return feats;

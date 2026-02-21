@@ -1,17 +1,18 @@
 import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from 'react';
+import abandonaLeft from "../../../../assets/abandonaLeft.png";
 import check from "../../../../assets/check.png";
 import checkpoint from "../../../../assets/checkpoint.png";
 import difficultyIcon from "../../../../assets/difficulty.png";
 import skull from "../../../../assets/skull-solid.svg";
 import suitcase from "../../../../assets/suitcase-medical-solid.svg";
+import swap from "../../../../assets/swap.png";
 import { API_CONFIG } from '../../../../config';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
-
 
 export default function Pve({ activity, userId }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
@@ -26,10 +27,39 @@ export default function Pve({ activity, userId }) {
     useEffect(() => {
         (async () => {
             const data = await fetchPlayersBasicData(activity, userId);
-            const completeAct = { ...activity, ...data };
+            const playersStatusData = getHowToDisplayPlayers(data, activity);
+            const completeAct = { ...activity, ...playersStatusData };
+            console.log("Actividad completa: ", completeAct);
             setActComplete(completeAct);
         })();
     }, [activity, userId, fetchPlayersBasicData]);
+
+    const getHowToDisplayPlayers = (playersData, activity) => {
+        let peopleStay = null, peopleLeave = null;
+        if (activity.modeNumbers.includes(4) || activity.modeNumbers.includes(82)) { //En Mazmorras o Raids
+            if (activity.completed == "Completado") { //Si se completó
+                peopleStay = playersData.people.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
+                peopleLeave = playersData.people.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
+            }
+            else if (activity.completed == "Abandonado" && playersData.people.length <= 6) { //Si no se completó y fueron 6 personas o menos
+                peopleStay = playersData.people; //se quedaron todos
+            }
+            else if (activity.completed == "Abandonado" && playersData.people.length > 6) { //Si no se completó y fueron más de 6 personas
+                peopleStay = playersData.people.filter(player => player.completed == 0 || player.membershipId == userId).sort((a, b) => b.timePlayedSeconds - a.timePlayedSeconds) //se quedó y ordenar por el que mas tiempo estuvo
+                playersData.mvp = peopleStay[0]; //El MVP ahora es el que más tiempo estuvo.
+                playersData.mvp.specialOne =  true;
+                playersData.mvp.message = "El que bancó más tiempo";
+            }
+        } else { //En el resto de PvE
+            if (activity.completed == "Abandonado") peopleStay = playersData.people; //Si no se completó, se muestra las stats de todos.
+            else if (activity.completed == "Completado") { //Si se completó, se muestra solo las stats de los que lo completaron.
+                peopleStay = playersData.people.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
+                peopleLeave = playersData.people.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
+            }
+        }
+        playersData.people = null;
+        return { peopleStay, peopleLeave, ...playersData };
+    }
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -61,9 +91,9 @@ export default function Pve({ activity, userId }) {
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex items-center w-full justify-center text-xl'>
                     {actComplete.mvp && (
-                        <div className='dark flex flex-col justify-end items-end space-y-1 mt-2 w-[28%]'>
+                        <div className={`dark ${actComplete.completed == "Completado" ? "theme-shimmer-dorado" : "theme-shimmer-gris"} flex flex-col justify-end items-end space-y-1 mt-2 w-[28%]`} title={actComplete.mvp.message}>
                             <button className='flex flex-col items-center mvp-button bg-black/25 rounded-lg p-2 px-3.5' data-effect="wave">
-                                <span className="shimmer"></span>
+                                <span className="shimmer "></span>
                                 <div className='flex'>
                                     <p>{actComplete.mvp.uniqueName}</p>
                                     <p style={{ color: '#479ce4' }}>{actComplete.mvp.uniqueNameCode}</p>
@@ -118,35 +148,39 @@ export default function Pve({ activity, userId }) {
 
                 <div className='w-fit'>
                     <div className='w-full'>
-                        <div className='flex items-center text-center space-x-4 justify-end'>
-                            <div className=''></div>
-                            <div className='w-[53px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Completadas'>
-                                <img src={check} width={15} height={15} />
-                            </div>
-                            <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[320px]'>
-                                {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
-                                <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
-                                <div className='w-20 flex justify-center items-center' title='Muertes'>
-                                    <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
+                        {actComplete.peopleStay && (
+                            <div className='flex items-center text-center space-x-4 justify-end'>
+                                <div className=''></div>
+                                <div className='w-[53px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Completadas'>
+                                    <img src={check} width={15} height={15} />
                                 </div>
-                                <div className='w-20 flex justify-center items-center' title='Asistencias'>
-                                    <img src={suitcase} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
+                                <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[320px]'>
+                                    {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                    <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
+                                    <div className='w-20 flex justify-center items-center' title='Muertes'>
+                                        <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
+                                    </div>
+                                    <div className='w-20 flex justify-center items-center' title='Asistencias'>
+                                        <img src={suitcase} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
+                                    </div>
+                                    <div className='w-20'>KD</div>
                                 </div>
-                                <div className='w-20'>KD</div>
+                                <div className='w-[95px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Tiempo de juego'>
+                                    <i className='icon-clock' />
+                                </div>
                             </div>
-                            <div className='w-[95px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Tiempo de juego'>
-                                <i className='icon-clock' />
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className='w-full'>
-                        {actComplete.people.map((person, idx) => {
+                        {actComplete.peopleStay.map((person, idx) => {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
+                            const MvPLeft = isMvp && actComplete.completed == "Abandonado" ? true : false;
+                            const MvPCompleted = isMvp && actComplete.completed == "Completado" ? true : false;
                             return (
                                 <div key={idx} className={`flex items-end text-start space-x-4 text-sm py-2 ${isMvp ? "font-bold " : ""} relative`}>
-                                    <div className=' text-xs min-w-max w-full dark whitespace-nowrap dark'>
+                                    <div className={`text-xs min-w-max w-full dark whitespace-nowrap ${MvPCompleted ? "theme-shimmer-dorado" : MvPLeft ? "theme-shimmer-gris" : ""}`}>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -158,15 +192,21 @@ export default function Pve({ activity, userId }) {
                                             {isMvp && <span className="shimmer"></span>}
                                             <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
                                             <div className='flex flex-col justify-center'>
-                                                <div className='flex'>
+                                                <div className='flex items-center'>
                                                     <p>{person.uniqueName}</p>
                                                     <p style={{ color: '#479ce4' }}>{person.uniqueNameCode}</p>
+                                                    {person.characterIds.length > 1 && <img src={swap} className="w-3 ml-1 mb-0.5" alt="Swap" title='Cambió de personaje' />}
                                                 </div>
                                                 <div className='flex items-center'>
                                                     <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
                                                     {person.class} - {person.power}
                                                 </div>
                                             </div>
+                                            {isMvp && (
+                                                <div className={`absolute top-4 -left-10 mvp-tag rounded-md ${MvPCompleted ? "mvp-completed" : MvPLeft ? "mvp-abandoned" : ""}`} title={actComplete.mvp.message}>
+                                                    <span>MVP</span>
+                                                </div>
+                                            )}
                                         </button>
 
                                         {jugadorSelected === personIndex && (
@@ -197,6 +237,39 @@ export default function Pve({ activity, userId }) {
                                 </div>
                             );
                         })}
+                    </div>
+                    <div className='w-fit max-w-140 h-full mx-6'>
+                        {(
+                            actComplete.peopleLeave != null && actComplete.peopleLeave.length > 0 && (
+                                <div className="flex items-center justify-start">
+                                    <img src={abandonaLeft} width={25} height={25} title='Dejó la actividad' className='mr-2 opacity-70'></img>
+                                    <div className='flex flex-wrap gap-4'>
+                                        {actComplete.peopleLeave.map((person, idx) => {
+                                            return (
+                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
+                                                    <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
+                                                    <div className='flex flex-col justify-start items-start mr-l'>
+                                                        <div className='flex'>
+                                                            {person.uniqueName.length > 12
+                                                                ? person.uniqueName.slice(0, 12) + "..."
+                                                                : person.uniqueName
+                                                            }
+                                                            <span style={{ color: '#479ce4' }}>
+                                                                {person.uniqueNameCode}
+                                                            </span>
+                                                        </div>
+                                                        <div className='flex items-center justify-start'>
+                                                            <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
+                                                            {person.class} - {person.power}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        )}
                     </div>
                 </div>
             </div>
