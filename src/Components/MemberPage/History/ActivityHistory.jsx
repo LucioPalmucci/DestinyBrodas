@@ -11,6 +11,7 @@ import '../../CSS/Tab.css';
 import Crucible from './PopUps/Crucible';
 import Pve from './PopUps/Pve';
 import Rumble from './PopUps/Rumble';
+import Social from './PopUps/Social';
 
 
 const ActivityHistory = ({ userId, membershipType, currentClass }) => {
@@ -39,6 +40,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const colorCazador = "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)";
     const colorHechicero = "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)";
     const [hoveredClass, setHoveredClass] = useState(null);
+    const [allCharacters, setAllCharacters] = useState({});
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -49,6 +51,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else setIsLoading(true);
             try {
                 const characters = await getCompChars(membershipType, userId);
+                setAllCharacters(characters);
                 const allActivities = [];
                 setCurrentActivityClass(currentClass);
                 setCurrentActivityType(null);
@@ -438,7 +441,11 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <Crucible activity={activity} userId={userId} />
                                                 ) : (
                                                     activity.activityType == "PvE" ? (
+                                                        activity.activityMode == "Social" ? (
+                                                            <Social activity={activity} userId={userId} membershipType={membershipType}/>
+                                                        ) : (
                                                         <Pve activity={activity} userId={userId} />
+                                                        )
                                                     ) : (
                                                         <Rumble activity={activity} userId={userId} />
                                                     )

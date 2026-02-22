@@ -3,14 +3,14 @@ import { useCallback } from 'react';
 import { API_CONFIG } from '../../../../config';
 import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 const usePlayersBasicData = () => {
-    const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats } = useBungieAPI();
+    const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats, getCompChars } = useBungieAPI();
     const hazanias = [991354116, 2392637702, 251257575, 525411852, 2673088233];
-    const fetchCarnageReport = useCallback(async (activity, userId) => {
+    const fetchCarnageReport = useCallback(async (activity, userId, membershipType) => {
         try {
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
             const filteredEntries = carnageReportResponse.entries;
-            if (filteredEntries.length > 30) filteredEntries.splice(30);
-            console.log("Carnage report response: ", carnageReportResponse);
+
+            if (activity.activityMode == "Social") return await getCaseSocial(activity, carnageReportResponse, userId, membershipType);
 
             const peopleRaw = await Promise.all(filteredEntries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -44,7 +44,6 @@ const usePlayersBasicData = () => {
                 assists: entry.values.assists.basic.value,
                 completions: activity.activityType == "PvE" ? await getCompletionsPlayer(activity.hash, entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
             })));
-
             const people = getReformedPeople(peopleRaw, activity, carnageReportResponse, userId);
 
 
@@ -320,6 +319,48 @@ const usePlayersBasicData = () => {
             }
         });
         return feats;
+    }
+
+    const getCaseSocial = async (activity, carnageReportResponse, userId, membershipType) => {
+
+        let classe, classSymbol, player = null;
+        const playerEntry = carnageReportResponse.entries.find(entry => entry.player.destinyUserInfo.membershipId == userId);
+
+        const profile = playerEntry ? await getCompsProfile(membershipType, userId) : null;
+        const chars = profile ? await getCompChars(membershipType, userId) : null;
+        let emblem = playerEntry ? await getItemManifest(playerEntry.player.emblemHash, "DestinyInventoryItemDefinition") : null;
+
+        const power = playerEntry ? playerEntry.player.lightLevel : null;
+        emblem = emblem ? emblem.displayProperties.icon : null;
+        const uniqueName = profile ? profile.profile.data.userInfo.bungieGlobalDisplayName : null;
+        const uniqueNameCode = profile ? "#" + profile.profile.data.userInfo.bungieGlobalDisplayNameCode : null;
+
+        for (const char of Object.values(chars)) {
+            if (char.characterId == playerEntry.characterId) {
+                const charData = await getItemManifest(char.classHash, "DestinyClassDefinition");
+                classe = charData.genderedClassNames[char.genderType == 0 ? "Male" : "Female"];
+                classSymbol = getUserClassSymbol(char.classHash);
+                break;
+            }
+        }
+
+        return player = {
+            emblem,
+            uniqueName,
+            uniqueNameCode,
+            classe,
+            classSymbol,
+            power,
+            kills: playerEntry.values.kills.basic.value,
+            deaths: playerEntry.values.deaths.basic.value,
+            assists: playerEntry.values.assists.basic.value,
+            kd: playerEntry.values.killsDeathsRatio.basic.value.toFixed(1),
+            percentagePlayed: Math.trunc((playerEntry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100),
+            dashoffset: 2 * Math.PI * 6.5 * (1 - (Math.trunc((playerEntry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100) / 100)),
+            timePlayed: playerEntry.values.timePlayedSeconds.basic.displayValue,
+            values: playerEntry.extended?.values,
+        };
+
     }
     return fetchCarnageReport;
 
