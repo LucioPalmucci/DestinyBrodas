@@ -35,7 +35,8 @@ const CustomNextArrow = ({ onClick }) => (
     </button>
 );
 
-const PopUp = ({ jugador, setIsOpen }) => {
+const PopUp = ({ jugador  }) => {
+    console.log("Renderizando PopUp para jugador: ", jugador);
     const [activeTab, setActiveTab] = useState("details");
     const settings = {
         dots: false,
@@ -50,7 +51,6 @@ const PopUp = ({ jugador, setIsOpen }) => {
         nextArrow: <CustomNextArrow />,
     };
 
-    if (!jugador || !jugador.name) return null;
 
     return (
         <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start font-normal flex mt-10 font-Inter items-center flex-col space-y-4 relative">
@@ -64,7 +64,7 @@ const PopUp = ({ jugador, setIsOpen }) => {
             >
                 <div className='ml-1 items-center mb-0'>
                     <h2 className='text-xl font-large tracking-wide leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
-                        {jugador.name.length > 12 ? `${jugador.name.substring(0, 12)}...` : jugador.name}
+                        {jugador.uniqueName.length > 12 ? `${jugador.uniqueName.substring(0, 12)}...` : jugador.uniqueName}
                     </h2>
                     <div className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
                         <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardinRank?.num || 1}.fw.png`} className='w-4 h-4 mr-1' />

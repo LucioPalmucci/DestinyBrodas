@@ -5,6 +5,7 @@ import abandonaLeft from '../../../../assets/abandonaLeft.png';
 import medal from "../../../../assets/medal-solid.svg";
 import skull from "../../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../../config';
+import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
@@ -18,6 +19,8 @@ export default function Rumble({ activity, userId }) {
     const fetchPlayersBasicData = usePlayersBasicData();
     const scoreFirstPlace = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
     const scoreSecondPlace = useCountUp(actComplete?.secondPlace?.score ?? 0, 1000);
+    const r = 6.5;
+    const circunference = 2 * Math.PI * r;
 
     useEffect(() => {
         (async () => {
@@ -63,7 +66,7 @@ export default function Rumble({ activity, userId }) {
                                 <span className="shimmer"></span>
                                 <p className='text-5xl font-semibold fade-in'>{scoreFirstPlace}</p>
                             </button>
-                            <div className='flex bg-black/25 rounded-lg p-1 px-1.5 text-[0.7rem]'>
+                            <div className='flex bg-black/25 rounded-lg p-1 px-1.5 text-[0.7rem] fade-in'>
                                 <p>{actComplete.firstPlace.uniqueName}</p>
                                 <p style={{ color: '#479ce4' }}>{actComplete.firstPlace.uniqueNameCode}</p>
                             </div>
@@ -82,7 +85,7 @@ export default function Rumble({ activity, userId }) {
                             <div className='bg-black/25 rounded-lg p-2 w-30'>
                                 <p className='text-5xl font-semibold fade-in'>{scoreSecondPlace}</p>
                             </div>
-                            <div className='flex bg-black/25 rounded-lg p-1 px-1.5 text-[0.7rem]'>
+                            <div className='flex bg-black/25 rounded-lg p-1 px-1.5 text-[0.7rem] fade-in'>
                                 <p>{actComplete.secondPlace.uniqueName}</p>
                                 <p style={{ color: '#479ce4' }}>{actComplete.secondPlace.uniqueNameCode}</p>
                             </div>
@@ -94,9 +97,22 @@ export default function Rumble({ activity, userId }) {
                     <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg'>
                         <p>{actComplete.activityTypePVP}: {actComplete.activityName}</p>
                     </div>
-                    <div className='flex items-center bg-black/25 p-2 rounded-lg space-x-3' title='fecha y hora de inicio'>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                    <div className='flex items-center bg-black/25 p-2 rounded-lg space-x-3.5' title='Fecha y hora de la actividad'>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.hour}</p>
+                        </div>
+                    </div>
+                    <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg' title='Duración de la actividad'>
+                        <div className='flex items-center space-x-1'>
+                            <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
+                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
+                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
+                            </svg>
+                            <p className='fade-in'>{actComplete.duration}</p>
+                        </div>
                     </div>
                     <div className=' flex items-center  bg-black/25 p-2 rounded-lg'>
                         <img title={actComplete.completed} src={actComplete.completedSymbol} className='w-4.5' style={{ filter: 'brightness(0) invert(1)' }} />

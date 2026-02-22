@@ -9,6 +9,7 @@ import skull from "../../../../assets/skull-solid.svg";
 import suitcase from "../../../../assets/suitcase-medical-solid.svg";
 import swap from "../../../../assets/swap.png";
 import { API_CONFIG } from '../../../../config';
+import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
@@ -29,7 +30,6 @@ export default function Pve({ activity, userId }) {
             const data = await fetchPlayersBasicData(activity, userId);
             const playersStatusData = getHowToDisplayPlayers(data, activity);
             const completeAct = { ...activity, ...playersStatusData };
-            console.log("Actividad completa: ", completeAct);
             setActComplete(completeAct);
         })();
     }, [activity, userId, fetchPlayersBasicData]);
@@ -94,7 +94,7 @@ export default function Pve({ activity, userId }) {
                         <div className={`dark ${actComplete.completed == "Completado" ? "theme-shimmer-dorado" : "theme-shimmer-gris"} flex flex-col justify-end items-end space-y-1 mt-2 w-[28%]`} title={actComplete.mvp.message}>
                             <button className='flex flex-col items-center mvp-button bg-black/25 rounded-lg p-2 px-3.5' data-effect="wave">
                                 <span className="shimmer "></span>
-                                <div className='flex'>
+                                <div className='flex pop-in'>
                                     <p>{actComplete.mvp.uniqueName}</p>
                                     <p style={{ color: '#479ce4' }}>{actComplete.mvp.uniqueNameCode}</p>
                                 </div>
@@ -109,10 +109,15 @@ export default function Pve({ activity, userId }) {
                             />
                         </div>
                     )}
-                    <div className='w-[28%] text-base'>
-                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='fecha y hora de inicio'>
-                            <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
-                            <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                    <div className='w-[28%]'>
+                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='Duración de la actividad'>
+                            <div className='flex items-center space-x-2'>
+                                <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
+                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
+                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
+                                </svg>
+                                <p>{actComplete.duration}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,6 +125,14 @@ export default function Pve({ activity, userId }) {
                 <div className='flex justify-center items-center w-fit space-x-7 text-sm'>
                     <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg'>
                         <p>{actComplete.activityName}</p>
+                    </div>
+                    <div className='flex items-center bg-black/25 p-2 rounded-lg' title='Fecha y hora de la actividad'>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p>
+                        </div>
+                        <div className='flex items-center ml-4'>
+                            <FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.hour}</p>
+                        </div>
                     </div>
                     <div className='flex items-center bg-black/25 p-1 rounded-lg'>
                         {actComplete.feats && actComplete.feats.length > 0 ? (
@@ -229,7 +242,7 @@ export default function Pve({ activity, userId }) {
                                         <div className='w-24 flex items-center justify-center space-x-1' title={"Presente en el " + person.percentagePlayed + "% de la actividad"}>
                                             <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
                                                 <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
-                                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={person.dashoffset} />
+                                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': person.dashoffset }} />
                                             </svg>
                                             <p>{person.timePlayed}</p>
                                         </div>
@@ -248,7 +261,7 @@ export default function Pve({ activity, userId }) {
                                             return (
                                                 <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
                                                     <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
-                                                    <div className='flex flex-col justify-start items-start mr-l'>
+                                                    <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>
                                                             {person.uniqueName.length > 12
                                                                 ? person.uniqueName.slice(0, 12) + "..."

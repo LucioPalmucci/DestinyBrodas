@@ -1,0 +1,11 @@
+.circle-progress {
+  stroke-dasharray: var(--circ);
+  stroke-dashoffset: var(--from);
+  animation: circle-fill 1000ms ease-out forwards;
+}
+
+@keyframes circle-fill {
+  to {
+    stroke-dashoffset: var(--to);
+  }
+}

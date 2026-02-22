@@ -6,6 +6,7 @@ import skull from "../../../../assets/skull-solid.svg";
 import suitcase from "../../../../assets/suitcase-medical-solid.svg";
 import { API_CONFIG } from '../../../../config';
 import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
+import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
@@ -59,10 +60,7 @@ export default function Social({ activity, userId, membershipType }) {
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex items-center w-full justify-center text-xl'>
-                    <div className='w-[28%] justify-end flex'>
-                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='fecha y hora de inicio'>
-                            <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
-                        </div>
+                    <div className='w-[32%] justify-end flex'>
                     </div>
                     {actComplete.activityIcon && (
                         <div className='w-30 h-30 mx-8 bg-black/25 rounded-lg p-1'>
@@ -72,9 +70,15 @@ export default function Social({ activity, userId, membershipType }) {
                             />
                         </div>
                     )}
-                    <div className='w-[28%]'>
-                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='fecha y hora de inicio'>
-                            <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                    <div className='w-[32%]'>
+                        <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='Duración de la actividad'>
+                            <div className='flex items-center space-x-2'>
+                                <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
+                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
+                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
+                                </svg>
+                                <p className='fade-in'>{actComplete.duration}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -82,6 +86,15 @@ export default function Social({ activity, userId, membershipType }) {
                 <div className='flex justify-center items-center w-fit space-x-7 text-sm'>
                     <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg'>
                         <p>{actComplete.activityMode}: {actComplete.activityName}</p>
+                    </div>
+
+                    <div className='flex items-center bg-black/25 p-2 rounded-lg' title='Fecha y hora de la actividad'>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p>
+                        </div>
+                        <div className='flex items-center ml-4'>
+                            <FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.hour}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -147,7 +160,7 @@ export default function Social({ activity, userId, membershipType }) {
                                     <div className='w-24 flex items-center justify-center space-x-1' title={"Presente en el " + actComplete.player.percentagePlayed + "% de la actividad"}>
                                         <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
                                             <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
-                                            <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={actComplete.player.dashoffset} />
+                                            <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': actComplete.player.dashoffset }} />
                                         </svg>
                                         <p>{actComplete.player.timePlayed}</p>
                                     </div>

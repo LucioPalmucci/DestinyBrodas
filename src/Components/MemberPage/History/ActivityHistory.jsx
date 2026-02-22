@@ -104,6 +104,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 year: 'numeric',
                 hour12: false
             }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
+            const hour = new Date(activity.period).toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
             const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
             const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
             let datosDelModo, datosDelTipo;
@@ -148,8 +154,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             }
             let activityCompleted = false; //Hay veces que la api no registra bien las actividades completadas, por eso se usa la razón.
             if (activity.values.completed) activityCompleted = activity.values.completed.basic.value == 1 || activity.values.completionReason.basic.value == 0 ? true : false;
-
-            if (activity.activityDetails.referenceId == 3817322389) console.log("Actividad encontrada: ", activity, activityInfo, datosDelModo, datosDelTipo);
+             console.log("Actividad encontrada: ", activity.values);
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
@@ -168,7 +173,9 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 activityTypeHash: activityInfo.activityTypeHash || null,
                 date,
                 duration,
+                hour,
                 durationInSeconds: activity.values.activityDurationSeconds.basic.value,
+                durationFormated: activity.values.activityDurationSeconds.basic.displayValue,
                 hash: activity.activityDetails.referenceId,
                 difficultyCollection: activityInfo.difficultyTierCollectionHash,
                 splitedInTeams: activityInfo.matchmaking?.maxParty > 1 && activityType != "PvE" ? true : false,
@@ -182,7 +189,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
         const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
         const s = String(seconds % 60).padStart(2, '0');
-        return `${h}:${m}:${s}`;
+        if ( h === "00") return `${m}m ${s}s`;
+        return `${h}h ${m}m ${s}s`;
     }
 
     const filterActivitiesMode = async (activities, type) => {
@@ -400,7 +408,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                 <div className={`transition-colors cursor-pointer hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
                                     <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
                                         <div key={uniqueId} className={`px-6 text-[1.1rem] text-start justify-between flex items-center`}>
-                                            <div className='flex items-center justify-between w-[60%] text-start'>
+                                            <div className='flex items-center justify-between w-[55%] text-start'>
                                                 <div className='flex items-center text-start'>
                                                     {activity.activityIcon && <img src={`${API_CONFIG.BUNGIE_API}${activity.activityIcon}`} className='w-13 h-13' style={{ filter: "brightness(0) contrast(100%)" }} />}
                                                     <div className='w-1.5'></div>
@@ -410,25 +418,25 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className='flex items-center justify-between w-[40%] text-start'>
-                                                <div>
+                                            <div className='flex items-center justify-end w-[45%] text-start space-x-6'>
+                                                <div className='w-35 justify-end flex'>
                                                     <p className='w-fit'>{activity.duration}</p>
                                                 </div>
-                                                <div className='flex items-center w-fit'>
+                                                <div className='flex items-center w-20'>
                                                     <i className='icon-kills3' style={{ filter: "invert(100%)" }}></i>
                                                     <div className='w-1'></div>
                                                     <p>{activity.kills}</p>
                                                 </div>
-                                                <div className='flex items-center w-fit'>
+                                                <div className='flex items-center w-15'>
                                                     <img src={skull} className="mr-2" width={27} height={27} />
                                                     <p>{activity.deaths}</p>
                                                 </div>
-                                                <div className='flex items-center w-fit'>
+                                                <div className='flex items-center w-20 justify-end'>
                                                     <p className='py-2'>KD</p>
                                                     <div className='w-1'></div>
                                                     <p>{activity.kd}</p>
                                                 </div>
-                                                <div className='w-10 flex items-center mr-1'>
+                                                <div className='w-15 flex items-center mr-1'>
                                                     <img src={activity.completedSymbol} className='w-10 h-10' />
                                                 </div>
                                             </div>

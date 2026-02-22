@@ -6,6 +6,7 @@ import abandonaRight from '../../../../assets/abandonaRight.png';
 import medal from "../../../../assets/medal-solid.svg";
 import skull from "../../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../../config';
+import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
@@ -18,6 +19,8 @@ export default function Crucible({ activity, userId }) {
     const [actComplete, setActComplete] = useState(null);
     const scoreTeamA = useCountUp(actComplete?.teams?.teamA?.score ?? 0, 1000);
     const scoreTeamB = useCountUp(actComplete?.teams?.teamB?.score ?? 0, 1000);
+    const r = 6.5;
+    const circunference = 2 * Math.PI * r;
 
     useEffect(() => {
         (async () => {
@@ -105,9 +108,22 @@ export default function Crucible({ activity, userId }) {
                     <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg'>
                         <p>{actComplete.activityTypePVP}: {actComplete.activityName}</p>
                     </div>
-                    <div className='flex items-center bg-black/25 p-2 rounded-lg space-x-3' title='fecha y hora de inicio'>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p> </div>
-                        <div className='flex items-center'><FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.duration}</p></div>
+                    <div className='flex items-center bg-black/25 p-2 rounded-lg space-x-3.5' title='Fecha y hora de la actividad'>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faCalendar} className='mr-1' /><p>{actComplete.date}</p>
+                        </div>
+                        <div className='flex items-center'>
+                            <FontAwesomeIcon icon={faClock} className='mr-1' /><p>{actComplete.hour}</p>
+                        </div>
+                    </div>
+                    <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg' title='Duración de la actividad'>
+                        <div className='flex items-center space-x-1'>
+                            <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
+                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
+                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
+                            </svg>
+                            <p className='fade-in'>{actComplete.duration}</p>
+                        </div>
                     </div>
                     <div className=' flex items-center  bg-black/25 p-2 rounded-lg'>
                         <img title={actComplete.completed} src={actComplete.completedSymbol} className='w-4.5' style={{ filter: 'brightness(0) invert(1)' }} />
@@ -118,7 +134,7 @@ export default function Crucible({ activity, userId }) {
                     <div className='w-full flex justify-center space-x-8 h-10'>
                         <div className='flex items-center text-center pb-1 w-80'>
                             {actComplete.teams.teamA.people.some(person => person.completed == 1) &&
-                                <div className='flex bg-black/25 p-2 w-full justify-between rounded-lg items-center text-[0.72rem]'>
+                                <div className='flex bg-black/25 p-2 text-center rounded-lg w-80 justify-evenly items-center text-[0.72rem]'>
                                     {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
                                     <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                     <div className='flex justify-center items-center w-20' title='Muertes'>
@@ -126,7 +142,7 @@ export default function Crucible({ activity, userId }) {
                                     </div>
                                     <div className='w-20'>KD</div>
                                     {actComplete.hasMedals && (
-                                        <div className=' flex justify-center items-center w-20' title='medallas'>
+                                        <div className=' flex justify-center items-center w-20' title='Medallas'>
                                             <img src={medal} style={{ filter: 'brightness(0) invert(1)' }} width={15} height={15} />
                                         </div>
                                     )}
@@ -134,7 +150,7 @@ export default function Crucible({ activity, userId }) {
                         </div>
                         <div className='flex items-center text-center pb-1 w-80'>
                             {actComplete.teams.teamB.people.some(person => person.completed == 1) &&
-                                <div className='flex flex-row-reverse bg-black/25 p-2 w-full justify-between rounded-lg items-center text-[0.72rem] '>
+                                <div className='flex flex-row-reverse bg-black/25 p-2 text-center rounded-lg w-80 justify-evenly items-center text-[0.72rem]'>
                                     {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
                                     <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                     <div className='flex justify-center items-center w-20' title='Muertes'>
@@ -142,7 +158,7 @@ export default function Crucible({ activity, userId }) {
                                     </div>
                                     <div className='w-20'>KD</div>
                                     {actComplete.hasMedals && (
-                                        <div className='flex justify-center items-center w-20' title='medallas'>
+                                        <div className='flex justify-center items-center w-20' title='Medallas'>
                                             <img src={medal} style={{ filter: 'brightness(0) invert(1)' }} width={15} height={15} />
                                         </div>
                                     )}

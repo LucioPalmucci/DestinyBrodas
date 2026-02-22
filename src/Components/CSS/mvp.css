@@ -87,12 +87,10 @@
 }
 
 .mvp-button:hover:not(:active):not([disabled]) {
-    scale: 1.1;
     transition-duration: calc(var(--spring-duration)*0.5);
 }
 
 .mvp-button:active:not([disabled]) {
-    scale: 1.05;
     transition-duration: calc(var(--spring-duration)*0.5);
 }
 

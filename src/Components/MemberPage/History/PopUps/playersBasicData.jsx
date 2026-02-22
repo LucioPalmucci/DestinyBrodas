@@ -234,14 +234,6 @@ const usePlayersBasicData = () => {
             for (const charId of characterIds) {
                 const charCompletions = await getAggregateActivityStats(membershipType, membershipId, charId);
                 if (charCompletions) {
-                    /*for (const actiii of Object.values(charCompletions.activities)) {
-                        if(actiii.activityHash == activityHash) {
-                            const detalles = await getItemManifest(activityHash, "DestinyActivityDefinition");
-                            if(detalles && detalles.displayProperties && detalles.displayProperties.name) {
-                                console.log(`Detalles de la actividad ${detalles.displayProperties.name}`, actiii);
-                            }
-                        }
-                    }*/
                     let act = charCompletions.activities.find(activity => activity.activityHash == activityHash);
                     if (act) {
                         totalCompletitions += act.values.activityCompletions.basic.value;
@@ -292,11 +284,11 @@ const usePlayersBasicData = () => {
         if (["normal", "estándar", "estandar", "avanzado"].some(k => dn.includes(k))) {
             return "brightness(0) saturate(100%) invert(49%) sepia(99%) saturate(135%) hue-rotate(83deg) brightness(91%) contrast(91%)";
         }
-        if (["experto", "maestro"].some(k => dn.includes(k))) {
-            return "brightness(0) saturate(100%) invert(77%) sepia(79%) saturate(1179%) hue-rotate(324deg) brightness(90%) contrast(83%)";
-        }
         if (["gran maestro", "granmaestro", "definitivo", "ultimátum", "ultimatum"].some(k => dn.includes(k))) {
             return "brightness(0) saturate(100%) invert(22%) sepia(41%) saturate(2631%) hue-rotate(327deg) brightness(88%) contrast(94%)";
+        }
+        if (["experto", "maestro"].some(k => dn.includes(k))) {
+            return "brightness(0) saturate(100%) invert(77%) sepia(79%) saturate(1179%) hue-rotate(324deg) brightness(90%) contrast(83%)";
         }
         return "";
     }
