@@ -18,8 +18,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [activityDetails, setActivityDetails] = useState([]);
     const [expandedIndex, setExpandedIndex] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
-    const [currentActivityType, setCurrentActivityType] = useState([]);
-    const [currentActivityClass, setCurrentActivityClass] = useState([]);
+    const [currentActivityType, setCurrentActivityType] = useState(0);
+    const [currentActivityClass, setCurrentActivityClass] = useState({hashClass: null, classId: null});
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
@@ -32,7 +32,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const popupRef = useRef(null);
     const CACHE_TTL = 1//00 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
-    const { getCarnageReport, getItemManifest, getRecentActivities, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
+    const { getCarnageReport, getItemManifest, getRecentActivities, getRecentActivitiesPage, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
     const logoHechicero = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`;
     const logoTitan = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`;
     const logoCazador = `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`;
@@ -51,26 +51,22 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else setIsLoading(true);
             try {
                 const characters = await getCompChars(membershipType, userId);
-                setAllCharacters(characters);
-                const allActivities = [];
-                setCurrentActivityClass(currentClass);
-                setCurrentActivityType(null);
-
+                const charactersByHash = Object.fromEntries(Object.values(characters).map(char => [char.classHash, char]));
+                setAllCharacters(charactersByHash);
                 const characterList = Object.values(characters);
-                for (const char of characterList) {
-                    try {
-                        const responseActs = await getRecentActivities(membershipType, userId, char.characterId, 50);
-                        const tagged = (responseActs || []).map(act => ({ ...act, claseHash: char.classHash }));
-                        allActivities.push(...tagged);
-                    } catch (error) {
-                        if (error.status == 503 || error.status == 500) throw error;
-                    }
-                }
+                const selectedCharacter = characterList.find(char => char.classHash == currentClass) ?? characterList[0];
+                const firstChar = selectedCharacter?.characterId;
 
-                const recentActivities = allActivities.sort((a, b) => new Date(b.period) - new Date(a.period));
-                setRawActivities(recentActivities);
-                setFilteredActivities(recentActivities);
-                const details = await getSomeActivities(recentActivities, currentClass, 1, null);
+                setCurrentActivityClass({
+                    hashClass: currentClass ?? null,
+                    classId: firstChar ?? null,
+                });
+
+                let activities = await getRecentActivitiesPage(membershipType, userId, firstChar, 10, 0, 0); //memebershipType, userId, characterId, count, page, mode
+                
+                setRawActivities(activities);
+                setFilteredActivities(activities);
+                const details = await getSomeActivities(activities, 0);
                 setActivityDetails(details);
                 setCurrentPage(1);
                 setFullLoaded(true);
@@ -91,10 +87,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         }
     }, [userId, membershipType]);
 
-    const getSomeActivities = async (activities, classHash, page, type) => {
-        activities = activities.filter(act => act.claseHash === classHash);
-        activities = activities.filter(activity => type == null || activity.activityDetails.modes.includes(type));
-        activities = activities.slice((page - 1) * 10, page * 10);
+    const getSomeActivities = async (activities, type) => {
+
+        if(type != 0 )activities = activities.filter(activity => activity.activityDetails.modes.includes(type));
+        console.log(`Originallllllllllll: `, activities);
 
         const details = await Promise.all(activities.map(async (activity) => {
             const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
@@ -152,10 +148,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
+
+
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
-                activityTypePVP: activityInfo?.originalDisplayProperties?.name,
+                activityTypePVP: activityInfo?.originalDisplayProperties?.name?.replaceAll(":", " -"),
                 activityIcon: actIcon,
                 pgcrImage: activityMain?.pgcrImage || null,
                 difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name || "Estándar" : activityInfo?.selectionScreenDisplayProperties?.name || "Estándar",
@@ -164,7 +162,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
                 completed: activity.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
-                completedSymbol: activity.values.completed.basic.value == 1  ? completed : NotCompleted,
+                completedSymbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,
@@ -194,27 +192,22 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setIsLoading(true);
         setFullLoaded(false);
         setCurrentActivityType(type);
-        const filtered = (rawActivities || []).filter(activity =>
-            (type == null || activity.activityType == type) && activity?.clase?.hash == currentActivityClass
-        );
-        setFilteredActivities(filtered);
         setCurrentPage(1);
-        const details = await getSomeActivities(rawActivities, currentActivityClass, 1, type);
+        //memebershipType, userId, characterId, count, page, mode
+        const acts = await getRecentActivitiesPage(membershipType, userId, currentActivityClass?.classId, 10, 0, type);
+        const details = await getSomeActivities(acts, type);
         setActivityDetails(details);
         setIsLoading(false);
         setFullLoaded(true);
     };
 
-    const filterActivitiesClass = async (activities, classHash) => {
+    const filterActivitiesClass = async (activities, classData) => {
         setIsLoading(true);
         setFullLoaded(false);
-        setCurrentActivityClass(classHash);
-        const filtered = (rawActivities || []).filter(activity =>
-            activity?.clase?.hash == classHash && (currentActivityType == null || activity.activityType == currentActivityType)
-        );
-        setFilteredActivities(filtered);
+        setCurrentActivityClass(classData);
         setCurrentPage(1);
-        const details = await getSomeActivities(rawActivities, classHash, 1, currentActivityType);
+        const acts = await getRecentActivitiesPage(membershipType, userId, classData.classId, 10, 0, currentActivityType);
+        const details = await getSomeActivities(acts, currentActivityType);
         setActivityDetails(details);
         setIsLoading(false);
         setFullLoaded(true);
@@ -223,57 +216,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const toggleExpand = (index) => {
         setExpandedIndex(expandedIndex === index ? null : index);
     };
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchClan = async (id, type) => {
-        try {
-            const userClan = await getClanUser(type, id);
-            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
-                return userClan.results[0].group.name;
-            } else {
-                return "No pertenece a ningún clan";
-            }
-        } catch (error) {
-            console.error('Error al cargar el clan del usuario:', error);
-            return "No pertenece a ningún clan";
-        }
-    }
-
-    const getWeaponDetails = async (weapons) => {
-        if (!weapons || !Array.isArray(weapons)) {
-            return [];
-        }
-        const weaponD = await Promise.all(weapons.map(async (weapon) => {
-            const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
-            return {
-                name: weaponInfo.displayProperties.name,
-                icon: weaponInfo.displayProperties.icon,
-                archetype: weaponInfo.itemTypeDisplayName,
-                kills: weapon.values.uniqueWeaponKills.basic.value,
-                precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
-                precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
-            };
-        }));
-        return weaponD;
-    }
 
     const setUpByCache = (cached) => {
         const cachedData = Array.isArray(cached) ? cached : (cached?.details || []);
@@ -308,7 +250,9 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setCurrentPage(pageNumber);
         setIsLoading(true);
         setFullLoaded(false);
-        const details = await getSomeActivities(rawActivities, currentActivityClass, pageNumber, currentActivityType);
+        const acts = await getRecentActivitiesPage(membershipType, userId, currentActivityClass?.classId, activitiesPerPage, pageNumber - 1, currentActivityType);
+        console.log(`Fetched activities for page ${pageNumber}:`, acts);
+        const details = await getSomeActivities(acts, currentActivityType);
         setActivityDetails(details);
         setFullLoaded(true);
         setIsLoading(false);
@@ -347,7 +291,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
             <div className='mb-4 flex'>
                 <div className="flex mr-6">
-                    <button onClick={() => filterActivitiesMode(activityDetails, null)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === null ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
+                    <button onClick={() => filterActivitiesMode(activityDetails, null)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 0 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 7)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 7 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 5)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 5 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 63)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 63 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
@@ -355,7 +299,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 <div className='flex'>
                     <button
                         title='Titán'
-                        onClick={() => filterActivitiesClass(activityDetails, 3655393761)}
+                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 3655393761, classId: allCharacters[3655393761]?.characterId})}
                         onMouseEnter={() => setHoveredClass(3655393761)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer rounded-s-md bg-gray-300`}
@@ -363,12 +307,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         <img
                             className='w-8 h-8'
                             src={logoTitan}
-                            style={{ filter: `${(currentActivityClass == 3655393761 || hoveredClass == 3655393761) ? colorTitan : "brightness(0) contrast(100%)"}` }}
+                            style={{ filter: `${(currentActivityClass?.hashClass == 3655393761 || hoveredClass == 3655393761) ? colorTitan : "brightness(0) contrast(100%)"}` }}
                         />
                     </button>
                     <button
                         title="Cazador"
-                        onClick={() => filterActivitiesClass(activityDetails, 671679327)}
+                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 671679327, classId: allCharacters[671679327]?.characterId})}
                         onMouseEnter={() => setHoveredClass(671679327)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer bg-gray-300`}
@@ -376,12 +320,12 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         <img
                             className='w-8 h-8'
                             src={logoCazador}
-                            style={{ filter: `${(currentActivityClass == 671679327 || hoveredClass == 671679327) ? colorCazador : "brightness(0) contrast(100%)"}` }}
+                            style={{ filter: `${(currentActivityClass?.hashClass == 671679327 || hoveredClass == 671679327) ? colorCazador : "brightness(0) contrast(100%)"}` }}
                         />
                     </button>
                     <button
                         title="Hechicero"
-                        onClick={() => filterActivitiesClass(activityDetails, 2271682572)}
+                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 2271682572, classId: allCharacters[2271682572]?.characterId})}
                         onMouseEnter={() => setHoveredClass(2271682572)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer rounded-e-md bg-gray-300`}
@@ -389,7 +333,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         <img
                             className='w-8 h-8'
                             src={logoHechicero}
-                            style={{ filter: `${(currentActivityClass == 2271682572 || hoveredClass == 2271682572) ? colorHechicero : "brightness(0) contrast(100%)"}` }}
+                            style={{ filter: `${(currentActivityClass?.hashClass == 2271682572 || hoveredClass == 2271682572) ? colorHechicero : "brightness(0) contrast(100%)"}` }}
                         />
                     </button>
                 </div>
@@ -444,8 +388,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                         </div>
                                     </button>
                                     {expandedIndex === (uniqueId) && (
-                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
-                                            <div className="relative overflow-visible">
+                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300'  onClick={() => setExpandedIndex(null)}>
+                                            <div className="relative overflow-visible" onClick={(e) => e.stopPropagation()}>
                                                 {activity.splitedInTeams == true ? (
                                                     <Crucible activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
                                                 ) : (
@@ -465,7 +409,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                 </div>
                             );
                         }) : (
-                            <div className='top-0 text-xl font-bold'>No hay actividades para este filtro</div>
+                            <div className='top-0 text-xl font-bold'>Ya no hay actividades para este filtro</div>
                         )}
                     </div>
                 </>)}

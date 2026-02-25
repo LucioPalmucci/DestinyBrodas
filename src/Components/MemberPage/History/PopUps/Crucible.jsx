@@ -54,6 +54,22 @@ export default function Crucible({ activity, userId, onClose }) {
         };
     }, []);
 
+    const renderNameWithBlueCode = (fullName, maxLen = 16) => {
+        const text = fullName?.length > maxLen
+            ? `${fullName.slice(0, maxLen)}...`
+            : (fullName ?? '');
+
+        const hashIndex = text.indexOf('#');
+        if (hashIndex === -1) return <>{text}</>;
+
+        return (
+            <>
+                <span>{text.slice(0, hashIndex)}</span>
+                <span className="text-[#479ce4]">{text.slice(hashIndex)}</span>
+            </>
+        );
+    };
+
     return !actComplete ? (
         <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
@@ -188,13 +204,7 @@ export default function Crucible({ activity, userId, onClose }) {
                                                 <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
                                                 <div className='flex flex-col justify-center'>
                                                     <div className='flex'>
-                                                        {person.uniqueName.length > 14
-                                                            ? person.uniqueName.slice(0, 14) + "..."
-                                                            : person.uniqueName
-                                                        }
-                                                        <span style={{ color: '#479ce4' }}>
-                                                            {person.uniqueNameCode}
-                                                        </span>
+                                                        {renderNameWithBlueCode(person.uniqueCompleteName)}
                                                     </div>
                                                     <div className='flex items-center'>
                                                         <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -250,13 +260,7 @@ export default function Crucible({ activity, userId, onClose }) {
                                                 {isMvp && <span className="shimmer"></span>}
                                                 <div className='flex flex-col justify-end items-end'>
                                                     <div className='flex'>
-                                                        {person.uniqueName.length > 12
-                                                            ? person.uniqueName.slice(0, 12) + "..."
-                                                            : person.uniqueName
-                                                        }
-                                                        <span style={{ color: '#479ce4' }}>
-                                                            {person.uniqueNameCode}
-                                                        </span>
+                                                        {renderNameWithBlueCode(person.uniqueCompleteName)}
                                                     </div>
                                                     <div className='flex items-center justify-end'>
                                                         <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -290,16 +294,11 @@ export default function Crucible({ activity, userId, onClose }) {
                                     <div className='flex flex-wrap gap-4'>
                                         {actComplete.teams.teamA.people.filter(person => person.completed == 0 && person.membershipId != userId).map((person, idx) => {
                                             return (
-                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
-                                                    <div className='flex flex-col justify-start items-start mr-2'>
+                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-xs opacity-70">
+                                                    <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
+                                                    <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>
-                                                            {person.uniqueName.length > 12
-                                                                ? person.uniqueName.slice(0, 12) + "..."
-                                                                : person.uniqueName
-                                                            }
-                                                            <span style={{ color: '#479ce4' }}>
-                                                                {person.uniqueNameCode}
-                                                            </span>
+                                                            {renderNameWithBlueCode(person.uniqueCompleteName)}
                                                         </div>
                                                         <div className='flex items-center justify-start'>
                                                             <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -314,21 +313,15 @@ export default function Crucible({ activity, userId, onClose }) {
                             )}
                         </div>
                         <div className='w-[50%] mx-6'>
-                            {actComplete.teams.teamB.people.some(person => person.completed == 0) && (
+                            {actComplete.teams.teamB.people.some(person => person.completed == 0 && person.membershipId != userId) && (
                                 <div className="flex items-center justify-end">
                                     <div className='flex flex-wrap-reverse gap-4'>
-                                        {actComplete.teams.teamB.people.filter(person => person.completed == 0).map((person, idx) => {
+                                        {actComplete.teams.teamB.people.filter(person => person.completed == 0 && person.membershipId != userId).map((person, idx) => {
                                             return (
                                                 <div key={idx} className="flex items-center justify-end w-fit p-2 bg-black/25 rounded-lg text-xs opacity-70">
                                                     <div className='flex flex-col justify-end items-end mr-2'>
                                                         <div className='flex'>
-                                                            {person.uniqueName.length > 12
-                                                                ? person.uniqueName.slice(0, 12) + "..."
-                                                                : person.uniqueName
-                                                            }
-                                                            <span style={{ color: '#479ce4' }}>
-                                                                {person.uniqueNameCode}
-                                                            </span>
+                                                            {renderNameWithBlueCode(person.uniqueCompleteName)}
                                                         </div>
                                                         <div className='flex items-center justify-end'>
                                                             <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />

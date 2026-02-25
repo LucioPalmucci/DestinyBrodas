@@ -30,6 +30,7 @@ const usePlayersBasicData = () => {
                 membershipType: entry.player.destinyUserInfo.membershipType,
                 uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
+                uniqueCompleteName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                 //honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
                 //guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
                 //emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
@@ -69,7 +70,7 @@ const usePlayersBasicData = () => {
                     difficulty = await getDifficultyName(activity, carnageReportResponse, manifest);
                     difficultyColor = getDifficultyColor(difficulty);
                 }
-                if(hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
+                if (hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
                 return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity };
             }
         } catch (error) {
@@ -355,7 +356,60 @@ const usePlayersBasicData = () => {
             values: playerEntry.extended?.values,
         };
 
+
+        const fetchGuardianRank = async (id, type) => {
+            try {
+                const responseProfile = await getCompsProfile(type, id);
+                const RankNum = responseProfile.profile.data.currentGuardianRank;
+                const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
+                return ({
+                    title: guardianRankResponse.displayProperties.name,
+                    num: RankNum,
+                });
+            } catch (error) {
+                console.error('Error al cargar datos del popup del jugador:', error);
+            }
+        }
+
+        const fetchEmblema = async (emblem) => {
+            const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
+            return emblemaResponse.secondaryIcon;
+        }
+
+        const fetchClan = async (id, type) => {
+            try {
+                const userClan = await getClanUser(type, id);
+                if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
+                    return userClan.results[0].group.name;
+                } else {
+                    return "No pertenece a ningún clan";
+                }
+            } catch (error) {
+                console.error('Error al cargar el clan del usuario:', error);
+                return "No pertenece a ningún clan";
+            }
+        }
+
+        const getWeaponDetails = async (weapons) => {
+            if (!weapons || !Array.isArray(weapons)) {
+                return [];
+            }
+            const weaponD = await Promise.all(weapons.map(async (weapon) => {
+                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
+                return {
+                    name: weaponInfo.displayProperties.name,
+                    icon: weaponInfo.displayProperties.icon,
+                    archetype: weaponInfo.itemTypeDisplayName,
+                    kills: weapon.values.uniqueWeaponKills.basic.value,
+                    precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
+                    precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
+                };
+            }));
+            return weaponD;
+        }
     }
+
+
     return fetchCarnageReport;
 
 
