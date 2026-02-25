@@ -12,10 +12,11 @@ import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
+import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Pve({ activity, userId }) {
+export default function Pve({ activity, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [actComplete, setActComplete] = useState(null);
@@ -47,7 +48,7 @@ export default function Pve({ activity, userId }) {
             else if (activity.completed == "Abandonado" && playersData.people.length > 6) { //Si no se completó y fueron más de 6 personas
                 peopleStay = playersData.people.filter(player => player.completed == 0 || player.membershipId == userId).sort((a, b) => b.timePlayedSeconds - a.timePlayedSeconds) //se quedó y ordenar por el que mas tiempo estuvo
                 playersData.mvp = peopleStay[0]; //El MVP ahora es el que más tiempo estuvo.
-                playersData.mvp.specialOne =  true;
+                playersData.mvp.specialOne = true;
                 playersData.mvp.message = "El que bancó más tiempo";
             }
         } else { //En el resto de PvE
@@ -82,7 +83,7 @@ export default function Pve({ activity, userId }) {
     }, []);
 
     return !actComplete ? (
-        <div className="h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
+        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
             className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
@@ -167,8 +168,7 @@ export default function Pve({ activity, userId }) {
                                 <div className='w-[53px] flex bg-black/25 p-2 rounded-lg justify-center items-center text-[0.72rem]' title='Completadas'>
                                     <img src={check} width={15} height={15} />
                                 </div>
-                                <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[320px]'>
-                                    {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                <div className={`flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem] w-[320px]`} title='Puntuación'>
                                     <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                     <div className='w-20 flex justify-center items-center' title='Muertes'>
                                         <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
@@ -192,7 +192,7 @@ export default function Pve({ activity, userId }) {
                             const MvPLeft = isMvp && actComplete.completed == "Abandonado" ? true : false;
                             const MvPCompleted = isMvp && actComplete.completed == "Completado" ? true : false;
                             return (
-                                <div key={idx} className={`flex items-end text-start space-x-4 text-sm py-2 ${isMvp ? "font-bold " : ""} relative`}>
+                                <div key={idx} className={`flex items-end text-start space-x-4 text-sm pt-2 ${isMvp ? "font-bold " : ""} relative`}>
                                     <div className={`text-xs min-w-max w-full dark whitespace-nowrap ${MvPCompleted ? "theme-shimmer-dorado" : MvPLeft ? "theme-shimmer-gris" : ""}`}>
                                         <button
                                             onClick={(e) => {
@@ -232,7 +232,6 @@ export default function Pve({ activity, userId }) {
                                         <div className='w-13'>{person.completions}</div>
                                     </div>
                                     <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg text-center'>
-                                        {actComplete.hasPoints && <div className='w-20'>{person.score}</div>}
                                         <div className='w-20'>{person.kills}</div>
                                         <div className='w-20'>{person.deaths}</div>
                                         <div className='w-20'>{person.assists}</div>
@@ -251,7 +250,7 @@ export default function Pve({ activity, userId }) {
                             );
                         })}
                     </div>
-                    <div className='w-fit max-w-140 h-full mx-6'>
+                    <div className='w-fit max-w-140 mx-6'>
                         {(
                             actComplete.peopleLeave != null && actComplete.peopleLeave.length > 0 && (
                                 <div className="flex items-center justify-start">
@@ -285,7 +284,27 @@ export default function Pve({ activity, userId }) {
                         )}
                     </div>
                 </div>
+                    {actComplete.hasPoints && (
+                        <div className='w-full items-center justify-center flex'>
+                            <div className='flex items-center bg-black/25 p-2 rounded-lg justify-center text-sm' >
+                                <p>PUNTAJE TOTAL:</p>
+                                <div className='flex items-center ml-2'>
+                                    <p className=' font-bold'>{actComplete.scoreActivity}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
             </div>
+            <button
+                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose?.();
+                }}
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
         </div>
     );
 }

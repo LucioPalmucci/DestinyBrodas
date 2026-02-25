@@ -10,6 +10,7 @@ const usePlayersBasicData = () => {
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
             const filteredEntries = carnageReportResponse.entries;
 
+            console.log("Carnage report response: ", carnageReportResponse);
             if (activity.activityMode == "Social") return await getCaseSocial(activity, carnageReportResponse, userId, membershipType);
 
             const peopleRaw = await Promise.all(filteredEntries.map(async (entry) => ({
@@ -47,7 +48,7 @@ const usePlayersBasicData = () => {
             const people = getReformedPeople(peopleRaw, activity, carnageReportResponse, userId);
 
 
-            let teams = [], mvp = null, firstPlace = null, secondPlace = null, difficultyColor = null, difficulty = null, feats = null;
+            let teams = [], mvp = null, firstPlace = null, secondPlace = null, difficultyColor = null, difficulty = null, feats = null, scoreActivity = null;
             const hasPoints = getScore(activity, people);
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
@@ -68,7 +69,8 @@ const usePlayersBasicData = () => {
                     difficulty = await getDifficultyName(activity, carnageReportResponse, manifest);
                     difficultyColor = getDifficultyColor(difficulty);
                 }
-                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats };
+                if(hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
+                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity };
             }
         } catch (error) {
             console.error('Error fetching carnage report:', error);

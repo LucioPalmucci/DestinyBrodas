@@ -10,10 +10,9 @@ export const loadCache = (key, ttl) => {
         }
 
         const { ts, data } = JSON.parse(raw);
-        // The ttl might be null becuase I want to cache indefinitely when the servers are down
+        // The ttl might be null because we may want stale cache on failures
         if (ttl != null && Date.now() - ts > ttl) {
             console.log('[CACHE][UTIL] expired', fullKey);
-            localStorage.removeItem(fullKey);
             return null;
         }
 

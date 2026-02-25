@@ -9,10 +9,11 @@ import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
+import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Crucible({ activity, userId }) {
+export default function Crucible({ activity, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const fetchPlayersBasicData = usePlayersBasicData();
@@ -54,7 +55,7 @@ export default function Crucible({ activity, userId }) {
     }, []);
 
     return !actComplete ? (
-        <div className="h-[600px] bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
+        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
             className='bg-center flex bg-cover rounded-lg w-fit text-white max-h-screen p-8 overflow-y-auto justify-center font-light'
@@ -134,8 +135,8 @@ export default function Crucible({ activity, userId }) {
                     <div className='w-full flex justify-center space-x-8 h-10'>
                         <div className='flex items-center text-center pb-1 w-80'>
                             {actComplete.teams.teamA.people.some(person => person.completed == 1) &&
-                                <div className='flex bg-black/25 p-2 text-center rounded-lg w-80 justify-evenly items-center text-[0.72rem]'>
-                                    {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                <div className='flex bg-black/25 p-2 rounded-lg w-80 justify-evenly items-center text-[0.72rem]'>
+                                    {actComplete.hasPoints && <div className='w-20 mt-0.5'>PUNTOS</div>}
                                     <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                     <div className='flex justify-center items-center w-20' title='Muertes'>
                                         <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
@@ -151,7 +152,7 @@ export default function Crucible({ activity, userId }) {
                         <div className='flex items-center text-center pb-1 w-80'>
                             {actComplete.teams.teamB.people.some(person => person.completed == 1) &&
                                 <div className='flex flex-row-reverse bg-black/25 p-2 text-center rounded-lg w-80 justify-evenly items-center text-[0.72rem]'>
-                                    {actComplete.hasPoints && <div className='w-20'>PUNTOS</div>}
+                                    {actComplete.hasPoints && <div className='w-20 mt-0.5'>PUNTOS</div>}
                                     <div className='w-20' title='Bajas'><i className='icon-kills2'></i></div>
                                     <div className='flex justify-center items-center w-20' title='Muertes'>
                                         <img src={skull} width={15} height={15} style={{ filter: 'brightness(0) invert(1)' }} />
@@ -346,6 +347,16 @@ export default function Crucible({ activity, userId }) {
                     </div>
                 </div>
             </div>
+            <button
+                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose?.();
+                }}
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
         </div>
     );
 }

@@ -8,10 +8,11 @@ import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
+import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Rumble({ activity, userId }) {
+export default function Rumble({ activity, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [actComplete, setActComplete] = useState(null);
@@ -52,7 +53,7 @@ export default function Rumble({ activity, userId }) {
     }, []);
 
     return !actComplete ? (
-        <div className="h-[600px] bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
+        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
             className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
@@ -225,6 +226,16 @@ export default function Rumble({ activity, userId }) {
                     </div>
                 </div>
             </div>
+            <button
+                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose?.();
+                }}
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
         </div>
     );
 }

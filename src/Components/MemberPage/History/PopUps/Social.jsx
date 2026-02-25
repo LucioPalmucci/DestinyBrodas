@@ -9,10 +9,11 @@ import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
+import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Social({ activity, userId, membershipType }) {
+export default function Social({ activity, userId, membershipType, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [actComplete, setActComplete] = useState(null);
@@ -52,7 +53,7 @@ export default function Social({ activity, userId, membershipType }) {
     }, []);
 
     return !actComplete ? (
-        <div className="h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light" style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }} />
+        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
             className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
@@ -170,6 +171,16 @@ export default function Social({ activity, userId, membershipType }) {
                     </div>
                 </div>
             </div>
+            <button
+                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose?.();
+                }}
+                aria-label="Cerrar"
+            >
+                ✕
+            </button>
         </div>
     );
 }

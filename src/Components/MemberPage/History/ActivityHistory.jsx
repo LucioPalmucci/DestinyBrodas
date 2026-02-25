@@ -152,9 +152,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
-            let activityCompleted = false; //Hay veces que la api no registra bien las actividades completadas, por eso se usa la razón.
-            if (activity.values.completed) activityCompleted = activity.values.completed.basic.value == 1 || activity.values.completionReason.basic.value == 0 ? true : false;
-             console.log("Actividad encontrada: ", activity.values);
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
@@ -166,8 +163,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                completed: activityCompleted ? "Completado" : "Abandonado",
-                completedSymbol: activityCompleted ? completed : NotCompleted,
+                completed: activity.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
+                completedSymbol: activity.values.completed.basic.value == 1  ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,
@@ -189,7 +186,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
         const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
         const s = String(seconds % 60).padStart(2, '0');
-        if ( h === "00") return `${m}m ${s}s`;
+        if (h === "00") return `${m}m ${s}s`;
         return `${h}h ${m}m ${s}s`;
     }
 
@@ -398,14 +395,18 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 </div>
             </div>
             {isLoading && !fullLoaded ? (
-                <div className="h-[900px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse"></div>
+                <div className="h-[800px] bg-gray-300 flex justify-center items-center p-2 text-xl font-semibold w-full text-black rounded-lg animate-pulse">
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <Spinner medium={true} />
+                    </div>
+                </div>
             ) : (
                 <>
                     <div>
                         {currentActivities.length > 0 ? currentActivities.map((activity, index) => {
                             const uniqueId = activity.instanceId + index;
                             return (
-                                <div className={`transition-colors cursor-pointer hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
+                                <div className={`transition-colors  hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
                                     <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
                                         <div key={uniqueId} className={`px-6 text-[1.1rem] text-start justify-between flex items-center`}>
                                             <div className='flex items-center justify-between w-[55%] text-start'>
@@ -431,7 +432,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                                     <img src={skull} className="mr-2" width={27} height={27} />
                                                     <p>{activity.deaths}</p>
                                                 </div>
-                                                <div className='flex items-center w-20 justify-end'>
+                                                <div className='flex items-center w-25 justify-end'>
                                                     <p className='py-2'>KD</p>
                                                     <div className='w-1'></div>
                                                     <p>{activity.kd}</p>
@@ -446,25 +447,18 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                         <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
                                             <div className="relative overflow-visible">
                                                 {activity.splitedInTeams == true ? (
-                                                    <Crucible activity={activity} userId={userId} />
+                                                    <Crucible activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
                                                 ) : (
                                                     activity.activityType == "PvE" ? (
                                                         activity.activityMode == "Social" ? (
-                                                            <Social activity={activity} userId={userId} membershipType={membershipType}/>
+                                                            <Social activity={activity} userId={userId} membershipType={membershipType} onClose={() => setExpandedIndex(null)} />
                                                         ) : (
-                                                        <Pve activity={activity} userId={userId} />
+                                                            <Pve activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
                                                         )
                                                     ) : (
-                                                        <Rumble activity={activity} userId={userId} />
+                                                        <Rumble activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
                                                     )
                                                 )}
-                                                <button
-                                                    className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
-                                                    onClick={(e) => { e.stopPropagation(); setExpandedIndex(null); }}
-                                                    aria-label="Cerrar"
-                                                >
-                                                    ✕
-                                                </button>
                                             </div>
                                         </div>
                                     )}
@@ -475,7 +469,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         )}
                     </div>
                 </>)}
-            {fullLoaded ? (
+            {fullLoaded && (
                 <div className="flex justify-center items-center mt-6 space-x-1">
                     <button
                         onClick={() => handlePageChange(currentPage - 1)}
@@ -515,14 +509,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         {">"}
                     </button>
                 </div>
-            ) : (
-                totalPages <= 1 && fullLoaded ? (
-                    null
-                ) : (
-                    <div className='mt-3'>
-                        <Spinner small={true} />
-                    </div>
-                )
             )}
         </div>
     );

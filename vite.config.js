@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
     plugins: [react(), tailwindcss()],
     base: '/DestinyBrodas/',
-    
+
     define: {
         __BUNGIE_API_URL__: JSON.stringify(process.env.NODE_ENV === 'production'
             ? 'https://www.bungie.net'
@@ -28,5 +28,8 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/reporte/, ''),
             },
         },
+        allowedHosts: [
+            '.trycloudflare.com'
+        ]
     },
 })
