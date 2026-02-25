@@ -19,9 +19,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [expandedIndex, setExpandedIndex] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
     const [currentActivityType, setCurrentActivityType] = useState(0);
-    const [currentActivityClass, setCurrentActivityClass] = useState({hashClass: null, classId: null});
+    const [currentActivityClass, setCurrentActivityClass] = useState({ hashClass: null, classId: null });
     const [weaponDetails, setWeaponDetails] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
+    const goToButtonRef = useRef(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [isLoading, setIsLoading] = useState(false);
     const [jugadorSelected, setJugadorSelected] = useState(null);
@@ -29,6 +30,9 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [activitiesPerPage] = useState(10);
     const [fullLoaded, setFullLoaded] = useState(false);
     const [rawActivities, setRawActivities] = useState([]); // lista completa sin paginar
+    const [knownLastPage, setKnownLastPage] = useState(null); // null = aún no conocemos el final
+    const [gotoPageInput, setGotoPageInput] = useState("");
+    const [goToPageError, setGoToPageError] = useState(false);
     const popupRef = useRef(null);
     const CACHE_TTL = 1//00 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
@@ -63,7 +67,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 });
 
                 let activities = await getRecentActivitiesPage(membershipType, userId, firstChar, 10, 0, 0); //memebershipType, userId, characterId, count, page, mode
-                
+
                 setRawActivities(activities);
                 setFilteredActivities(activities);
                 const details = await getSomeActivities(activities, 0);
@@ -88,9 +92,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     }, [userId, membershipType]);
 
     const getSomeActivities = async (activities, type) => {
-
-        if(type != 0 )activities = activities.filter(activity => activity.activityDetails.modes.includes(type));
-        console.log(`Originallllllllllll: `, activities);
+        if (type != 0) activities = activities.filter(activity => activity.activityDetails.modes.includes(type));
 
         const details = await Promise.all(activities.map(async (activity) => {
             const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
@@ -149,20 +151,25 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
 
-
+            let splitedInTeams = false;
+            if(activityType == "PvP") {
+                const carnageReport = await getCarnageReport(activity.activityDetails.instanceId);
+                splitedInTeams = carnageReport?.teams?.length > 1;
+            }
             return {
                 activityName: activityMain?.originalDisplayProperties?.name,
                 activityMode: modeName,
                 activityTypePVP: activityInfo?.originalDisplayProperties?.name?.replaceAll(":", " -"),
                 activityIcon: actIcon,
+                instanceId: activity.activityDetails.instanceId,
                 pgcrImage: activityMain?.pgcrImage || null,
                 difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name || "Estándar" : activityInfo?.selectionScreenDisplayProperties?.name || "Estándar",
                 instanceId: activity.activityDetails.instanceId,
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                completed: activity.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
-                completedSymbol: activity.values.completed.basic.value == 1 ? completed : NotCompleted,
+                completed: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6) ? "Completado" : "Abandonado",
+                completedSymbol: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6)  ? completed : NotCompleted,
                 modeNumbers: activity.activityDetails.modes,
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,
@@ -173,7 +180,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 durationFormated: activity.values.activityDurationSeconds.basic.displayValue,
                 hash: activity.activityDetails.referenceId,
                 difficultyCollection: activityInfo.difficultyTierCollectionHash,
-                splitedInTeams: activityInfo.matchmaking?.maxParty > 1 && activityType != "PvE" ? true : false,
+                splitedInTeams: splitedInTeams,
             };
         }));
         console.log("All activity details fetched: ", details);
@@ -193,6 +200,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setFullLoaded(false);
         setCurrentActivityType(type);
         setCurrentPage(1);
+        setKnownLastPage(null);
         //memebershipType, userId, characterId, count, page, mode
         const acts = await getRecentActivitiesPage(membershipType, userId, currentActivityClass?.classId, 10, 0, type);
         const details = await getSomeActivities(acts, type);
@@ -206,6 +214,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setFullLoaded(false);
         setCurrentActivityClass(classData);
         setCurrentPage(1);
+        setKnownLastPage(null);
         const acts = await getRecentActivitiesPage(membershipType, userId, classData.classId, 10, 0, currentActivityType);
         const details = await getSomeActivities(acts, currentActivityType);
         setActivityDetails(details);
@@ -243,47 +252,102 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const indexOfLastActivity = currentPage * activitiesPerPage;
     const indexOfFirstActivity = indexOfLastActivity - activitiesPerPage;
     let currentActivities = activityDetails;
-    const totalPages = 5 //Math.max(1, Math.ceil((filteredActivities || []).length / activitiesPerPage));
 
     const handlePageChange = async (pageNumber) => {
-        if (pageNumber < 1 || pageNumber > totalPages) return;
-        setCurrentPage(pageNumber);
+        if (pageNumber < 1) return false;
+        let acts;
+        try {
+            acts = await getRecentActivitiesPage(membershipType, userId, currentActivityClass?.classId, activitiesPerPage, pageNumber - 1, currentActivityType);
+        } catch (error) {
+            return false;
+        }
+        if (!acts || acts.length === 0) {
+            setKnownLastPage((prev) => prev ?? Math.max(1, pageNumber - 1));
+            return false
+        };
+
         setIsLoading(true);
         setFullLoaded(false);
-        const acts = await getRecentActivitiesPage(membershipType, userId, currentActivityClass?.classId, activitiesPerPage, pageNumber - 1, currentActivityType);
-        console.log(`Fetched activities for page ${pageNumber}:`, acts);
-        const details = await getSomeActivities(acts, currentActivityType);
-        setActivityDetails(details);
-        setFullLoaded(true);
-        setIsLoading(false);
-        setExpandedIndex(null);
+
+        try {
+
+            // Si vino menos que el page size, esta es la última página
+            if (acts.length < activitiesPerPage) {
+                setKnownLastPage(pageNumber);
+            }
+
+            const details = await getSomeActivities(acts, currentActivityType);
+            setActivityDetails(details);
+            setCurrentPage(pageNumber);
+            setExpandedIndex(null);
+            setGoToPageError(false);
+            return true;
+        } finally {
+            setFullLoaded(true);
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoToPage = async () => {
+        const page = Number(gotoPageInput);
+
+        if (!Number.isInteger(page) || page < 1) {
+            triggerGoToPageError();
+            return;
+        }
+
+        const ok = await handlePageChange(page);
+        if (!ok) triggerGoToPageError();
+    };
+
+    const shakeGoButton = () => {
+        if (!goToButtonRef.current) return;
+        goToButtonRef.current.animate(
+            [
+                { transform: "translateX(0)" },
+                { transform: "translateX(-6px)" },
+                { transform: "translateX(6px)" },
+                { transform: "translateX(-4px)" },
+                { transform: "translateX(4px)" },
+                { transform: "translateX(0)" },
+            ],
+            { duration: 280, iterations: 1, easing: "ease-in-out" }
+        );
+    };
+
+    const triggerGoToPageError = () => {
+        setGoToPageError(true);
+        shakeGoButton();
+        setTimeout(() => setGoToPageError(false), 700);
     };
 
     const getPageNumbers = () => {
-        const pages = [];
-        const maxVisible = 5;
+        // Regla:
+        // - Inicio: 1 2 3 4 5
+        // - Desde 8: 1 2 3 4 ... (actual-2) (actual-1) actual
 
-        if (totalPages <= maxVisible) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-            return pages;
+        // Páginas 1..5
+        if (currentPage <= 5) {
+            const end = knownLastPage ? Math.min(5, knownLastPage) : 5;
+            return Array.from({ length: end }, (_, i) => i + 1);
         }
 
-        const side = Math.floor((maxVisible - 1) / 2); // 2
-        let start = currentPage - side;
-        let end = currentPage + side;
+        // Páginas 6 y 7 (sin puntos suspensivos)
+        if (currentPage < 8) {
+            const end = knownLastPage ? Math.min(currentPage, knownLastPage) : currentPage;
+            return Array.from({ length: end }, (_, i) => i + 1);
+        }
 
-        if (start < 1) { start = 1; end = maxVisible; }
-        if (end > totalPages) { end = totalPages; start = totalPages - maxVisible + 1; }
+        // Desde la 8 en adelante
+        const pages = [1, 2, 3, 4, "...", currentPage - 2, currentPage - 1, currentPage];
 
-        if (start > 1) pages.push(1);
-        if (start > 2) pages.push('...');
-
-        for (let i = start; i <= end; i++) pages.push(i);
-
-        if (end < totalPages - 1) pages.push('...');
-        if (end < totalPages) pages.push(totalPages);
-
-        return pages;
+        const seen = new Set();
+        return pages.filter((p) => {
+            if (p === "...") return true;
+            if (seen.has(p)) return false;
+            seen.add(p);
+            return true;
+        });
     };
 
     return (
@@ -291,7 +355,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
             <div className='mb-4 flex'>
                 <div className="flex mr-6">
-                    <button onClick={() => filterActivitiesMode(activityDetails, null)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 0 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
+                    <button onClick={() => filterActivitiesMode(activityDetails, 0)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 0 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 7)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 7 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 5)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 5 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
                     <button onClick={() => filterActivitiesMode(activityDetails, 63)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 63 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
@@ -299,7 +363,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 <div className='flex'>
                     <button
                         title='Titán'
-                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 3655393761, classId: allCharacters[3655393761]?.characterId})}
+                        onClick={() => filterActivitiesClass(activityDetails, { hashClass: 3655393761, classId: allCharacters[3655393761]?.characterId })}
                         onMouseEnter={() => setHoveredClass(3655393761)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer rounded-s-md bg-gray-300`}
@@ -312,7 +376,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                     </button>
                     <button
                         title="Cazador"
-                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 671679327, classId: allCharacters[671679327]?.characterId})}
+                        onClick={() => filterActivitiesClass(activityDetails, { hashClass: 671679327, classId: allCharacters[671679327]?.characterId })}
                         onMouseEnter={() => setHoveredClass(671679327)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer bg-gray-300`}
@@ -325,7 +389,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                     </button>
                     <button
                         title="Hechicero"
-                        onClick={() => filterActivitiesClass(activityDetails, {hashClass: 2271682572, classId: allCharacters[2271682572]?.characterId})}
+                        onClick={() => filterActivitiesClass(activityDetails, { hashClass: 2271682572, classId: allCharacters[2271682572]?.characterId })}
                         onMouseEnter={() => setHoveredClass(2271682572)}
                         onMouseLeave={() => setHoveredClass(null)}
                         className={`px-4 py-2 cursor-pointer rounded-e-md bg-gray-300`}
@@ -388,7 +452,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                         </div>
                                     </button>
                                     {expandedIndex === (uniqueId) && (
-                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300'  onClick={() => setExpandedIndex(null)}>
+                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
                                             <div className="relative overflow-visible" onClick={(e) => e.stopPropagation()}>
                                                 {activity.splitedInTeams == true ? (
                                                     <Crucible activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
@@ -413,8 +477,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         )}
                     </div>
                 </>)}
-            {fullLoaded && (
-                <div className="flex justify-center items-center mt-6 space-x-1">
+            <div className="flex justify-center items-center mt-6 space-x-8 ">
+                <div className="flex items-center space-x-1">
                     <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
@@ -434,7 +498,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                             className={`px-3 py-1 rounded cursor-pointer ${pageNumber === currentPage
                                 ? 'bg-blue-500 text-white'
                                 : pageNumber === '...'
-                                    ? 'bg-white text-gray-400 cursor-default'
+                                    ? 'text-gray-400 cursor-default'
                                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
@@ -444,8 +508,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
 
                     <button
                         onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`px-3 py-1 rounded cursor-pointer ${currentPage === totalPages
+                        disabled={knownLastPage ? currentPage >= knownLastPage : false}
+                        className={`px-3 py-1 rounded cursor-pointer ${knownLastPage && currentPage >= knownLastPage
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                             : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
@@ -453,7 +517,29 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                         {">"}
                     </button>
                 </div>
-            )}
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm">Página:</span>
+                    <input
+                        type="number"
+                        min="1"
+                        onChange={(e) => {
+                            setGotoPageInput(e.target.value);
+                            if (goToPageError) setGoToPageError(false);
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleGoToPage()}
+                        className={`w-18 px-2 py-1 border bg-white rounded ${goToPageError ? "border-red-500" : "border-gray-300"}`}
+                    />
+                    <button
+                        ref={goToButtonRef}
+                        onClick={handleGoToPage}
+                        className={`px-3 py-1 rounded text-white cursor-pointer transition-colors ${goToPageError ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
+                            }`}
+                    >
+                        Ir
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

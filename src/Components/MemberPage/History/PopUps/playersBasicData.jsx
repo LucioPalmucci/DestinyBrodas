@@ -31,14 +31,11 @@ const usePlayersBasicData = () => {
                 uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
                 uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
                 uniqueCompleteName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                //honor: entry.player.destinyUserInfo.membershipType != 0 ? await getCommendations(entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
-                //guardinRank: entry.player.destinyUserInfo.membershipType != 0 ? await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
-                //emblemBig: entry.player.destinyUserInfo.membershipType != 0 ? await fetchEmblema(entry.player.emblemHash) : null,
-                //clan: entry.player.destinyUserInfo.membershipType != 0 ? await fetchClan(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType) : null,
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,
-                //weapons: await getWeaponDetails(entry.extended?.weapons) || null,
+                weaponsBase: entry.extended.weapons,
+                emblemHash: entry.player.emblemHash,
                 timePlayed: entry.values.timePlayedSeconds.basic.displayValue,
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.value,
                 percentagePlayed: Math.trunc((entry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100),
@@ -53,16 +50,19 @@ const usePlayersBasicData = () => {
             const hasPoints = getScore(activity, people);
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
-            if ((activity.modeNumbers.includes(5) || activity.modeNumbers.includes(63)) && (!activity.modeNumbers.includes(48) && !activity.modeNumbers.includes(57))) {
-                teams = buildTeamsData(people, carnageReportResponse, userId);
-                mvp = getMVP(teams, "pvp");
-                return { teams, mvp, hasPoints, hasMedals, full };
-            } else if ((activity.modeNumbers.includes(48) || activity.modeNumbers.includes(57))) {
-                mvp = getMVP(people, "rumble");
-                firstPlace = people.sort((a, b) => b.score - a.score)[0];
-                secondPlace = people.sort((a, b) => b.score - a.score)[1];
-                return { people: people, mvp, hasPoints, hasMedals, full, firstPlace, secondPlace };
-            } else {
+            if ((activity.modeNumbers.includes(5) || activity.modeNumbers.includes(63))) { //PVP
+                if (carnageReportResponse.teams && carnageReportResponse.teams.length >= 2) { //Por equipos
+                    teams = buildTeamsData(people, carnageReportResponse, userId);
+                    mvp = getMVP(teams, "pvp");
+                    return { teams, mvp, hasPoints, hasMedals, full };
+                } else { //Individual
+                    mvp = getMVP(people, "rumble");
+                    firstPlace = people.sort((a, b) => b.score - a.score)[0]
+                    firstPlace = people.sort((a, b) => b.score - a.score)[0];
+                    secondPlace = people.sort((a, b) => b.score - a.score)[1];
+                    return { people: people, mvp, hasPoints, hasMedals, full, firstPlace, secondPlace };
+                }
+            } else { //PVE
                 mvp = getMVP(people, "pve", activity);
                 const manifest = await getManifest();
                 if (carnageReportResponse.selectedSkullHashes && hazanias.some(h => carnageReportResponse.selectedSkullHashes.includes(h))) feats = await getAllFeats(activity, carnageReportResponse, manifest);
@@ -80,12 +80,17 @@ const usePlayersBasicData = () => {
     }, [getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser]);
 
     const buildTeamsData = (people, carnageReportResponse, userId) => {
-        const teamAstanding = carnageReportResponse.teams.find(team => team.teamId == 19).standing.basic.value;
-        const teamBstanding = carnageReportResponse.teams.find(team => team.teamId == 20)?.standing.basic.value;
 
+        const sortedTeams = [...(carnageReportResponse?.teams || [])]
+            .sort((a, b) => (a?.teamId ?? Infinity) - (b?.teamId ?? Infinity));
+
+        const teamAData = sortedTeams[0] || null;
+        const teamBData = sortedTeams[1] || null;
+        const teamAstanding = teamAData?.standing?.basic?.value;
+        const teamBstanding = teamBData?.standing?.basic?.value;
         let alphaPoints, bravoPoints, peopleA, peopleB;
-        alphaPoints = carnageReportResponse.teams.find(team => team.teamId == 19).score.basic.value;
-        bravoPoints = carnageReportResponse.teams.find(team => team.teamId == 20)?.score.basic.value;
+        alphaPoints = teamAData?.score?.basic?.value ?? 0;
+        bravoPoints = teamBData?.score?.basic?.value ?? 0;
         peopleA = people.filter(person => person.standing === teamAstanding);
         peopleB = people.filter(person => person.standing === teamBstanding);
 
@@ -167,57 +172,6 @@ const usePlayersBasicData = () => {
             uniqueNameCode: mvp?.uniqueNameCode,
             message: mode === "pve" ? "El que murió menos veces" : "El que tuvo mejor puntuación",
         };
-    }
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchClan = async (id, type) => {
-        try {
-            const userClan = await getClanUser(type, id);
-            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
-                return userClan.results[0].group.name;
-            } else {
-                return "No pertenece a ningún clan";
-            }
-        } catch (error) {
-            console.error('Error al cargar el clan del usuario:', error);
-            return "No pertenece a ningún clan";
-        }
-    }
-
-    const getWeaponDetails = async (weapons) => {
-        if (!weapons || !Array.isArray(weapons)) {
-            return [];
-        }
-        const weaponD = await Promise.all(weapons.map(async (weapon) => {
-            const weaponInfo = await getItemManifest(weapon.referenceId, "DestinyInventoryItemDefinition");
-            return {
-                name: weaponInfo.displayProperties.name,
-                icon: weaponInfo.displayProperties.icon,
-                archetype: weaponInfo.itemTypeDisplayName,
-                kills: weapon.values.uniqueWeaponKills.basic.value,
-                precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
-                precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
-            };
-        }));
-        return weaponD;
     }
 
     const getUserClassSymbol = (classHash) => {
@@ -317,7 +271,6 @@ const usePlayersBasicData = () => {
     }
 
     const getCaseSocial = async (activity, carnageReportResponse, userId, membershipType) => {
-
         let classe, classSymbol, player = null;
         const playerEntry = carnageReportResponse.entries.find(entry => entry.player.destinyUserInfo.membershipId == userId);
 
@@ -356,57 +309,6 @@ const usePlayersBasicData = () => {
             values: playerEntry.extended?.values,
         };
 
-
-        const fetchGuardianRank = async (id, type) => {
-            try {
-                const responseProfile = await getCompsProfile(type, id);
-                const RankNum = responseProfile.profile.data.currentGuardianRank;
-                const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-                return ({
-                    title: guardianRankResponse.displayProperties.name,
-                    num: RankNum,
-                });
-            } catch (error) {
-                console.error('Error al cargar datos del popup del jugador:', error);
-            }
-        }
-
-        const fetchEmblema = async (emblem) => {
-            const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-            return emblemaResponse.secondaryIcon;
-        }
-
-        const fetchClan = async (id, type) => {
-            try {
-                const userClan = await getClanUser(type, id);
-                if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
-                    return userClan.results[0].group.name;
-                } else {
-                    return "No pertenece a ningún clan";
-                }
-            } catch (error) {
-                console.error('Error al cargar el clan del usuario:', error);
-                return "No pertenece a ningún clan";
-            }
-        }
-
-        const getWeaponDetails = async (weapons) => {
-            if (!weapons || !Array.isArray(weapons)) {
-                return [];
-            }
-            const weaponD = await Promise.all(weapons.map(async (weapon) => {
-                const weaponInfo = await fetchActivityDetails(weapon.referenceId, "DestinyInventoryItemDefinition");
-                return {
-                    name: weaponInfo.displayProperties.name,
-                    icon: weaponInfo.displayProperties.icon,
-                    archetype: weaponInfo.itemTypeDisplayName,
-                    kills: weapon.values.uniqueWeaponKills.basic.value,
-                    precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
-                    precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
-                };
-            }));
-            return weaponD;
-        }
     }
 
 

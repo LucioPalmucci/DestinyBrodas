@@ -56,7 +56,7 @@ export default function Rumble({ activity, userId, onClose }) {
         <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
-            className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
+            className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 justify-center font-light'
             style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>

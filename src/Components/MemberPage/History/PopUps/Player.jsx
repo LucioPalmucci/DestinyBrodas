@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -15,6 +15,7 @@ import raidReportIcon from "../../../../assets/raidreport.png";
 import skull from "../../../../assets/skull-solid.svg";
 import suitcase from "../../../../assets/suitcase-medical-solid.svg";
 import { API_CONFIG } from "../../../../config";
+import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 import "../../../CSS/Tab.css";
 
 const CustomPrevArrow = ({ onClick }) => (
@@ -35,9 +36,82 @@ const CustomNextArrow = ({ onClick }) => (
     </button>
 );
 
-const PopUp = ({ jugador  }) => {
-    console.log("Renderizando PopUp para jugador: ", jugador);
+const PopUp = ({ jugador }) => {
+    const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats, getCompChars } = useBungieAPI();
+    const [playerReady, setPlayerReady] = useState(false);
     const [activeTab, setActiveTab] = useState("details");
+
+    useEffect(() => {
+        const loadPlayerData = async () => {
+            try {
+                jugador.honor = await getCommendations(jugador.membershipType, jugador.membershipId)
+                jugador.guardianRank = await fetchGuardianRank(jugador.membershipId, jugador.membershipType);
+                jugador.clan = await fetchClan(jugador.membershipId, jugador.membershipType);
+                jugador.emblemBig = await fetchEmblema(jugador.emblemHash);
+                jugador.weapons = await getWeaponDetails(jugador.weaponsBase);
+                setPlayerReady(true);
+            } catch (error) {
+                console.error("Error al cargar los datos del jugador:", error);
+                setPlayerReady(false);
+            }
+        };
+        loadPlayerData();
+    }, [jugador]);
+
+    const fetchGuardianRank = async (id, type) => {
+        try {
+            const responseProfile = await getCompsProfile(type, id);
+            const RankNum = responseProfile.profile.data.currentGuardianRank;
+            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
+            return ({
+                title: guardianRankResponse.displayProperties.name,
+                num: RankNum,
+            });
+        } catch (error) {
+            console.error('Error al cargar datos del popup del jugador:', error);
+        }
+    }
+
+    const fetchEmblema = async (emblem) => {
+        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
+        return emblemaResponse.secondaryIcon;
+    }
+
+    const fetchClan = async (id, type) => {
+        try {
+            const userClan = await getClanUser(type, id);
+            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
+                return userClan.results[0].group.name;
+            } else {
+                return "No pertenece a ningún clan";
+            }
+        } catch (error) {
+            console.error('Error al cargar el clan del usuario:', error);
+            return "No pertenece a ningún clan";
+        }
+    }
+
+    const getWeaponDetails = async (weapons) => {
+        console.log("Weapons base: ");
+        console.log("Weapons to fetch: ", weapons);
+        if (!weapons || !Array.isArray(weapons)) {
+            return [];
+        }
+        const weaponD = await Promise.all(weapons.map(async (weapon) => {
+            const weaponInfo = await getItemManifest(weapon.referenceId, "DestinyInventoryItemDefinition");
+            return {
+                name: weaponInfo.displayProperties.name,
+                icon: weaponInfo.displayProperties.icon,
+                archetype: weaponInfo.itemTypeDisplayName,
+                kills: weapon.values.uniqueWeaponKills.basic.value,
+                precisionKills: weapon.values.uniqueWeaponPrecisionKills.basic.value,
+                precisionKillsPercentage: weapon.values.uniqueWeaponKillsPrecisionKills.basic.displayValue,
+            };
+        }));
+        console.log("Weapon details: ", weaponD);
+        return weaponD;
+    }
+
     const settings = {
         dots: false,
         infinite: true,
@@ -51,8 +125,8 @@ const PopUp = ({ jugador  }) => {
         nextArrow: <CustomNextArrow />,
     };
 
-
     return (
+        playerReady &&
         <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start font-normal flex mt-10 font-Inter items-center flex-col space-y-4 relative">
             <div
                 style={{
@@ -67,8 +141,8 @@ const PopUp = ({ jugador  }) => {
                         {jugador.uniqueName.length > 12 ? `${jugador.uniqueName.substring(0, 12)}...` : jugador.uniqueName}
                     </h2>
                     <div className='text-lg text-neutral-100 opacity-75 flex items-center leading-tight' style={{ textShadow: "0px 1px 2px rgba(37, 37, 37, 0.4)" }}>
-                        <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardinRank?.num || 1}.fw.png`} className='w-4 h-4 mr-1' />
-                        <p className="mt-1">{jugador.guardinRank?.title || "Guardian"}</p>
+                        <img src={`${import.meta.env.BASE_URL}levels/${jugador.guardianRank?.num || 1}.fw.png`} className='w-4 h-4 mr-1' />
+                        <p className="mt-1">{jugador.guardianRank?.title || "Guardian"}</p>
                     </div>
                     <h1 className='leading-tight font-extralight tracking-wide text-gray-200 text-lg opacity-50'>
                         {jugador.clan || "Sin clan"}
@@ -111,7 +185,7 @@ const PopUp = ({ jugador  }) => {
                 <p className="tracking-[0.4rem] mb-1" style={{ color: '#479ce4' }}>ID DE BUNGIE</p>
                 <div className="items-center flex text-base w-full">
                     <img src={bungieLogo} alt="Bungie Logo" className="w-4 h-4 mr-1" />
-                    {jugador.uniqueName|| jugador.name}
+                    {jugador.uniqueName || jugador.name}
                     <span style={{ color: '#479ce4' }}>
                         {jugador.uniqueNameCode || ""}
                     </span>

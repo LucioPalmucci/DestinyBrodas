@@ -86,7 +86,7 @@ export default function Pve({ activity, userId, onClose }) {
         <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
-            className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 overflow-y-auto justify-center font-light'
+            className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6  justify-center font-light'
             style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
@@ -250,7 +250,7 @@ export default function Pve({ activity, userId, onClose }) {
                             );
                         })}
                     </div>
-                    <div className='w-fit max-w-140 mx-6'>
+                    <div className='w-fit max-w-140 mx-6 mt-4'>
                         {(
                             actComplete.peopleLeave != null && actComplete.peopleLeave.length > 0 && (
                                 <div className="flex items-center justify-start">
@@ -258,7 +258,7 @@ export default function Pve({ activity, userId, onClose }) {
                                     <div className='flex flex-wrap gap-4'>
                                         {actComplete.peopleLeave.map((person, idx) => {
                                             return (
-                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
+                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-xs opacity-70">
                                                     <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
                                                     <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>

@@ -74,7 +74,7 @@ export default function Crucible({ activity, userId, onClose }) {
         <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
     ) : (
         <div
-            className='bg-center flex bg-cover rounded-lg w-fit text-white max-h-screen p-8 overflow-y-auto justify-center font-light'
+            className='bg-center flex bg-cover rounded-lg w-fit text-white max-h-screen p-8 justify-center font-light'
             style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
@@ -187,7 +187,7 @@ export default function Crucible({ activity, userId, onClose }) {
                     <div className='w-full flex space-x-8'>
                         <div>
                             {actComplete.teams.teamA.people.filter(person => person.completed == 1 || person.membershipId == userId).map((person, idx) => {
-                                const personIndex = `single-${idx}`;
+                                const personIndex = `single-${idx}-A`;
                                 const isMvp = person.membershipId == actComplete.mvp.membershipId;
                                 return (
                                     <div key={idx} className={`flex items-center text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
@@ -237,7 +237,7 @@ export default function Crucible({ activity, userId, onClose }) {
                         </div>
                         <div>
                             {actComplete.teams.teamB.people.filter(person => person.completed == 1 || person.membershipId == userId).map((person, idx) => {
-                                const personIndex = `single-${idx}`;
+                                const personIndex = `single-${idx}-B`;
                                 const isMvp = person.membershipId == actComplete.mvp.membershipId;
                                 return (
                                     <div key={idx} className={`flex items-center text-start space-x-4 text-sm ${isMvp ? "font-bold " : ""} relative`}>
