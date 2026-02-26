@@ -138,7 +138,6 @@ export const useBungieAPI = () => {
 
     const getRecentActivitiesPage = useCallback(async (membershipType, userId, characterId, count, page, mode) => {
         const url = `${API_CONFIG.BUNGIE_API}/Platform/Destiny2/${membershipType}/Account/${userId}/Character/${characterId}/Stats/Activities/?count=${count}&page=${page}&mode=${mode}&lc=es`;
-        console.log("Fetching recent activities page:", url);
         const response = await apiRequest('recentActivities', url, [membershipType, userId, characterId, count, page]);
         return response?.Response?.activities || [];
     }, [apiRequest]);

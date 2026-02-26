@@ -8,6 +8,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<ClanLista/>} />
                 <Route path="/member/:membershipType/:membershipId" element={<MemberDetail/>} />
+                <Route path="/member/:membershipType/:membershipId/report/:instanceId" element={<MemberDetail />} />
             </Routes>
         </Router>
     );

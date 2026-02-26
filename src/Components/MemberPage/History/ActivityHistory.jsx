@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from "react-router-dom";
 import completed from "../../../assets/completed.png";
 import NotCompleted from "../../../assets/notCompleted.png";
 import skull from "../../../assets/skull-solid.svg";
@@ -8,15 +9,13 @@ import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import Spinner from '../../CSS/Spinner';
 import '../../CSS/Tab.css';
-import Crucible from './PopUps/Crucible';
-import Pve from './PopUps/Pve';
-import Rumble from './PopUps/Rumble';
-import Social from './PopUps/Social';
+import ActivityPopUp from './PopUps/ActivityPopUp';
 
 
 const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [activityDetails, setActivityDetails] = useState([]);
     const [expandedIndex, setExpandedIndex] = useState(null);
+    const [expandedInstanceId, setExpandedInstanceId] = useState(null);
     const [filteredActivities, setFilteredActivities] = useState([]);
     const [currentActivityType, setCurrentActivityType] = useState(0);
     const [currentActivityClass, setCurrentActivityClass] = useState({ hashClass: null, classId: null });
@@ -46,17 +45,24 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [hoveredClass, setHoveredClass] = useState(null);
     const [allCharacters, setAllCharacters] = useState({});
 
+    const navigate = useNavigate();
+    const { instanceId } = useParams();
+
     useEffect(() => {
         const fetchActivityHistory = async () => {
             if (isLoading) return;
+
             const cached = loadCache(cacheKey, CACHE_TTL);
             if (cached) {
                 setUpByCache(cached);
             } else setIsLoading(true);
+
+            console.log("Fetching activity history for userId:", instanceId);
             try {
                 const characters = await getCompChars(membershipType, userId);
                 const charactersByHash = Object.fromEntries(Object.values(characters).map(char => [char.classHash, char]));
                 setAllCharacters(charactersByHash);
+
                 const characterList = Object.values(characters);
                 const selectedCharacter = characterList.find(char => char.classHash == currentClass) ?? characterList[0];
                 const firstChar = selectedCharacter?.characterId;
@@ -72,8 +78,8 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 setFilteredActivities(activities);
                 const details = await getSomeActivities(activities, 0);
                 setActivityDetails(details);
-                setCurrentPage(1);
                 setFullLoaded(true);
+
                 try {
                     saveCache(cacheKey, details);
                 } catch (e) {
@@ -86,33 +92,17 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 setIsLoading(false);
             }
         };
-        if (userId && membershipType) {
-            fetchActivityHistory();
-        }
+
+        if (userId && membershipType) fetchActivityHistory();
     }, [userId, membershipType]);
 
-    const getSomeActivities = async (activities, type) => {
-        if (type != 0) activities = activities.filter(activity => activity.activityDetails.modes.includes(type));
-
+    const getSomeActivities = async (activities) => {
         const details = await Promise.all(activities.map(async (activity) => {
             const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
-            const date = new Date(activity.period).toLocaleString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour12: false
-            }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
-            const hour = new Date(activity.period).toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            const duration = formatDuration(activity.values.activityDurationSeconds.basic.value);
             const activityInfo = await fetchActivityDetails(activity.activityDetails.directorActivityHash, "DestinyActivityDefinition");
             let datosDelModo, datosDelTipo;
-            datosDelTipo = await fetchActivityDetails(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
-            if (activityInfo.directActivityModeHash) datosDelModo = await fetchActivityDetails(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
+            datosDelTipo = await fetchActivityDetails(activityInfo?.activityTypeHash, "DestinyActivityTypeDefinition");
+            if (activityInfo.directActivityModeHash) datosDelModo = await fetchActivityDetails(activityInfo?.directActivityModeHash, "DestinyActivityModeDefinition");
 
             let activityType;
             if (activity.activityDetails.modes.includes(7)) {
@@ -124,18 +114,9 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             } else activityType = "PvE";
 
             let actIcon = null;
-            let orden = 2;
-            if (orden == 1) {
-                if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
-                else if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
-                else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
-            }
-            else if (orden == 2) {
-                if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
-                else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
-
-                else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
-            }
+            if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
+            else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+            else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
             else activityMain?.displayProperties?.icon || null;
 
             if (actIcon == null || actIcon.includes("missing_icon")) {
@@ -145,41 +126,38 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
             let modeName = null;
-            if (activity.activityDetails.modes.includes(5) && !activity.activityDetails.modes.includes(84)) {
+            if(activity.activityDetails.modes.includes(19)) {
+                modeName = activityInfo?.originalDisplayProperties?.name;
+            }
+            else if (activity.activityDetails.modes.includes(5) && !activity.activityDetails.modes.includes(84)) {
                 modeName = datosDelModo?.displayProperties?.name + ": " + activityInfo?.originalDisplayProperties?.name;
             } else {
                 modeName = datosDelTipo?.displayProperties?.name || datosDelModo?.displayProperties?.name;
             }
 
             let splitedInTeams = false;
-            if(activityType == "PvP") {
+            if (activityType == "PvP") {
                 const carnageReport = await getCarnageReport(activity.activityDetails.instanceId);
                 splitedInTeams = carnageReport?.teams?.length > 1;
             }
+            let finalActivityName = activityMain?.originalDisplayProperties?.name;
+            if(activityMain?.originalDisplayProperties?.name.includes(modeName)){
+                const cleanedName = activityMain?.originalDisplayProperties?.name.replace(modeName, "").replace(": ", "").trim();
+                finalActivityName = cleanedName.charAt(0).toUpperCase() + cleanedName.slice(1);
+            }
             return {
-                activityName: activityMain?.originalDisplayProperties?.name,
+                activityName: finalActivityName,
                 activityMode: modeName,
-                activityTypePVP: activityInfo?.originalDisplayProperties?.name?.replaceAll(":", " -"),
                 activityIcon: actIcon,
-                instanceId: activity.activityDetails.instanceId,
-                pgcrImage: activityMain?.pgcrImage || null,
-                difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name || "Estándar" : activityInfo?.selectionScreenDisplayProperties?.name || "Estándar",
                 instanceId: activity.activityDetails.instanceId,
                 kills: activity.values.kills.basic.value || 0,
                 deaths: activity.values.deaths.basic.value || 0,
                 kd: activity.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
                 completed: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6) ? "Completado" : "Abandonado",
-                completedSymbol: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6)  ? completed : NotCompleted,
-                modeNumbers: activity.activityDetails.modes,
+                completedSymbol: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6) ? completed : NotCompleted,
                 activityType,
-                activityTypeHash: activityInfo.activityTypeHash || null,
-                date,
-                duration,
-                hour,
-                durationInSeconds: activity.values.activityDurationSeconds.basic.value,
-                durationFormated: activity.values.activityDurationSeconds.basic.displayValue,
+                duration: formatDuration(activity.values.activityDurationSeconds.basic.value || 0),
                 hash: activity.activityDetails.referenceId,
-                difficultyCollection: activityInfo.difficultyTierCollectionHash,
                 splitedInTeams: splitedInTeams,
             };
         }));
@@ -222,8 +200,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setFullLoaded(true);
     };
 
-    const toggleExpand = (index) => {
-        setExpandedIndex(expandedIndex === index ? null : index);
+    const toggleExpand = (instanceId) => {
+        const id = String(instanceId);
+        if (expandedInstanceId === id) closePopup();
+        else openPopup(id);
     };
 
     const setUpByCache = (cached) => {
@@ -350,6 +330,23 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         });
     };
 
+    const openPopup = (id) => {
+        setExpandedInstanceId(id);
+        navigate(`/member/${membershipType}/${userId}/report/${id}`, { replace: false });
+    };
+
+    const closePopup = () => {
+        setExpandedInstanceId(null);
+        navigate(`/member/${membershipType}/${userId}`, { replace: false });
+    };
+
+    useEffect(() => {
+        if (instanceId) {
+            console.log("Opening popup for instanceId from URL:", instanceId);
+            setExpandedInstanceId(instanceId);
+        }
+    }, [instanceId]);
+
     return (
         <div>
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
@@ -415,7 +412,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                             const uniqueId = activity.instanceId + index;
                             return (
                                 <div className={`transition-colors  hover:bg-gray-300/50 ${index % 2 === 0 ? 'bg-gray-300' : 'bg-[#C1C7CE]'}`} key={uniqueId}>
-                                    <button onClick={() => toggleExpand(uniqueId)} className='cursor-pointer w-full h-[80px]'>
+                                    <button onClick={() => toggleExpand(activity.instanceId)} className='cursor-pointer w-full h-[80px]'>
                                         <div key={uniqueId} className={`px-6 text-[1.1rem] text-start justify-between flex items-center`}>
                                             <div className='flex items-center justify-between w-[55%] text-start'>
                                                 <div className='flex items-center text-start'>
@@ -451,22 +448,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                                             </div>
                                         </div>
                                     </button>
-                                    {expandedIndex === (uniqueId) && (
-                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={() => setExpandedIndex(null)}>
+                                    {expandedInstanceId == uniqueId && (
+                                        <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={closePopup}>
                                             <div className="relative overflow-visible" onClick={(e) => e.stopPropagation()}>
-                                                {activity.splitedInTeams == true ? (
-                                                    <Crucible activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
-                                                ) : (
-                                                    activity.activityType == "PvE" ? (
-                                                        activity.activityMode == "Social" ? (
-                                                            <Social activity={activity} userId={userId} membershipType={membershipType} onClose={() => setExpandedIndex(null)} />
-                                                        ) : (
-                                                            <Pve activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
-                                                        )
-                                                    ) : (
-                                                        <Rumble activity={activity} userId={userId} onClose={() => setExpandedIndex(null)} />
-                                                    )
-                                                )}
+                                                <ActivityPopUp instanceId={activity.instanceId} userId={userId} membershipType={membershipType} onClose={closePopup} />
                                             </div>
                                         </div>
                                     )}
@@ -540,6 +525,13 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                     </button>
                 </div>
             </div>
+            {instanceId && (
+                <div className='fixed inset-0 bg-black/60 flex justify-center items-center z-50 transition duration-300' onClick={closePopup}>
+                    <div className="relative overflow-visible" onClick={(e) => e.stopPropagation()}>
+                        <ActivityPopUp instanceId={instanceId} userId={userId} membershipType={membershipType} onClose={closePopup} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -183,12 +183,12 @@ export default function ClanTeammates({ userId, membershipType }) {
                                     <img width={40} height={40} alt="Emblem" src={`${API_CONFIG.BUNGIE_API}${jugador.icon}`} />
                                     <div className="flex flex-col">
                                         <h1>
-                                            {jugador.uniqueName.length > 12
-                                                ? jugador.uniqueName.slice(0, 12) + "..."
-                                                : jugador.uniqueName
+                                            {jugador?.uniqueName?.length > 12
+                                                ? jugador?.uniqueName?.slice(0, 12) + "..."
+                                                : jugador?.uniqueName
                                             }
                                             <span style={{ color: '#479ce4' }}>
-                                                {jugador.uniqueNameCode}
+                                                {jugador?.uniqueNameCode}
                                             </span>
                                         </h1>
                                         <span className="text-xs italic">{jugador.date}</span>

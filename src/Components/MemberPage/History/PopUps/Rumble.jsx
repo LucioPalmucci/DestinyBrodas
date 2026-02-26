@@ -8,28 +8,41 @@ import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
-import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Rumble({ activity, userId, onClose }) {
+export default function Rumble({ actComplete, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
-    const [actComplete, setActComplete] = useState(null);
     const [leftWidth, setLeftWidth] = useState(null);
+    const [bgLoaded, setBgLoaded] = useState(false);
+    const [bgError, setBgError] = useState(false);
     const fetchPlayersBasicData = usePlayersBasicData();
     const scoreFirstPlace = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
     const scoreSecondPlace = useCountUp(actComplete?.secondPlace?.score ?? 0, 1000);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
 
+    /*useEffect(() => {
+        setBgLoaded(false);
+        setBgError(false);
+
+        const img = new Image();
+        img.src = activity?.pgcrImage || "";
+        img.onload = () => setBgLoaded(true);
+        img.onerror = () => {
+            setBgError(true);
+            setBgLoaded(true); // evita loader infinito
+        };
+
+    }, [activity?.pgcrImage]);
+
     useEffect(() => {
         (async () => {
-            const data = await fetchPlayersBasicData(activity, userId);
-            const completeAct = { ...activity, ...data };
-            setActComplete(completeAct);
+            if (!activity?.people) return;
+            setActComplete(activity);
         })();
-    }, [activity, userId, fetchPlayersBasicData]);
+    }, [activity, userId]);*/
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -52,12 +65,10 @@ export default function Rumble({ activity, userId, onClose }) {
         };
     }, []);
 
-    return !actComplete ? (
-        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
-    ) : (
+    return (
         <div
             className='bg-center flex bg-cover rounded-lg w-4xl text-white max-h-screen p-6 justify-center font-light'
-            style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
+            style={{ backgroundImage: bgError ? "none" : `url(${actComplete?.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex justify-center items-center w-full text-sm'>
@@ -122,7 +133,7 @@ export default function Rumble({ activity, userId, onClose }) {
 
                 <div className='w-fit'>
                     <div className='w-full'>
-                        {actComplete.people.some(person => person.completed == 1) && (
+                        {actComplete?.people?.some(person => person.completed == 1) && (
                             <div className='flex items-center text-center pb-1 space-x-4'>
                                 <div className='w-full'></div>
                                 <div className='flex bg-black/25 py-2 px-0 rounded-lg items-center text-[0.72rem]'>
@@ -143,7 +154,7 @@ export default function Rumble({ activity, userId, onClose }) {
                     </div>
 
                     <div className='w-full'>
-                        {actComplete.people.filter(person => person.completed == 1 || person.membershipId == userId).map((person, idx) => {
+                        {actComplete?.people?.filter(person => person.completed == 1 || person.membershipId == userId).map((person, idx) => {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             return (
@@ -177,7 +188,7 @@ export default function Rumble({ activity, userId, onClose }) {
                                         </button>
 
                                         {jugadorSelected === personIndex && (
-                                            <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                            <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
                                                 <PopUp jugador={person} setIsOpen={setJugadorSelected} />
                                             </div>
                                         )}
@@ -194,11 +205,11 @@ export default function Rumble({ activity, userId, onClose }) {
                         })}
                     </div>
                     <div className='w-full mx-6'>
-                        {actComplete.people.some(person => person.completed == 0 && person.membershipId != userId) && (
+                        {actComplete?.people?.some(person => person.completed == 0 && person.membershipId != userId) && (
                             <div className="flex items-center justify-start">
                                 <img src={abandonaLeft} width={25} height={25} title='Dejó la actividad' className='mr-2 opacity-70'></img>
                                 <div className='flex flex-wrap gap-4'>
-                                    {actComplete.people.filter(person => person.completed == 0 && person.membershipId != userId).map((person, idx) => {
+                                    {actComplete?.people?.filter(person => person.completed == 0 && person.membershipId != userId).map((person, idx) => {
                                         return (
                                             <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-sm opacity-70">
                                                 <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />

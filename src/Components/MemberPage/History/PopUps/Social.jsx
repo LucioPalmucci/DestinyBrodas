@@ -1,4 +1,3 @@
-
 import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from 'react';
@@ -9,28 +8,39 @@ import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
-import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Social({ activity, userId, membershipType, onClose }) {
+export default function Social({ actComplete, userId, membershipType, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
-    const [actComplete, setActComplete] = useState(null);
     const [leftWidth, setLeftWidth] = useState(null);
+    const [bgLoaded, setBgLoaded] = useState(false);
+    const [bgError, setBgError] = useState(false);
     const fetchPlayersBasicData = usePlayersBasicData();
     const scoreMVP = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
     const { getCompsProfile } = useBungieAPI();
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
 
+    /*useEffect(() => {
+        setBgLoaded(false);
+        setBgError(false);
+
+        const img = new Image();
+        img.src = activity?.pgcrImage || "";
+        img.onload = () => setBgLoaded(true);
+        img.onerror = () => {
+            setBgError(true);
+            setBgLoaded(true); // evita loader infinito
+        };
+    }, [activity?.pgcrImage]);
+
     useEffect(() => {
         (async () => {
-            const player = await fetchPlayersBasicData(activity, userId, membershipType);
-            setActComplete({ ...activity, player });
-            console.log("Datos completos de la actividad social: ", { ...activity, player });
+            setActComplete(activity);
         })();
-    }, [activity, userId]);
+    }, [activity, userId, membershipType, fetchPlayersBasicData]);*/
 
     const handlePlayerClick = (person, open) => {
         if (open === false) {
@@ -52,12 +62,10 @@ export default function Social({ activity, userId, membershipType, onClose }) {
         };
     }, []);
 
-    return !actComplete ? (
-        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
-    ) : (
+    return (
         <div
             className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 justify-center font-light'
-            style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
+            style={{ backgroundImage: bgError ? "none" : `url(${actComplete.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex items-center w-full justify-center text-xl'>
@@ -71,7 +79,7 @@ export default function Social({ activity, userId, membershipType, onClose }) {
                             />
                         </div>
                     )}
-                    <div className='w-[32%]'>
+                    <div className='min-w-[32%]'>
                         <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='Duración de la actividad'>
                             <div className='flex items-center space-x-2'>
                                 <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>

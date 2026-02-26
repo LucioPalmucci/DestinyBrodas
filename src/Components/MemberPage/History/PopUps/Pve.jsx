@@ -11,56 +11,35 @@ import swap from "../../../../assets/swap.png";
 import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
-import { useCountUp } from './Hooks/countUp';
-import LoadingReport from './LoadingReport';
 import PopUp from './Player';
-import usePlayersBasicData from './playersBasicData';
 
-export default function Pve({ activity, userId, onClose }) {
+export default function Pve({ actComplete, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
-    const [actComplete, setActComplete] = useState(null);
-    const [leftWidth, setLeftWidth] = useState(null);
-    const fetchPlayersBasicData = usePlayersBasicData();
-    const scoreMVP = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
+    const [bgLoaded, setBgLoaded] = useState(false);
+    const [bgError, setBgError] = useState(false);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
 
-    useEffect(() => {
-        (async () => {
-            const data = await fetchPlayersBasicData(activity, userId);
-            const playersStatusData = getHowToDisplayPlayers(data, activity);
-            const completeAct = { ...activity, ...playersStatusData };
-            setActComplete(completeAct);
-        })();
-    }, [activity, userId, fetchPlayersBasicData]);
+    /*useEffect(() => {
+        setBgLoaded(false);
+        setBgError(false);
 
-    const getHowToDisplayPlayers = (playersData, activity) => {
-        let peopleStay = null, peopleLeave = null;
-        if (activity.modeNumbers.includes(4) || activity.modeNumbers.includes(82)) { //En Mazmorras o Raids
-            if (activity.completed == "Completado") { //Si se completó
-                peopleStay = playersData.people.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
-                peopleLeave = playersData.people.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
-            }
-            else if (activity.completed == "Abandonado" && playersData.people.length <= 6) { //Si no se completó y fueron 6 personas o menos
-                peopleStay = playersData.people; //se quedaron todos
-            }
-            else if (activity.completed == "Abandonado" && playersData.people.length > 6) { //Si no se completó y fueron más de 6 personas
-                peopleStay = playersData.people.filter(player => player.completed == 0 || player.membershipId == userId).sort((a, b) => b.timePlayedSeconds - a.timePlayedSeconds) //se quedó y ordenar por el que mas tiempo estuvo
-                playersData.mvp = peopleStay[0]; //El MVP ahora es el que más tiempo estuvo.
-                playersData.mvp.specialOne = true;
-                playersData.mvp.message = "El que bancó más tiempo";
-            }
-        } else { //En el resto de PvE
-            if (activity.completed == "Abandonado") peopleStay = playersData.people; //Si no se completó, se muestra las stats de todos.
-            else if (activity.completed == "Completado") { //Si se completó, se muestra solo las stats de los que lo completaron.
-                peopleStay = playersData.people.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
-                peopleLeave = playersData.people.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
-            }
-        }
-        playersData.people = null;
-        return { peopleStay, peopleLeave, ...playersData };
-    }
+        const img = new Image();
+        img.src = activity.pgcrImage;
+        img.onload = () => setBgLoaded(true);
+        img.onerror = () => {
+            setBgError(true);
+            setBgLoaded(true);
+        };
+    }, [activity?.pgcrImage]);
+
+    useEffect(() => {
+        (() => {
+            setActComplete(activity);
+        })();
+    }, [activity, userId]);*/
+
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -82,17 +61,15 @@ export default function Pve({ activity, userId, onClose }) {
         };
     }, []);
 
-    return !actComplete ? (
-        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
-    ) : (
+    return (
         <div
-            className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6  justify-center font-light'
-            style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
+            className='min-h-[500px] bg-center flex bg-cover rounded-lg min-w-4xl text-white max-h-screen p-6 justify-center font-light'
+            style={{ backgroundImage: `url(${actComplete?.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex items-center w-full justify-center text-xl'>
-                    {actComplete.mvp && (
-                        <div className={`dark ${actComplete.completed == "Completado" ? "theme-shimmer-dorado" : "theme-shimmer-gris"} flex flex-col justify-end items-end space-y-1 mt-2 w-[28%]`} title={actComplete.mvp.message}>
+                    {actComplete?.mvp && (
+                        <div className={`dark ${actComplete.completed == "Completado" ? "theme-shimmer-dorado" : "theme-shimmer-gris"} flex flex-col justify-end items-end space-y-1 mt-2 min-w-[28%]`} title={actComplete.mvp.message}>
                             <button className='flex flex-col items-center mvp-button bg-black/25 rounded-lg p-2 px-3.5' data-effect="wave">
                                 <span className="shimmer "></span>
                                 <div className='flex pop-in'>
@@ -103,7 +80,7 @@ export default function Pve({ activity, userId, onClose }) {
                         </div>
                     )}
                     {actComplete.activityIcon && (
-                        <div className='w-30 h-30 mx-8 bg-black/25 rounded-lg p-1'>
+                        <div className='w-30 h-30 mx-8 bg-black/25 rounded-lg p-1 justify-center items-center flex' title={actComplete.activityName}>
                             <img
                                 src={`${API_CONFIG.BUNGIE_API}${actComplete.activityIcon}`}
                                 className='pop-in'
@@ -186,7 +163,7 @@ export default function Pve({ activity, userId, onClose }) {
                     </div>
 
                     <div className='w-full'>
-                        {actComplete.peopleStay.map((person, idx) => {
+                        { actComplete.peopleStay.map((person, idx) => {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             const MvPLeft = isMvp && actComplete.completed == "Abandonado" ? true : false;
@@ -223,7 +200,7 @@ export default function Pve({ activity, userId, onClose }) {
                                         </button>
 
                                         {jugadorSelected === personIndex && (
-                                            <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                            <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
                                                 <PopUp jugador={person} setIsOpen={setJugadorSelected} />
                                             </div>
                                         )}
@@ -284,16 +261,16 @@ export default function Pve({ activity, userId, onClose }) {
                         )}
                     </div>
                 </div>
-                    {actComplete.hasPoints && (
-                        <div className='w-full items-center justify-center flex'>
-                            <div className='flex items-center bg-black/25 p-2 rounded-lg justify-center text-sm' >
-                                <p>PUNTAJE TOTAL:</p>
-                                <div className='flex items-center ml-2'>
-                                    <p className=' font-bold'>{actComplete.scoreActivity}</p>
-                                </div>
+                {actComplete.hasPoints && (
+                    <div className='w-full items-center justify-center flex'>
+                        <div className='flex items-center bg-black/25 p-2 rounded-lg justify-center text-sm' >
+                            <p>PUNTAJE TOTAL:</p>
+                            <div className='flex items-center ml-2'>
+                                <p className=' font-bold'>{actComplete.scoreActivity}</p>
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
             </div>
             <button
                 className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"

@@ -9,28 +9,38 @@ import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import { useCountUp } from './Hooks/countUp';
-import LoadingReport from './LoadingReport';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Crucible({ activity, userId, onClose }) {
+export default function Crucible({ actComplete, userId, onClose }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const fetchPlayersBasicData = usePlayersBasicData();
-    const [actComplete, setActComplete] = useState(null);
+    const [bgLoaded, setBgLoaded] = useState(false);
+    const [bgError, setBgError] = useState(false);
     const scoreTeamA = useCountUp(actComplete?.teams?.teamA?.score ?? 0, 1000);
     const scoreTeamB = useCountUp(actComplete?.teams?.teamB?.score ?? 0, 1000);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
 
-    useEffect(() => {
+    /*useEffect(() => {
+        setBgLoaded(false);
+        setBgError(false);
+
+        const img = new Image();
+        img.src = activity?.pgcrImage || "";
+        img.onload = () => setBgLoaded(true);
+        img.onerror = () => {
+            setBgError(true);
+            setBgLoaded(true); // evita loader infinito
+        };
+    }, [activity?.pgcrImage]);*/
+
+    /*useEffect(() => {
         (async () => {
-            const data = await fetchPlayersBasicData(activity, userId);
-            const completeAct = { ...activity, ...data };
-            console.log(completeAct);
-            setActComplete(completeAct);
+            setActComplete(activity);
         })();
-    }, [activity, userId, fetchPlayersBasicData]);
+    }, [activity, userId, fetchPlayersBasicData]);*/
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -70,12 +80,10 @@ export default function Crucible({ activity, userId, onClose }) {
         );
     };
 
-    return !actComplete ? (
-        <LoadingReport image={API_CONFIG.BUNGIE_API + activity.pgcrImage} />
-    ) : (
+    return (
         <div
             className='bg-center flex bg-cover rounded-lg w-fit text-white max-h-screen p-8 justify-center font-light'
-            style={{ backgroundImage: `url(${API_CONFIG.BUNGIE_API}${activity.pgcrImage})` }}
+            style={{ backgroundImage: bgError ? "none" : `url(${actComplete?.pgcrImage})` }}
         >
             <div className='flex flex-col justify-center space-y-4 items-center'>
                 <div className='flex justify-center items-center w-full text-sm'>
@@ -219,7 +227,7 @@ export default function Crucible({ activity, userId, onClose }) {
                                             </button>
 
                                             {jugadorSelected === personIndex && (
-                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                                <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
                                                     <PopUp jugador={person} setIsOpen={setJugadorSelected} />
                                                 </div>
                                             )}
@@ -276,7 +284,7 @@ export default function Crucible({ activity, userId, onClose }) {
                                             </button>
 
                                             {jugadorSelected === personIndex && (
-                                                <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2 overflow-hidden">
+                                                <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
                                                     <PopUp jugador={person} setIsOpen={setJugadorSelected} />
                                                 </div>
                                             )}

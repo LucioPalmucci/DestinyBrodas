@@ -8,12 +8,13 @@ const usePlayersBasicData = () => {
     const fetchCarnageReport = useCallback(async (activity, userId, membershipType) => {
         try {
             const carnageReportResponse = await getCarnageReport(activity.instanceId);
-            const filteredEntries = carnageReportResponse.entries;
+            if (activity.activityMode == "Social") {
+                let player = await getCaseSocial(activity, carnageReportResponse, userId, membershipType)
+                return player;
+            }
+            console.log("Carnage report response:", carnageReportResponse);
 
-            console.log("Carnage report response: ", carnageReportResponse);
-            if (activity.activityMode == "Social") return await getCaseSocial(activity, carnageReportResponse, userId, membershipType);
-
-            const peopleRaw = await Promise.all(filteredEntries.map(async (entry) => ({
+            const peopleRaw = await Promise.all(carnageReportResponse.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
                 kd: entry.values.killsDeathsRatio.basic.value.toFixed(1),
                 deaths: entry.values.deaths.basic.value,
@@ -50,7 +51,7 @@ const usePlayersBasicData = () => {
             const hasPoints = getScore(activity, people);
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
-            if ((activity.modeNumbers.includes(5) || activity.modeNumbers.includes(63))) { //PVP
+            if ((activity.modeNumbers.includes(5) || activity.modeNumbers.includes(63)) || activity.modeNumbers.includes(32)) { //PVP
                 if (carnageReportResponse.teams && carnageReportResponse.teams.length >= 2) { //Por equipos
                     teams = buildTeamsData(people, carnageReportResponse, userId);
                     mvp = getMVP(teams, "pvp");
@@ -71,7 +72,8 @@ const usePlayersBasicData = () => {
                     difficultyColor = getDifficultyColor(difficulty);
                 }
                 if (hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
-                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity };
+                const playersStatusData = getHowToDisplayPlayers(activity, people);
+                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity, ...playersStatusData};
             }
         } catch (error) {
             console.error('Error fetching carnage report:', error);
@@ -271,6 +273,7 @@ const usePlayersBasicData = () => {
     }
 
     const getCaseSocial = async (activity, carnageReportResponse, userId, membershipType) => {
+        console.log("Actividad social detectada, obteniendo datos de jugadores...");
         let classe, classSymbol, player = null;
         const playerEntry = carnageReportResponse.entries.find(entry => entry.player.destinyUserInfo.membershipId == userId);
 
@@ -292,6 +295,7 @@ const usePlayersBasicData = () => {
             }
         }
 
+        console.log("Datos obtenidos para jugador social:", { emblem, uniqueName, uniqueNameCode, classe, classSymbol, power });
         return player = {
             emblem,
             uniqueName,
@@ -308,9 +312,36 @@ const usePlayersBasicData = () => {
             timePlayed: playerEntry.values.timePlayedSeconds.basic.displayValue,
             values: playerEntry.extended?.values,
         };
-
+        
     }
 
+    const getHowToDisplayPlayers = (activity, playersData) => {
+        let peopleStay = null, peopleLeave = null;
+        console.log("Actividad para determinar cómo mostrar a los jugadores:", activity);
+        if (activity.modeNumbers.includes(4) || activity.modeNumbers.includes(82)) { //En Mazmorras o Raids
+            if (activity.completed == "Completado") { //Si se completó
+                peopleStay = playersData.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
+                peopleLeave = playersData.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
+            }
+            else if (activity.completed == "Abandonado" && playersData.length <= 6) { //Si no se completó y fueron 6 personas o menos
+                peopleStay = playersData; //se quedaron todos
+            }
+            else if (activity.completed == "Abandonado" && playersData.length > 6) { //Si no se completó y fueron más de 6 personas
+                peopleStay = playersData.filter(player => player.completed == 0 || player.membershipId == userId).sort((a, b) => b.timePlayedSeconds - a.timePlayedSeconds) //se quedó y ordenar por el que mas tiempo estuvo
+                playersData.mvp = peopleStay[0]; //El MVP ahora es el que más tiempo estuvo.
+                playersData.mvp.specialOne = true;
+                playersData.mvp.message = "El que bancó más tiempo";
+            }
+        } else { //En el resto de PvE
+            if (activity.completed == "Abandonado") peopleStay = playersData; //Si no se completó, se muestra las stats de todos.
+            else if (activity.completed == "Completado") { //Si se completó, se muestra solo las stats de los que lo completaron.
+                peopleStay = playersData.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
+                peopleLeave = playersData.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
+            }
+        }
+        playersData.people = null;
+        return { peopleStay, peopleLeave, ...playersData };
+    }
 
     return fetchCarnageReport;
 

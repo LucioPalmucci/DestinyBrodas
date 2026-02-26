@@ -126,7 +126,6 @@ const PopUp = ({ jugador }) => {
     };
 
     return (
-        playerReady &&
         <div className="text-white font-Inter w-[350px] bg-black/75 text-start justify-start font-normal flex mt-10 font-Inter items-center flex-col space-y-4 relative">
             <div
                 style={{
@@ -217,7 +216,7 @@ const PopUp = ({ jugador }) => {
             <div className="w-full h-px bg-white opacity-30" />
 
             <div className="flex justify-evenly space-x-4">
-                <span className="flex" title="Tiempo jugado"><i className="icon-clock mr-2 -translate-y-0.5" alt="Clock" /> <p>{jugador.timePlayedSeconds}</p></span>
+                <span className="flex" title="Tiempo jugado"><i className="icon-clock mr-2 -translate-y-0.5" alt="Clock" /> <p>{jugador.timePlayed}</p></span>
                 <span className="flex" title="Bajas"><i className="icon-kills2 mr-2 -translate-y-0.5" /> {jugador.kills}</span>
                 <p className="flex" title="Muertes"><img src={skull} className="mr-2 -translate-y-0.5" width={15} height={15} style={{ filter: "invert(100%)" }} /> {jugador.deaths}</p>
                 <p className="flex" title="Asistencias"><img src={suitcase} className="mr-2 -translate-y-0.5" width={15} height={15} style={{ filter: "invert(100%)" }} /> {jugador.assists}</p>
@@ -236,8 +235,8 @@ const PopUp = ({ jugador }) => {
                     <img src={gun} className="mr-1" width={15} height={15} style={{ filter: "invert(100%)" }} /> Armas
                 </button>
             </div>
-            <div className="w-full h-48 overflow-visible pb-2 items-center">
-                <AnimatePresence mode="wait">
+            <div className="w-full h-56 overflow-visible pb-2 items-center">
+                {playerReady && <AnimatePresence mode="wait">
                     {activeTab === "details" && (
                         <motion.div
                             key="details"
@@ -354,7 +353,7 @@ const PopUp = ({ jugador }) => {
                             )}
                         </motion.div>
                     )}
-                </AnimatePresence>
+                </AnimatePresence>}
             </div>
         </div>
     );
