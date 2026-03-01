@@ -36,9 +36,8 @@ export default function ActivityPopUp({ instanceId, userId, membershipType, onCl
 
             const preloadedBg = await preloadImage(fullPgcrImage);
             
-            if (activityGeneral.activityMode == "Social") activityData = { ...activityGeneral, player, pgcrImage: preloadedBg };
+            if (activityGeneral?.activityMode == "Social") activityData = { ...activityGeneral, player, pgcrImage: preloadedBg };
             else activityData = { ...activityGeneral, ...player,  pgcrImage: preloadedBg};
-
             setActivity(activityData);
             setLoading(false);
         };

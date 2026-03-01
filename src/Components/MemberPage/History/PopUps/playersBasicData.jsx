@@ -12,7 +12,6 @@ const usePlayersBasicData = () => {
                 let player = await getCaseSocial(activity, carnageReportResponse, userId, membershipType)
                 return player;
             }
-            console.log("Carnage report response:", carnageReportResponse);
 
             const peopleRaw = await Promise.all(carnageReportResponse.entries.map(async (entry) => ({
                 kills: entry.values.kills.basic.value,
@@ -29,13 +28,13 @@ const usePlayersBasicData = () => {
                 characterId: entry.characterId,
                 membershipId: entry.player.destinyUserInfo.membershipId,
                 membershipType: entry.player.destinyUserInfo.membershipType,
-                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName,
-                uniqueNameCode: "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
-                uniqueCompleteName: entry.player.destinyUserInfo.bungieGlobalDisplayName + "#" + entry.player.destinyUserInfo.bungieGlobalDisplayNameCode,
+                uniqueName: entry.player.destinyUserInfo.bungieGlobalDisplayName || entry.player.destinyUserInfo.displayName,
+                uniqueNameCode: entry.player.destinyUserInfo.bungieGlobalDisplayNameCode ? "#" + String(entry.player.destinyUserInfo.bungieGlobalDisplayNameCode).padStart(4, '0') : "",
+                uniqueCompleteName: entry.player.destinyUserInfo.bungieGlobalDisplayName || entry.player.destinyUserInfo.displayName + "#" + String(entry.player.destinyUserInfo.bungieGlobalDisplayNameCode).padStart(4, '0') || "",
                 standing: entry.standing,
                 completed: entry.values.completed.basic.value,
                 values: entry.extended?.values,
-                weaponsBase: entry.extended.weapons,
+                weaponsBase: entry.extended?.weapons,
                 emblemHash: entry.player.emblemHash,
                 timePlayed: entry.values.timePlayedSeconds.basic.displayValue,
                 timePlayedSeconds: entry.values.timePlayedSeconds.basic.value,
@@ -51,7 +50,7 @@ const usePlayersBasicData = () => {
             const hasPoints = getScore(activity, people);
             const hasMedals = people.some(person => person.medals > 0);
             const full = carnageReportResponse.activityWasStartedFromBeginning;
-            if ((activity.modeNumbers.includes(5) || activity.modeNumbers.includes(63)) || activity.modeNumbers.includes(32)) { //PVP
+            if (activity.activityType == "PvP" || activity.activityType == "Gambito") { //PVP
                 if (carnageReportResponse.teams && carnageReportResponse.teams.length >= 2) { //Por equipos
                     teams = buildTeamsData(people, carnageReportResponse, userId);
                     mvp = getMVP(teams, "pvp");
@@ -72,7 +71,7 @@ const usePlayersBasicData = () => {
                     difficultyColor = getDifficultyColor(difficulty);
                 }
                 if (hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
-                const playersStatusData = getHowToDisplayPlayers(activity, people);
+                const playersStatusData = getHowToDisplayPlayers(activity, people, userId);
                 return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity, ...playersStatusData};
             }
         } catch (error) {
@@ -81,10 +80,9 @@ const usePlayersBasicData = () => {
         }
     }, [getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser]);
 
-    const buildTeamsData = (people, carnageReportResponse, userId) => {
+    const buildTeamsData = (people, carnageReportResponse) => {
 
-        const sortedTeams = [...(carnageReportResponse?.teams || [])]
-            .sort((a, b) => (a?.teamId ?? Infinity) - (b?.teamId ?? Infinity));
+        const sortedTeams = [...(carnageReportResponse?.teams || [])].sort((a, b) => (a?.teamId ?? Infinity) - (b?.teamId ?? Infinity));
 
         const teamAData = sortedTeams[0] || null;
         const teamBData = sortedTeams[1] || null;
@@ -148,6 +146,11 @@ const usePlayersBasicData = () => {
         if (mode === "pvp") {
             const winningTeam = teams.teamA.standing == 0 ? teams.teamA : teams.teamB;
             mvp = winningTeam?.people.sort((a, b) => b.score - a.score)[0];
+            mvp.message = "El que tuvo mejor puntuación";
+            if(mvp.score == null || mvp.score == 0) {
+                mvp = winningTeam?.people.sort((a, b) => b.kd - a.kd)[0];
+                mvp.message = "El que tuvo mejor KD";
+            }
         } else if (mode === "rumble") {
             mvp = teams.sort((a, b) => b.score - a.score)[0];
         } else if (mode === "pve") {
@@ -163,6 +166,7 @@ const usePlayersBasicData = () => {
                     }
                 }
             });
+            mvp.message = "El que murió menos veces";
         }
         return {
             nombre: mvp?.name,
@@ -172,7 +176,7 @@ const usePlayersBasicData = () => {
             classHash: mvp?.classHash,
             uniqueName: mvp?.uniqueName,
             uniqueNameCode: mvp?.uniqueNameCode,
-            message: mode === "pve" ? "El que murió menos veces" : "El que tuvo mejor puntuación",
+            message: mvp?.message,
         };
     }
 
@@ -207,10 +211,10 @@ const usePlayersBasicData = () => {
     }
 
     const getScore = (activity, people) => {
-        //Portal: Solo ops, fireteam ops, arena ops, crucible, gambit x2
+        //Portal: Solo ops, fireteam ops, arena ops, crucible, gambit x2, pruebas de osiris.
         const isFormPortal = activity.activityTypeHash == 1996806804 || activity.activityTypeHash == 3851289711 ||
             activity.activityTypeHash == 904017341 || activity.activityTypeHash == 3340296467 || activity.activityTypeHash == 4088006058
-            || activity.activityTypeHash == 2490937569 || activity.activityTypeHash == 248695599;
+            || activity.activityTypeHash == 2490937569 || activity.activityTypeHash == 248695599 || activity.activityTypeHash == 2112637710;
         if (isFormPortal) {
             return people.some(person => person.score);
         } else return false;
@@ -219,19 +223,18 @@ const usePlayersBasicData = () => {
     const getDifficultyName = async (activity, carnageReportResponse, manifest) => {
         let difficultyName = null;
         if (activity.difficultyCollection) {
-            //const difficutyFamily = await getItemManifest(activity.difficultyCollection, "DestinyActivityDifficultyTierCollectionDefinition");
-            //console.log("Dificultades obtenidas del endpoint: ", difficutyFamily);
             const diffUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDifficultyTierCollectionDefinition}`;
             const diffRes = await axios.get(diffUrl);
             const diffData = diffRes.data;
 
             const filteredActivities = Object.values(diffData).find((difficultyItem) => difficultyItem.hash == activity.difficultyCollection);
 
-            difficultyName = filteredActivities.difficultyTiers[carnageReportResponse.activityDifficultyTier].displayProperties.name;
+            difficultyName = filteredActivities?.difficultyTiers?.[carnageReportResponse.activityDifficultyTier - 1]?.displayProperties?.name; //
         }
         if ((difficultyName == null || difficultyName == "") && activity.difficulty || difficultyName.includes(activity.activityMode)) {
             difficultyName = activity.difficulty;
         }
+        if (activity.activityName.includes(activity.difficulty)) difficultyName = "Estándar";
         return difficultyName;
     }
 
@@ -273,7 +276,6 @@ const usePlayersBasicData = () => {
     }
 
     const getCaseSocial = async (activity, carnageReportResponse, userId, membershipType) => {
-        console.log("Actividad social detectada, obteniendo datos de jugadores...");
         let classe, classSymbol, player = null;
         const playerEntry = carnageReportResponse.entries.find(entry => entry.player.destinyUserInfo.membershipId == userId);
 
@@ -284,7 +286,7 @@ const usePlayersBasicData = () => {
         const power = playerEntry ? playerEntry.player.lightLevel : null;
         emblem = emblem ? emblem.displayProperties.icon : null;
         const uniqueName = profile ? profile.profile.data.userInfo.bungieGlobalDisplayName : null;
-        const uniqueNameCode = profile ? "#" + profile.profile.data.userInfo.bungieGlobalDisplayNameCode : null;
+        const uniqueNameCode = profile ? "#" + String(profile.profile.data.userInfo.bungieGlobalDisplayNameCode).padStart(4, '0') : null;
 
         for (const char of Object.values(chars)) {
             if (char.characterId == playerEntry.characterId) {
@@ -295,7 +297,6 @@ const usePlayersBasicData = () => {
             }
         }
 
-        console.log("Datos obtenidos para jugador social:", { emblem, uniqueName, uniqueNameCode, classe, classSymbol, power });
         return player = {
             emblem,
             uniqueName,
@@ -315,9 +316,8 @@ const usePlayersBasicData = () => {
         
     }
 
-    const getHowToDisplayPlayers = (activity, playersData) => {
+    const getHowToDisplayPlayers = (activity, playersData, userId) => {
         let peopleStay = null, peopleLeave = null;
-        console.log("Actividad para determinar cómo mostrar a los jugadores:", activity);
         if (activity.modeNumbers.includes(4) || activity.modeNumbers.includes(82)) { //En Mazmorras o Raids
             if (activity.completed == "Completado") { //Si se completó
                 peopleStay = playersData.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
@@ -338,14 +338,16 @@ const usePlayersBasicData = () => {
                 peopleStay = playersData.filter(player => player.completed == 1 || player.membershipId == userId) //se quedó
                 peopleLeave = playersData.filter(player => player.completed == 0 && player.membershipId != userId) //se fue
             }
+            if (activity.completed == "Completado" && activity.modeNumbers.includes(6)) { //Si es exploracion
+                peopleStay = playersData;
+                peopleLeave = null;
+            }
         }
         playersData.people = null;
         return { peopleStay, peopleLeave, ...playersData };
     }
 
     return fetchCarnageReport;
-
-
 }
 
 

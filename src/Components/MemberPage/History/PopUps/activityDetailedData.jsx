@@ -15,8 +15,8 @@ export default function useActivityDetails() {
             const activityInfo = await getItemManifest(carnageAct.activityDetails.directorActivityHash, "DestinyActivityDefinition");
 
             let datosDelModo, datosDelTipo;
-            datosDelTipo = await getItemManifest(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
-            if (activityInfo.directActivityModeHash) datosDelModo = await getItemManifest(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
+            if (activityInfo?.activityTypeHash) datosDelTipo = await getItemManifest(activityInfo.activityTypeHash, "DestinyActivityTypeDefinition");
+            if (activityInfo?.directActivityModeHash) datosDelModo = await getItemManifest(activityInfo.directActivityModeHash, "DestinyActivityModeDefinition");
 
             //console.log("Activity main details:", carnageAct, activityMain, activityInfo, datosDelModo, datosDelTipo);
             const activityType = getActivityType(carnageAct);
@@ -36,28 +36,30 @@ export default function useActivityDetails() {
                 hour12: false
             });
 
-            const playerEntry = carnageAct.entries.find(entry => entry.player.destinyUserInfo.membershipId === userId);
+            const playerEntry = carnageAct.entries.find(entry => entry.player.destinyUserInfo.membershipId === userId) || carnageAct.entries[0];
+            let name = activityMain?.originalDisplayProperties?.name;
+            if(carnageAct.activityDetails.modes.includes(46)) name = activityMain?.originalDisplayProperties?.name +  ": " + activityMain?.originalDisplayProperties?.description;
             return {
-                activityName: activityMain?.originalDisplayProperties?.name,
+                activityName: name,
                 activityMode: modeName,
                 activityTypePVP: activityInfo?.originalDisplayProperties?.name?.replaceAll(":", " -"),
                 activityIcon: actIcon,
                 instanceId: carnageAct.activityDetails.instanceId,
                 pgcrImage: activityMain.hash == 1477356389 ? tharsis : API_CONFIG.BUNGIE_API + activityMain?.pgcrImage,
                 difficulty: activityType == "PvE" ? activityMain?.selectionScreenDisplayProperties?.name || "Estándar" : activityInfo?.selectionScreenDisplayProperties?.name || "Estándar",
-                kills: playerEntry.values.kills.basic.value || 0,
-                deaths: playerEntry.values.deaths.basic.value || 0,
-                kd: playerEntry.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
-                completed: playerEntry.values.completed.basic.value == 1 ? "Completado" : "Abandonado",
-                completedSymbol: playerEntry.values.completed.basic.value == 1 ? completed : NotCompleted,
+                kills: playerEntry?.values.kills.basic.value || 0,
+                deaths: playerEntry?.values.deaths.basic.value || 0,
+                kd: playerEntry?.values.killsDeathsRatio.basic.value.toFixed(2) || 0,
+                completed: playerEntry?.values.completed.basic.value == 1 || carnageAct.activityDetails.modes.includes(6) ? "Completado" : "Abandonado",
+                completedSymbol: playerEntry?.values.completed.basic.value == 1 || carnageAct.activityDetails.modes.includes(6) ? completed : NotCompleted,
                 modeNumbers: carnageAct.activityDetails.modes,
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,
                 date,
-                duration: formatDuration(playerEntry.values.activityDurationSeconds.basic.value),
+                duration: formatDuration(playerEntry?.values.activityDurationSeconds.basic.value || 0),
                 hour,
-                durationInSeconds: playerEntry.values.activityDurationSeconds.basic.value,
-                durationFormated: playerEntry.values.activityDurationSeconds.basic.displayValue,
+                durationInSeconds: playerEntry?.values.activityDurationSeconds.basic.value || 0,
+                durationFormated: playerEntry?.values.activityDurationSeconds.basic.displayValue || "00:00",
                 hash: carnageAct.activityDetails.referenceId,
                 difficultyCollection: activityInfo.difficultyTierCollectionHash,
                 splitedInTeams: splitedInTeams,
@@ -74,7 +76,7 @@ export default function useActivityDetails() {
             activityType = "PvE";
         } else if (carnageAct?.activityDetails?.modes.includes(5) || carnageAct?.activityDetails?.modes.includes(32)) {
             activityType = "PvP";
-        } else if (carnageAct?.activityDetails?.modes.includes(63)) {
+        } else if (carnageAct?.activityDetails?.modes.includes(63) || carnageAct?.activityDetails?.modes.includes(75)) {
             activityType = "Gambito";
         } else activityType = "PvE";
         return activityType;
@@ -83,9 +85,9 @@ export default function useActivityDetails() {
     const getIcon = async (activityInfo, activityMain, datosDelModo, datosDelTipo) => {
         let actIcon = null;
         if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
-        else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+        else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon") && activityInfo.originalDisplayProperties.hasIcon) actIcon = activityInfo?.displayProperties?.icon;
         else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
-        else activityMain?.displayProperties?.icon || null;
+        else if (activityMain?.displayProperties?.icon != null && !activityMain?.displayProperties?.icon.includes("missing_icon")) actIcon = activityMain?.displayProperties?.icon;
 
         if (actIcon == null || actIcon.includes("missing_icon")) {
             const modoPorTipo = await getItemManifest(datosDelTipo?.hash, "DestinyActivityModeDefinition");

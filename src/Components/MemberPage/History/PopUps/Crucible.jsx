@@ -220,7 +220,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                     </div>
                                                 </div>
                                                 {isMvp && (
-                                                    <div className={`absolute -top-2 -left-2 mvp-tag rounded-md ${actComplete.completed == "Completado" ? "mvp-completed" : "mvp-abandoned"}`} title={actComplete.mvp.message}>
+                                                    <div className={`absolute -top-2 -left-2 mvp-tag rounded-md mvp-completed`} title={actComplete.mvp.message}>
                                                         <span>MVP</span>
                                                     </div>
                                                 )}
@@ -277,7 +277,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                 </div>
                                                 <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
                                                 {isMvp && (
-                                                    <div className={`absolute -top-2 -right-2 mvp-tag rounded-md ${actComplete.completed == "Completado" ? "mvp-completed" : "mvp-abandoned"}`} title={actComplete.mvp.message}>
+                                                    <div className={`absolute -top-2 -right-2 mvp-tag rounded-md mvp-completed`} title={actComplete.mvp.message}>
                                                         <span>MVP</span>
                                                     </div>
                                                 )}

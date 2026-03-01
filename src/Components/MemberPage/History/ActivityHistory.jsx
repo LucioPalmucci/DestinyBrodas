@@ -57,7 +57,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 setUpByCache(cached);
             } else setIsLoading(true);
 
-            console.log("Fetching activity history for userId:", instanceId);
             try {
                 const characters = await getCompChars(membershipType, userId);
                 const charactersByHash = Object.fromEntries(Object.values(characters).map(char => [char.classHash, char]));
@@ -109,13 +108,13 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 activityType = "PvE";
             } else if (activity.activityDetails.modes.includes(5) || activity.activityDetails.modes.includes(32)) {
                 activityType = "PvP";
-            } else if (activity.activityDetails.modes.includes(63)) {
+            } else if (activity.activityDetails.modes.includes(63) || activity.activityDetails.modes.includes(75)) {
                 activityType = "Gambito";
             } else activityType = "PvE";
 
             let actIcon = null;
             if (datosDelModo?.displayProperties?.icon != null && !datosDelModo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelModo?.displayProperties?.icon;
-            else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon")) actIcon = activityInfo?.displayProperties?.icon;
+            else if (activityInfo?.displayProperties?.icon != null && !activityInfo?.displayProperties?.icon.includes("missing_icon") && activityInfo.originalDisplayProperties.hasIcon) actIcon = activityInfo?.displayProperties?.icon;
             else if (datosDelTipo?.displayProperties?.icon != null && !datosDelTipo?.displayProperties?.icon.includes("missing_icon")) actIcon = datosDelTipo?.displayProperties?.icon;
             else activityMain?.displayProperties?.icon || null;
 
@@ -144,6 +143,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             if(activityMain?.originalDisplayProperties?.name.includes(modeName)){
                 const cleanedName = activityMain?.originalDisplayProperties?.name.replace(modeName, "").replace(": ", "").trim();
                 finalActivityName = cleanedName.charAt(0).toUpperCase() + cleanedName.slice(1);
+                if(finalActivityName == "") finalActivityName = activityMain?.originalDisplayProperties?.description;
             }
             return {
                 activityName: finalActivityName,
@@ -342,7 +342,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
 
     useEffect(() => {
         if (instanceId) {
-            console.log("Opening popup for instanceId from URL:", instanceId);
             setExpandedInstanceId(instanceId);
         }
     }, [instanceId]);

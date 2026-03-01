@@ -163,7 +163,7 @@ export default function Pve({ actComplete, userId, onClose }) {
                     </div>
 
                     <div className='w-full'>
-                        { actComplete.peopleStay.map((person, idx) => {
+                        {actComplete.peopleStay.map((person, idx) => {
                             const personIndex = `single-${idx}`;
                             const isMvp = person.membershipId == actComplete.mvp.membershipId;
                             const MvPLeft = isMvp && actComplete.completed == "Abandonado" ? true : false;
@@ -200,7 +200,7 @@ export default function Pve({ actComplete, userId, onClose }) {
                                         </button>
 
                                         {jugadorSelected === personIndex && (
-                                            <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
+                                            <div ref={popupRef} className="absolute left-30 -top-100 z-50 ml-2 overflow-hidden">
                                                 <PopUp jugador={person} setIsOpen={setJugadorSelected} />
                                             </div>
                                         )}
@@ -239,13 +239,8 @@ export default function Pve({ actComplete, userId, onClose }) {
                                                     <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
                                                     <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>
-                                                            {person.uniqueName.length > 12
-                                                                ? person.uniqueName.slice(0, 12) + "..."
-                                                                : person.uniqueName
-                                                            }
-                                                            <span style={{ color: '#479ce4' }}>
-                                                                {person.uniqueNameCode}
-                                                            </span>
+                                                            <p>{person.uniqueName}</p>
+                                                            <p style={{ color: '#479ce4' }}>{person.uniqueNameCode}</p>
                                                         </div>
                                                         <div className='flex items-center justify-start'>
                                                             <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
