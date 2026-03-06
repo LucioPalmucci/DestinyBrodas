@@ -7,6 +7,7 @@ import skull from "../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../config';
 import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
+import '../../CSS/scrollBar.css';
 import Spinner from '../../CSS/Spinner';
 import '../../CSS/Tab.css';
 import ActivityPopUp from './PopUps/ActivityPopUp';
@@ -32,7 +33,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
     const [knownLastPage, setKnownLastPage] = useState(null); // null = aún no conocemos el final
     const [gotoPageInput, setGotoPageInput] = useState("");
     const [goToPageError, setGoToPageError] = useState(false);
+    const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
+    const [modeIcons, setModeIcons] = useState({});
     const popupRef = useRef(null);
+    const modeDropdownRef = useRef(null);
     const CACHE_TTL = 1//00 * 60 * 1000; // 10 minutes
     const cacheKey = `ActHistory_${membershipType}_${userId}`;
     const { getCarnageReport, getItemManifest, getRecentActivities, getRecentActivitiesPage, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
@@ -47,6 +51,20 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
 
     const navigate = useNavigate();
     const { instanceId } = useParams();
+    const modeFilterOptions = [
+        { value: 0, label: "General" },
+        { value: 7, label: "PvE", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_5f8a923a0d0ac1e4289ae3be03f94aa2.png` },
+        { value: 5, label: "PvP", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/f9dbb041c0414ea4856c7be6d8c29f48.png` },
+        { value: 63, label: "Gambito", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_96f7e9009d4f26e30cfd60564021925e.png` },
+        { value: 93, label: "Territorio sin ley", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_7ea033d5203044ba378c14100c646e11.png` },
+        { value: 4, label: "Incursión", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_bfe80e3dafe6686a9dc42df0606bdc9b.png` },
+        { value: 82, label: "Mazmorra", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_f20ebb76bee675ca429e470cec58cc7b.png` },
+        { value: 84, label: "Pruebas de Osiris", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_e35792b49b249ca5dcdb1e7657ca42b6.png` },
+        { value: 69, label: "Competitivo", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_fb3e9149c43f7a2e8f8b66cbea7845fe.png` },
+        { value: 19, label: "Estandarte de Hierro", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_fe57052d7cf971f7502daa75a2ca2437.png` },
+        { value: 46, label: "Ocaso", modeIcon: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/DestinyActivityModeDefinition_234e7e18549d5eae2ddb012f2bcb203a.png` },
+    ];
+    const currentModeOption = modeFilterOptions.find((option) => option.value === currentActivityType) || modeFilterOptions[0];
 
     useEffect(() => {
         const fetchActivityHistory = async () => {
@@ -95,6 +113,46 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         if (userId && membershipType) fetchActivityHistory();
     }, [userId, membershipType]);
 
+    useEffect(() => {
+        let mounted = true;
+
+        const fetchModeIcons = async () => {
+            try {
+                const iconEntries = await Promise.all(
+                    modeFilterOptions
+                        .filter((option) => option.value !== 0)
+                        .map(async (option) => {
+                            const modeManifest = await getItemManifest(option.value, "DestinyActivityModeDefinition");
+                            const icon = modeManifest?.displayProperties?.icon;
+                            return [option.value, icon ? `${API_CONFIG.BUNGIE_API}${icon}` : null];
+                        })
+                );
+
+                if (!mounted) return;
+                setModeIcons(Object.fromEntries(iconEntries.filter(([, icon]) => icon)));
+            } catch (error) {
+                console.error("Error fetching activity mode icons:", error);
+            }
+        };
+
+        fetchModeIcons();
+
+        return () => {
+            mounted = false;
+        };
+    }, [getItemManifest]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target)) {
+                setIsModeDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const getSomeActivities = async (activities) => {
         const details = await Promise.all(activities.map(async (activity) => {
             const activityMain = await fetchActivityDetails(activity.activityDetails.referenceId, "DestinyActivityDefinition");
@@ -125,7 +183,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
             if (actIcon == null) actIcon = "/img/misc/missing_icon_d2.png";
 
             let modeName = null;
-            if(activity.activityDetails.modes.includes(19)) {
+            if (activity.activityDetails.modes.includes(19)) {
                 modeName = activityInfo?.originalDisplayProperties?.name;
             }
             else if (activity.activityDetails.modes.includes(5) && !activity.activityDetails.modes.includes(84)) {
@@ -140,10 +198,10 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 splitedInTeams = carnageReport?.teams?.length > 1;
             }
             let finalActivityName = activityMain?.originalDisplayProperties?.name;
-            if(activityMain?.originalDisplayProperties?.name.includes(modeName)){
+            if (activityMain?.originalDisplayProperties?.name.includes(modeName)) {
                 const cleanedName = activityMain?.originalDisplayProperties?.name.replace(modeName, "").replace(": ", "").trim();
                 finalActivityName = cleanedName.charAt(0).toUpperCase() + cleanedName.slice(1);
-                if(finalActivityName == "") finalActivityName = activityMain?.originalDisplayProperties?.description;
+                if (finalActivityName == "") finalActivityName = activityMain?.originalDisplayProperties?.description;
             }
             return {
                 activityName: finalActivityName,
@@ -177,6 +235,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         setIsLoading(true);
         setFullLoaded(false);
         setCurrentActivityType(type);
+        setIsModeDropdownOpen(false);
         setCurrentPage(1);
         setKnownLastPage(null);
         //memebershipType, userId, characterId, count, page, mode
@@ -350,11 +409,40 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         <div>
             <h2 className='text-2xl font-bold'>Historial de actividades</h2>
             <div className='mb-4 flex'>
-                <div className="flex mr-6">
-                    <button onClick={() => filterActivitiesMode(activityDetails, 0)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-s-md ${currentActivityType === 0 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Todas</button>
-                    <button onClick={() => filterActivitiesMode(activityDetails, 7)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer  ${currentActivityType === 7 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvE</button>
-                    <button onClick={() => filterActivitiesMode(activityDetails, 5)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer ${currentActivityType === 5 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>PvP</button>
-                    <button onClick={() => filterActivitiesMode(activityDetails, 63)} className={`hover:bg-blue-400 hover:text-white px-4 py-2 cursor-pointer rounded-e-md ${currentActivityType === 63 ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>Gambito</button>
+                <div className="relative mr-6 self-stretch flex" ref={modeDropdownRef}>
+                    <button
+                        type="button"
+                        onClick={() => setIsModeDropdownOpen((prev) => !prev)}
+                        className="w-60 h-full px-4 py-2 rounded-md bg-gray-300 cursor-pointer flex items-center justify-between"
+                    >
+                        <span className="flex items-center gap-2 truncate">
+                            {currentModeOption.modeIcon && (
+                                <img src={currentModeOption.modeIcon} alt={currentModeOption.label} className="w-6 h-6" style={{ filter: "brightness(0) contrast(100%)" }} />
+                            )}
+                            <span>{currentModeOption.label}</span>
+                        </span>
+                        <svg className={`w-4 h-4 transition-transform ${isModeDropdownOpen ? 'rotate-180' : ''}`} style={{ marginLeft: '3px' }} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+
+                    {isModeDropdownOpen && (
+                        <div className="absolute top-full left-0 z-20 mt-1 w-60 bg-gray-300 rounded-md shadow-md max-h-50 overflow-y-auto custom-dropdown-scroll">
+                            {modeFilterOptions.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => filterActivitiesMode(activityDetails, option.value)}
+                                    className={`w-full px-3 py-2 text-left cursor-pointer flex items-center gap-2 hover:bg-blue-400 hover:text-white ${currentActivityType === option.value ? 'bg-blue-500 text-white' : ''}`}
+                                >
+                                    {option.modeIcon && (
+                                        <img src={option.modeIcon} alt={option.label} className="w-6 h-6" style={{ filter: "brightness(0) contrast(100%)" }} />
+                                    )}
+                                    <span>{option.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <div className='flex'>
                     <button

@@ -231,11 +231,11 @@ export default function Pve({ actComplete, userId, onClose }) {
                         {(
                             actComplete.peopleLeave != null && actComplete.peopleLeave.length > 0 && (
                                 <div className="flex items-center justify-start">
-                                    <img src={abandonaLeft} width={25} height={25} title='Dejó la actividad' className='mr-2 opacity-70'></img>
+                                    <img src={abandonaLeft} width={20} height={20} title='Dejó la actividad' className='mr-2 opacity-70'></img>
                                     <div className='flex flex-wrap gap-4'>
                                         {actComplete.peopleLeave.map((person, idx) => {
                                             return (
-                                                <div key={idx} className="flex items-center justify-start w-fit p-2 bg-black/25 rounded-lg text-xs opacity-70">
+                                                <div key={idx} className="flex items-center justify-start w-fit p-1 bg-black/25 rounded-lg text-[0.67rem] opacity-70">
                                                     <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
                                                     <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>

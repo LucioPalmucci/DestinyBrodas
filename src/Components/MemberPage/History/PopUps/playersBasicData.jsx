@@ -72,7 +72,7 @@ const usePlayersBasicData = () => {
                 }
                 if (hasPoints) scoreActivity = people.find(person => person.membershipId == userId)?.score;
                 const playersStatusData = getHowToDisplayPlayers(activity, people, userId);
-                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity, ...playersStatusData};
+                return { people: people, mvp, hasPoints, hasMedals, full, difficulty, difficultyColor, feats, scoreActivity, ...playersStatusData };
             }
         } catch (error) {
             console.error('Error fetching carnage report:', error);
@@ -147,7 +147,7 @@ const usePlayersBasicData = () => {
             const winningTeam = teams.teamA.standing == 0 ? teams.teamA : teams.teamB;
             mvp = winningTeam?.people.sort((a, b) => b.score - a.score)[0];
             mvp.message = "El que tuvo mejor puntuación";
-            if(mvp.score == null || mvp.score == 0) {
+            if (mvp.score == null || mvp.score == 0) {
                 mvp = winningTeam?.people.sort((a, b) => b.kd - a.kd)[0];
                 mvp.message = "El que tuvo mejor KD";
             }
@@ -313,7 +313,6 @@ const usePlayersBasicData = () => {
             timePlayed: playerEntry.values.timePlayedSeconds.basic.displayValue,
             values: playerEntry.extended?.values,
         };
-        
     }
 
     const getHowToDisplayPlayers = (activity, playersData, userId) => {

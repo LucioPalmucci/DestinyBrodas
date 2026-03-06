@@ -39,6 +39,7 @@ export default function ActivityPopUp({ instanceId, userId, membershipType, onCl
             if (activityGeneral?.activityMode == "Social") activityData = { ...activityGeneral, player, pgcrImage: preloadedBg };
             else activityData = { ...activityGeneral, ...player,  pgcrImage: preloadedBg};
             setActivity(activityData);
+            console.log("Activity Data", activityData);
             setLoading(false);
         };
 
