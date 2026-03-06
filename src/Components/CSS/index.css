@@ -32,6 +32,7 @@ body {
     font-family: 'helvetica-65-medium-3', sans-serif;
 }
 
+
 .icon-AutoRifle::before {
     content: "\E100";
     font-family: "Destiny Symbols Common";
@@ -161,14 +162,29 @@ body {
     font-family: "Destiny Symbols Common";
 }
 
+.icon-super::before {
+    content: "\F205";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-habilidadClase::before {
+    content: "\F203";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
 .icon-melee::before {
     content: "\E110";
-    font-family: "Destiny Symbols Common";
+    font-family: "Destiny Symbols Common Braytech";
 }
 
 .icon-granada::before {
     content: "\E111";
-    font-family: "Destiny Symbols Common";
+    font-family: "Destiny Symbols Common Braytech";
+}
+
+.icon-precision::before {
+    content: "\E142";
+    font-family: "Destiny Symbols Common Braytech";
 }
 
 .icon-perforacion::before {
@@ -228,11 +244,6 @@ body {
     background-size: contain;
     background-repeat: no-repeat;
     vertical-align: middle;
-}
-
-.icon-precision::before {
-    content: "\E142";
-    font-family: "Destiny Symbols Common 2";
 }
 
 .icon-gilded::before {

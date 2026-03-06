@@ -94,12 +94,6 @@
     transition-duration: calc(var(--spring-duration)*0.5);
 }
 
-.mvp-button:focus .shimmer,
-.mvp-button:active .shimmer {
-    animation-play-state: paused !important;
-    mask-image: none !important;
-}
-
 .mvp-button:hover:not([disabled]) .shimmer::before,
 .mvp-button:hover:not([disabled]) .shimmer::after {
     opacity: 1;

@@ -12,7 +12,8 @@ import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Crucible({ actComplete, userId, onClose }) {
+
+export default function Crucible({ actComplete, userId, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const fetchPlayersBasicData = usePlayersBasicData();
@@ -212,7 +213,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                 <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={30} height={30} alt="Emblem" />
                                                 <div className='flex flex-col justify-center'>
                                                     <div className='flex'>
-                                                        {renderNameWithBlueCode(person.uniqueCompleteName)}
+                                                        {renderNameWithBlueCode(person.uniqueCompleteName + person.uniqueNameCode)}
                                                     </div>
                                                     <div className='flex items-center'>
                                                         <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -227,8 +228,8 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                             </button>
 
                                             {jugadorSelected === personIndex && (
-                                                <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
-                                                    <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                                <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2">
+                                                    <PopUp jugador={person} setIsOpen={setJugadorSelected} playerReady={playerReady} />
                                                 </div>
                                             )}
                                         </div>
@@ -268,7 +269,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                 {isMvp && <span className="shimmer"></span>}
                                                 <div className='flex flex-col justify-end items-end'>
                                                     <div className='flex'>
-                                                        {renderNameWithBlueCode(person.uniqueCompleteName)}
+                                                        {renderNameWithBlueCode(person.uniqueCompleteName + person.uniqueNameCode)}
                                                     </div>
                                                     <div className='flex items-center justify-end'>
                                                         <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -284,8 +285,8 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                             </button>
 
                                             {jugadorSelected === personIndex && (
-                                                <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
-                                                    <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                                <div ref={popupRef} className="absolute left-8 -top-50 z-50 ml-2">
+                                                    <PopUp jugador={person} setIsOpen={setJugadorSelected} playerReady={playerReady} inverted={true} />
                                                 </div>
                                             )}
                                         </div>
@@ -306,7 +307,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                     <img src={`${API_CONFIG.BUNGIE_API}/${person.emblem}`} width={25} height={25} alt="Emblem" />
                                                     <div className='flex flex-col justify-start items-start ml-2'>
                                                         <div className='flex'>
-                                                            {renderNameWithBlueCode(person.uniqueCompleteName)}
+                                                            {renderNameWithBlueCode(person.uniqueCompleteName + person.uniqueNameCode)}
                                                         </div>
                                                         <div className='flex items-center justify-start'>
                                                             <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />
@@ -329,7 +330,7 @@ export default function Crucible({ actComplete, userId, onClose }) {
                                                 <div key={idx} className="flex items-center justify-end w-fit p-2 bg-black/25 rounded-lg text-xs opacity-70">
                                                     <div className='flex flex-col justify-end items-end mr-2'>
                                                         <div className='flex'>
-                                                            {renderNameWithBlueCode(person.uniqueCompleteName)}
+                                                            {renderNameWithBlueCode(person.uniqueCompleteName + person.uniqueNameCode)}
                                                         </div>
                                                         <div className='flex items-center justify-end'>
                                                             <img src={person.classSymbol} className="w-4 h-4 mr-1" alt="class" />

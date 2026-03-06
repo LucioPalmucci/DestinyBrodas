@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import useActivityDetails from './activityDetailedData';
 import Crucible from './Crucible';
 import LoadingReport from "./LoadingReport";
+import { usePlayerDetailedData } from './playerDetailedData';
 import usePlayersBasicData from './playersBasicData';
 import Pve from './Pve';
 import Rumble from './Rumble';
@@ -19,6 +20,7 @@ const preloadImage = (src) =>
 export default function ActivityPopUp({ instanceId, userId, membershipType, onClose }) {
     const fetchActivitiesDetails = useActivityDetails();
     const fetchPlayersBasicData = usePlayersBasicData();
+    const { playerReady, loadDetailedData } = usePlayerDetailedData();
     const [activity, setActivity] = useState({});
     const [loading, setLoading] = useState(true);
 
@@ -35,30 +37,37 @@ export default function ActivityPopUp({ instanceId, userId, membershipType, onCl
                 : null;
 
             const preloadedBg = await preloadImage(fullPgcrImage);
-            
-            if (activityGeneral?.activityMode == "Social") activityData = { ...activityGeneral, player, pgcrImage: preloadedBg };
-            else activityData = { ...activityGeneral, ...player,  pgcrImage: preloadedBg};
-            setActivity(activityData);
-            console.log("Activity Data", activityData);
-            setLoading(false);
-        };
 
+            if (activityGeneral?.activityMode == "Social") activityData = { ...activityGeneral, player, pgcrImage: preloadedBg };
+            else activityData = { ...activityGeneral, ...player, pgcrImage: preloadedBg };
+            setActivity(activityData);
+            setLoading(false);
+
+            const allPlayers = activityData.splitedInTeams
+                ? [...(activityData.teams?.teamA?.people || []), ...(activityData.teams?.teamB?.people || [])]
+                : activityData.activityMode === "Social"
+                    ? [activityData.player]
+                    : activityData.people || activityData.peopleStay || [];
+
+                    console.log("All players to load:", allPlayers);
+            loadDetailedData(allPlayers);
+        };
         fetchActivity();
     }, [instanceId, userId, membershipType]);
 
     return (
         activity && !loading ? (
             activity.splitedInTeams == true ? (
-                <Crucible actComplete={activity} userId={userId} onClose={onClose} instanceId={activity.instanceId} />
+                <Crucible actComplete={activity} userId={userId} onClose={onClose} instanceId={activity.instanceId} playerReady={playerReady} />
             ) : (
                 activity.activityType == "PvE" ? (
                     activity.activityMode == "Social" ? (
-                        <Social actComplete={activity} userId={userId} membershipType={membershipType} onClose={onClose} instanceId={activity.instanceId} />
+                        <Social actComplete={activity} userId={userId} membershipType={membershipType} onClose={onClose} instanceId={activity.instanceId} playerReady={playerReady} />
                     ) : (
-                        <Pve actComplete={activity} userId={userId} onClose={onClose} />
+                        <Pve actComplete={activity} userId={userId} onClose={onClose} playerReady={playerReady} />
                     )
                 ) : (
-                    <Rumble actComplete={activity} userId={userId} onClose={onClose} instanceId={activity.instanceId} />
+                    <Rumble actComplete={activity} userId={userId} onClose={onClose} instanceId={activity.instanceId} playerReady={playerReady} />
                 )
             )) : <LoadingReport />
     );

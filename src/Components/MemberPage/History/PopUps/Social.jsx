@@ -11,7 +11,7 @@ import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Social({ actComplete, userId, membershipType, onClose }) {
+export default function Social({ actComplete, userId, membershipType, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [leftWidth, setLeftWidth] = useState(null);
@@ -155,7 +155,7 @@ export default function Social({ actComplete, userId, membershipType, onClose })
 
                                     {jugadorSelected && (
                                         <div ref={popupRef} className="absolute left-30 top-0 z-50 ml-2">
-                                            <PopUp jugador={actComplete.player} setIsOpen={setJugadorSelected} />
+                                            <PopUp jugador={actComplete.player} setIsOpen={setJugadorSelected} playerReady={playerReady} />
                                         </div>
                                     )}
                                 </div>

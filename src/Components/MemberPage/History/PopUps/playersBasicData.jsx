@@ -41,6 +41,7 @@ const usePlayersBasicData = () => {
                 percentagePlayed: Math.trunc((entry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100),
                 dashoffset: 2 * Math.PI * 6.5 * (1 - (Math.trunc((entry.values.timePlayedSeconds.basic.value / activity.durationInSeconds) * 100) / 100)),
                 assists: entry.values.assists.basic.value,
+                instanceId: activity.instanceId,
                 completions: activity.activityType == "PvE" ? await getCompletionsPlayer(activity.hash, entry.player.destinyUserInfo.membershipType, entry.player.destinyUserInfo.membershipId) : null,
             })));
             const people = getReformedPeople(peopleRaw, activity, carnageReportResponse, userId);

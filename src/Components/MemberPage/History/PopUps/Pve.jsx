@@ -13,33 +13,13 @@ import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
 import PopUp from './Player';
 
-export default function Pve({ actComplete, userId, onClose }) {
+export default function Pve({ actComplete, userId, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [bgLoaded, setBgLoaded] = useState(false);
     const [bgError, setBgError] = useState(false);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
-
-    /*useEffect(() => {
-        setBgLoaded(false);
-        setBgError(false);
-
-        const img = new Image();
-        img.src = activity.pgcrImage;
-        img.onload = () => setBgLoaded(true);
-        img.onerror = () => {
-            setBgError(true);
-            setBgLoaded(true);
-        };
-    }, [activity?.pgcrImage]);
-
-    useEffect(() => {
-        (() => {
-            setActComplete(activity);
-        })();
-    }, [activity, userId]);*/
-
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -200,8 +180,8 @@ export default function Pve({ actComplete, userId, onClose }) {
                                         </button>
 
                                         {jugadorSelected === personIndex && (
-                                            <div ref={popupRef} className="absolute left-30 -top-100 z-50 ml-2 overflow-hidden">
-                                                <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                            <div ref={popupRef} className="absolute left-30 -top-20 z-50 ml-2 overflow-visible">
+                                                <PopUp jugador={person} setIsOpen={setJugadorSelected} playerReady={playerReady} />
                                             </div>
                                         )}
                                     </div>

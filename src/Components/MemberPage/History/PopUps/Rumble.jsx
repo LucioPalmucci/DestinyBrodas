@@ -11,7 +11,7 @@ import { useCountUp } from './Hooks/countUp';
 import PopUp from './Player';
 import usePlayersBasicData from './playersBasicData';
 
-export default function Rumble({ actComplete, userId, onClose }) {
+export default function Rumble({ actComplete, userId, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
     const [leftWidth, setLeftWidth] = useState(null);
@@ -188,8 +188,8 @@ export default function Rumble({ actComplete, userId, onClose }) {
                                         </button>
 
                                         {jugadorSelected === personIndex && (
-                                            <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2 overflow-hidden">
-                                                <PopUp jugador={person} setIsOpen={setJugadorSelected} />
+                                            <div ref={popupRef} className="absolute left-30 -top-50 z-50 ml-2">
+                                                <PopUp jugador={person} setIsOpen={setJugadorSelected} playerReady={playerReady} />
                                             </div>
                                         )}
                                     </div>
