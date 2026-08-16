@@ -17,7 +17,7 @@ import { ActivityModeAggregator } from "../../../domain/services/ActivityModeAgg
 import { WeaponStatsCalculator } from "../../../domain/services/WeaponStatsCalculator";
 
 
-export default function FavouriteActivity({ membershipType, userId }) {
+export default function FavouriteActivity({ membershipType, userId, onApiError }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
@@ -126,6 +126,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     console.error('[CACHE] save error', e);
                 }
             } catch (error) {
+                onApiError?.();
                 const staleCache = loadCache(cacheKey, null);
                 if (staleCache) setUpCache(staleCache);
             }

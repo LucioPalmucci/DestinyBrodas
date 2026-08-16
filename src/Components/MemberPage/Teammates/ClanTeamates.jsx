@@ -9,7 +9,7 @@ import PopUpClanTeammates from "./PopUpClanTeammates";
 import { formatDurationVerbose } from "../../../utils/formatDuration";
 import { fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
 
-export default function ClanTeammates({ userId, membershipType }) {
+export default function ClanTeammates({ userId, membershipType, onApiError }) {
     const [playersClan, setJugadoresClan] = useState([]);
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -106,6 +106,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                 setJugadoresClan(jugadoresClan);
                 saveCache(cacheKey, jugadoresClan);
             } catch (error) {
+                onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setJugadoresClan(staleCached);
             } finally {

@@ -171,18 +171,18 @@ function MemberDetail() {
                         )}
                         <TriumphScore userId={membershipId} membershipType={membershipType} />
                         <Commendations userId={membershipId} membershipType={membershipType} />
-                        <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
+                        <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} onApiError={() => setShowApiModal(true)} />
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div className='w-[60%] space-y-6'>
                         <div className='flex items-center'>
                             <div className='flex space-x-6 w-full'>
                                 <div className='space-y-6 w-full'>
-                                    <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
-                                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
+                                    <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} onApiError={() => setShowApiModal(true)} />
+                                    <ClanTeammates userId={membershipId} membershipType={membershipType} onApiError={() => setShowApiModal(true)} />
                                 </div>
                                 <div className='w-full'>
-                                    <FavouriteActivity userId={membershipId} membershipType={membershipType} />
+                                    <FavouriteActivity userId={membershipId} membershipType={membershipType} onApiError={() => setShowApiModal(true)} />
                                 </div>
                             </div>
                         </div>

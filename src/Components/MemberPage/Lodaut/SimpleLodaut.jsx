@@ -6,7 +6,7 @@ import { loadCache, saveCache } from "../../Cache/componentsCache";
 import CurrentLoadout from "./CurrentLoadout";
 import StatPopup from "./StatPopup";
 
-export default function SimpleLoadout({ membershipType, userId, name, seasonHash, rank, light }) {
+export default function SimpleLoadout({ membershipType, userId, name, seasonHash, rank, light, onApiError }) {
     const [showFull, setShowFull] = useState(false);
     const [totalStats, setTotalStats] = useState(null);
     const [items, setItems] = useState(null);
@@ -90,6 +90,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 }
 
             } catch (error) {
+                onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setUpCache(staleCached);
             }

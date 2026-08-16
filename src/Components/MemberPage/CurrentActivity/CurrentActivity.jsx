@@ -9,7 +9,7 @@ import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 import { fetchClan, fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
 
-export default function CurrentActivity({ type, id, isOnline }) {
+export default function CurrentActivity({ type, id, isOnline, onApiError }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
     const [online, setOnline] = useState(isOnline);
@@ -122,6 +122,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
             } catch (error) {
+                onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setUpCache(staleCached);
             }
