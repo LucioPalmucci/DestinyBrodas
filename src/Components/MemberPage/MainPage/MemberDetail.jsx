@@ -19,6 +19,7 @@ import ClanTeammates from '../Teammates/ClanTeamates';
 import TriumphScore from '../TriumphScore/TriumphScore';
 import ReportLinks from './ReportLinks';
 import { getClassIconByType } from '../../../utils/classAssets';
+import { BungieApiClient } from '../../../infrastructure/api/BungieApiClient';
 
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -51,8 +52,7 @@ function MemberDetail() {
                 })
             } catch (error) {
                 console.error('Error fetching member detail clan members:', error);
-                const status = error.status;
-                if (status == 503 || status == 500) {
+                if (BungieApiClient.isServiceDownError(error)) {
                     setShowApiModal(true);
                 }
                 return;
@@ -102,11 +102,8 @@ function MemberDetail() {
 
             } catch (error) {
                 console.error('Error fetching member details:', error);
-                const status = error?.status;
-                if (status == 503 || status == 500) {
+                if (BungieApiClient.isServiceDownError(error)) {
                     setShowApiModal(true);
-                } else {
-                    setError('Error al cargar los detalles del miembro.');
                 }
             } finally {
                 setLoading(false);

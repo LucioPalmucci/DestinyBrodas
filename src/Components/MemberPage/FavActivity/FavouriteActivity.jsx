@@ -15,6 +15,7 @@ import ActivitiesComp from "./ActivitiesComp";
 import { getClassIconByName } from "../../../utils/classAssets";
 import { ActivityModeAggregator } from "../../../domain/services/ActivityModeAggregator";
 import { WeaponStatsCalculator } from "../../../domain/services/WeaponStatsCalculator";
+import { BungieApiClient } from "../../../infrastructure/api/BungieApiClient";
 
 
 export default function FavouriteActivity({ membershipType, userId, onApiError }) {
@@ -126,7 +127,7 @@ export default function FavouriteActivity({ membershipType, userId, onApiError }
                     console.error('[CACHE] save error', e);
                 }
             } catch (error) {
-                onApiError?.();
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCache = loadCache(cacheKey, null);
                 if (staleCache) setUpCache(staleCache);
             }

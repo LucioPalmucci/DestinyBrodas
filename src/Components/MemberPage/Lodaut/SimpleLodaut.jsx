@@ -5,6 +5,7 @@ import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import CurrentLoadout from "./CurrentLoadout";
 import StatPopup from "./StatPopup";
+import { BungieApiClient } from "../../../infrastructure/api/BungieApiClient";
 
 export default function SimpleLoadout({ membershipType, userId, name, seasonHash, rank, light, onApiError }) {
     const [showFull, setShowFull] = useState(false);
@@ -90,7 +91,7 @@ export default function SimpleLoadout({ membershipType, userId, name, seasonHash
                 }
 
             } catch (error) {
-                onApiError?.();
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setUpCache(staleCached);
             }

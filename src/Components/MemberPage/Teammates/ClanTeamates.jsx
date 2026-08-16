@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
 import { bungieApiClient, useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { BungieApiClient } from '../../../infrastructure/api/BungieApiClient';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/index.css"; // Importar estilos globales
 import "../../CSS/player.css";
@@ -106,7 +107,7 @@ export default function ClanTeammates({ userId, membershipType, onApiError }) {
                 setJugadoresClan(jugadoresClan);
                 saveCache(cacheKey, jugadoresClan);
             } catch (error) {
-                onApiError?.();
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setJugadoresClan(staleCached);
             } finally {

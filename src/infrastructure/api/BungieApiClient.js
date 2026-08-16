@@ -29,4 +29,13 @@ export class BungieApiClient {
     static isCancelError(error) {
         return error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED';
     }
+
+    // Un error de axios trae el status HTTP en error.response.status (no en
+    // error.status). Solo 500/503 se consideran "servidor caído" — el resto
+    // (404, 401, timeouts puntuales, etc.) son fallos normales de un request
+    // individual y no ameritan avisarle al usuario que Bungie está caído.
+    static isServiceDownError(error) {
+        const status = error?.response?.status;
+        return status === 500 || status === 503;
+    }
 }

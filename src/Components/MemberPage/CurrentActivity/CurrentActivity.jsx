@@ -8,6 +8,7 @@ import "../../CSS/Index.css";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
 import { fetchClan, fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
+import { BungieApiClient } from "../../../infrastructure/api/BungieApiClient";
 
 export default function CurrentActivity({ type, id, isOnline, onApiError }) {
     const [activity, setActivity] = useState(null);
@@ -122,7 +123,7 @@ export default function CurrentActivity({ type, id, isOnline, onApiError }) {
                 });
 
             } catch (error) {
-                onApiError?.();
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setUpCache(staleCached);
             }
