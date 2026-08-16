@@ -7,6 +7,8 @@ import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/index.css"; // Importar estilos globales
 import "../../CSS/player.css";
 import PopUpClanTeammates from "./PopUpClanTeammates";
+import { formatDurationVerbose } from "../../../utils/formatDuration";
+import { fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
 
 export default function ClanTeammates({ userId, membershipType }) {
     const [playersClan, setJugadoresClan] = useState([]);
@@ -71,8 +73,8 @@ export default function ClanTeammates({ userId, membershipType }) {
                                 membershipType: entry.player.destinyUserInfo.membershipType,
                                 light: entry.player.lightLevel,
                                 honor: await fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
-                                emblemaBig: await fetchEmblema(entry.player.emblemHash),
-                                guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                                emblemaBig: await fetchEmblema(entry.player.emblemHash, { getItemManifest }),
+                                guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, { getCompsProfile, getItemManifest }),
                                 mode: matchingMetric ? matchingMetric.displayProperties.name : '',
                                 activityName: activityName.displayProperties.name,
                                 date: new Date(act.period).toLocaleDateString('es-ES', {
@@ -82,7 +84,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                 }),
-                                duration: formatDuration(act.values.activityDurationSeconds.basic.value),
+                                duration: formatDurationVerbose(act.values.activityDurationSeconds.basic.value),
                                 iconActivity: matchingMetric ? matchingMetric.displayProperties.icon : '',
                                 pgcrImg: activityName.pgcrImage,
                             });
@@ -114,25 +116,6 @@ export default function ClanTeammates({ userId, membershipType }) {
         }
     }
 
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
     useEffect(() => {
         if (jugadorSelected === null) return;
         function handleClickOutside(event) {
@@ -145,20 +128,6 @@ export default function ClanTeammates({ userId, membershipType }) {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [jugadorSelected]);
-
-    const formatDuration = (seconds) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        let horas = h > 1 ? 'horas' : 'hora';
-        let minutos = m != 1 ? 'minutos' : 'minuto';
-        let segundos = s != 1 ? 'segundos' : 'segundo';
-        if (h > 0) {
-            return `${h} ${horas} ${m} ${minutos}`;
-        } else {
-            return `${m} ${minutos} ${s} ${segundos}`;
-        }
-    }
 
     return (
         <div>

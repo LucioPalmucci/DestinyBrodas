@@ -18,6 +18,7 @@ import SimpleLoadout from '../Lodaut/SimpleLodaut';
 import ClanTeammates from '../Teammates/ClanTeamates';
 import TriumphScore from '../TriumphScore/TriumphScore';
 import ReportLinks from './ReportLinks';
+import { getClassIconByType } from '../../../utils/classAssets';
 
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -89,23 +90,7 @@ function MemberDetail() {
                 setEmblem(mostRecentCharacter.emblemBackgroundPath);
                 const clase = mostRecentCharacter.classType;
 
-                switch (clase) {
-                    case 2: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-                        colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
-                    })
-                        break;
-                    case 0: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-                        colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
-                    })
-                        break;
-                    case 1: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-                        colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
-                    })
-                        break;
-                }
+                setClassImg(getClassIconByType(clase));
 
                 if (member?.isOnline) {
                     setActivity("");

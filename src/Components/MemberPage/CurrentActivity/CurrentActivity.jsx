@@ -7,6 +7,7 @@ import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/Index.css";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
+import { fetchClan, fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
 
 export default function CurrentActivity({ type, id, isOnline }) {
     const [activity, setActivity] = useState(null);
@@ -16,6 +17,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
     const popupRef = useRef(null);
     const [numColumns, setColums] = useState(0);
     const { getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
+    const bungieApi = { getCompsProfile, getItemManifest, getClanUser };
 
     const cacheKey = `CurrentActivity_${type}_${id}`;
     const CACHE_TTL = 150 * 60 * 1000; // 5 minutes
@@ -185,10 +187,10 @@ export default function CurrentActivity({ type, id, isOnline }) {
             return {
                 membershipId: member.membershipId,
                 membershipType: successfulPlatform,
-                guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform),
+                guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform, bungieApi),
                 honor: await getCommendations(successfulPlatform, member.membershipId),
-                emblemaBig: await fetchEmblema(emblemPath.emblemHash),
-                clan: await fetchClan(member.membershipId, successfulPlatform),
+                emblemaBig: await fetchEmblema(emblemPath.emblemHash, bungieApi),
+                clan: await fetchClan(member.membershipId, successfulPlatform, bungieApi),
                 emblemPath: emblemPath.emblemPath,
                 clase: emblemPath.clase,
                 light: emblemPath.light,
@@ -257,39 +259,6 @@ export default function CurrentActivity({ type, id, isOnline }) {
             return null;
         }
     };
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            //console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchClan = async (id, type) => {
-        try {
-            const userClan = await getClanUser(type, id);
-            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
-                return userClan.results[0].group.name;
-            } else {
-                return "No pertenece a ningún clan";
-            }
-        } catch (error) {
-            console.error('Error al cargar el clan del usuario:', error);
-            return "No pertenece a ningún clan";
-        }
-    }
 
     useEffect(() => {
         if (jugadorSelected === null) return;

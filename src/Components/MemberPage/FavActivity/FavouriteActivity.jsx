@@ -12,6 +12,8 @@ import { API_CONFIG } from "../../../config";
 import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import ActivitiesComp from "./ActivitiesComp";
+import { getClassIconByName } from "../../../utils/classAssets";
+import { weaponTranslations } from "../../../utils/weaponTranslations";
 
 
 export default function FavouriteActivity({ membershipType, userId }) {
@@ -23,28 +25,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
-
-    //Armas e iconos
-    const weaponTranslations = {
-        'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
-        'BeamRifle': { name: 'Fusil de Rastreo', icon: 'icon-BeamRifle' },
-        'Bow': { name: 'Arco', icon: 'icon-Bow' },
-        'FusionRifle': { name: 'Fusil de Fusion', icon: 'icon-FusionRifle' },
-        'Glaive': { name: 'Guja', icon: 'icon-Glaive' },
-        'GrenadeLauncher': { name: 'Lanzagranadas', icon: 'icon-GrenadeLauncher' },
-        'HandCannon': { name: 'Cañón de Mano', icon: 'icon-HandCannon' },
-        'MachineGun': { name: 'Ametralladora', icon: 'icon-MachineGun' },
-        'PulseRifle': { name: 'Fusil de Pulsos', icon: 'icon-PulseRifle' },
-        'RocketLauncher': { name: 'Lanzacohetes', icon: 'icon-RocketLauncher' },
-        'ScoutRifle': { name: 'Fusil de Explorador', icon: 'icon-ScoutRifle' },
-        'Shotgun': { name: 'Escopeta', icon: 'icon-Shotgun' },
-        'SideArm': { name: 'Pistola', icon: 'icon-SideArm' },
-        'Sniper': { name: 'Francotirador', icon: 'icon-Sniper' },
-        'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
-        'Sword': { name: 'Espada', icon: 'icon-Sword' },
-        'TraceRifle': { name: 'Fusil de Rastreo', icon: 'icon-TraceRifle' },
-        'N/A': { name: '', icon: 'icon-na' }
-    };
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
@@ -92,7 +72,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         allActivities.push(...Object.values(act));
                         return {
                             class: charClass,
-                            classImg: charImg(charClass),
+                            classImg: getClassIconByName(charClass),
                             id: characterId,
                             act,
                         };
@@ -179,7 +159,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(mode, character) || mode.modeData?.characterCompletions?.[character.id]?.completions || 0;
             characterCompletions[character.id].percentage = mode.name == "Competitivo" ? mode.modeData.characterCompletions[character.id]?.percentage : ((characterCompletions[character.id].totalCompletions / mode.completions) * 100).toFixed(1) || 0;
             characterCompletions[character.id].character = character.class;
-            characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
+            characterCompletions[character.id].classImg = getClassIconByName(characterCompletions[character.id].character);
         }
         characterCompletions = Object.values(characterCompletions).sort((a, b) => b.totalCompletions - a.totalCompletions);
 
@@ -604,23 +584,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
                 return "Cazador";
             case 2:
                 return "Hechicero";
-        }
-    }
-
-    function charImg(character) {
-        switch (character) {
-            case "Hechicero": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-                colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
-            })
-            case "Titán": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-                colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
-            })
-            case "Cazador": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-                colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
-            })
         }
     }
 

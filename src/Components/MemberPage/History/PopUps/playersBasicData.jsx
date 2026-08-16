@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useCallback } from 'react';
-import { API_CONFIG } from '../../../../config';
 import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
+import { getClassIconUrlByHash as getUserClassSymbol } from '../../../../utils/classAssets';
 const usePlayersBasicData = () => {
     const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats, getCompChars } = useBungieAPI();
     const hazanias = [991354116, 2392637702, 251257575, 525411852, 2673088233];
@@ -179,15 +179,6 @@ const usePlayersBasicData = () => {
             uniqueNameCode: mvp?.uniqueNameCode,
             message: mvp?.message,
         };
-    }
-
-    const getUserClassSymbol = (classHash) => {
-        const classIcons = {
-            [2271682572]: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-            [3655393761]: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-            [671679327]: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-        };
-        return classIcons[classHash] || null
     }
 
     const getCompletionsPlayer = async (activityHash, membershipType, membershipId) => {
