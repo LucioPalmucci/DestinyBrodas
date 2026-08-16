@@ -1,8 +1,13 @@
-import axios from 'axios';
 import { useCallback, useRef, useState } from 'react';
 import { API_CONFIG } from '../../config'; // Asegúrate de que esta ruta sea correcta
+import { BungieApiClient } from '../../infrastructure/api/BungieApiClient';
 
 const API_KEY = 'f83a251bf2274914ab739f4781b5e710';
+
+// Única instancia del cliente HTTP hacia Bungie. Se exporta para que los
+// componentes que necesitan descargas públicas del manifest (antes hacían
+// su propio axios.get suelto) pasen por acá en vez de duplicar la llamada.
+export const bungieApiClient = new BungieApiClient(API_KEY);
 
 export const useBungieAPI = () => {
     const [loading, setLoading] = useState(false);
@@ -13,21 +18,14 @@ export const useBungieAPI = () => {
     // Función genérica para hacer requests con cache
     const apiRequest = useCallback(async (type, url, params = [], customConfig = {}) => {
         try {
-            const config = {
-                headers: {
-                    'X-API-Key': API_KEY,
-                },
+            const data = await bungieApiClient.get(url, {
                 signal: abortControllerRef.current.signal,
                 ...customConfig
-            };
-
-            const response = await axios.get(url, config);
-            const data = response.data;
+            });
             return data;
         } catch (error) {
             // Detectar cancelaciones (AbortController + Axios CanceledError)
-            const isAbort = error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED';
-            if (isAbort) {
+            if (BungieApiClient.isCancelError(error)) {
                 console.debug('Request cancelled', { type, reason: error?.message || error?.code });
                 throw error;
             }

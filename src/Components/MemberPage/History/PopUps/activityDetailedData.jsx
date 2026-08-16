@@ -5,6 +5,7 @@ import NotCompleted from "../../../../assets/notCompleted.png";
 import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 
 import { API_CONFIG } from '../../../../config';
+import { formatDurationHMS } from '../../../../utils/formatDuration';
 export default function useActivityDetails() {
     const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats, getCompChars } = useBungieAPI();
 
@@ -56,7 +57,7 @@ export default function useActivityDetails() {
                 activityType,
                 activityTypeHash: activityInfo.activityTypeHash || null,
                 date,
-                duration: formatDuration(playerEntry?.values.activityDurationSeconds.basic.value || 0),
+                duration: formatDurationHMS(playerEntry?.values.activityDurationSeconds.basic.value || 0),
                 hour,
                 durationInSeconds: playerEntry?.values.activityDurationSeconds.basic.value || 0,
                 durationFormated: playerEntry?.values.activityDurationSeconds.basic.displayValue || "00:00",
@@ -108,12 +109,5 @@ export default function useActivityDetails() {
     }
 
     
-    const formatDuration = (seconds) => {
-        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        if (h === "00") return `${m}m ${s}s`;
-        return `${h}h ${m}m ${s}s`;
-    }
     return fetchActivitiesDetails;
 }

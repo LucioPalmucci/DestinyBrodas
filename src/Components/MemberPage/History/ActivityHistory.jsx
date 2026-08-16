@@ -11,6 +11,7 @@ import '../../CSS/scrollBar.css';
 import Spinner from '../../CSS/Spinner';
 import '../../CSS/Tab.css';
 import ActivityPopUp from './PopUps/ActivityPopUp';
+import { formatDurationHMS } from '../../../utils/formatDuration';
 
 
 const ActivityHistory = ({ userId, membershipType, currentClass }) => {
@@ -214,7 +215,7 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
                 completed: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6) ? "Completado" : "Abandonado",
                 completedSymbol: activity.values.completed.basic.value == 1 || activity.activityDetails.modes.includes(6) ? completed : NotCompleted,
                 activityType,
-                duration: formatDuration(activity.values.activityDurationSeconds.basic.value || 0),
+                duration: formatDurationHMS(activity.values.activityDurationSeconds.basic.value || 0),
                 hash: activity.activityDetails.referenceId,
                 splitedInTeams: splitedInTeams,
             };
@@ -223,13 +224,6 @@ const ActivityHistory = ({ userId, membershipType, currentClass }) => {
         return details;
     }
 
-    const formatDuration = (seconds) => {
-        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-        const s = String(seconds % 60).padStart(2, '0');
-        if (h === "00") return `${m}m ${s}s`;
-        return `${h}h ${m}m ${s}s`;
-    }
 
     const filterActivitiesMode = async (activities, type) => {
         setIsLoading(true);

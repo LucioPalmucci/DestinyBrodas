@@ -1,14 +1,16 @@
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { bungieApiClient, useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { BungieApiClient } from '../../../infrastructure/api/BungieApiClient';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/index.css"; // Importar estilos globales
 import "../../CSS/player.css";
 import PopUpClanTeammates from "./PopUpClanTeammates";
+import { formatDurationVerbose } from "../../../utils/formatDuration";
+import { fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
 
-export default function ClanTeammates({ userId, membershipType }) {
+export default function ClanTeammates({ userId, membershipType, onApiError }) {
     const [playersClan, setJugadoresClan] = useState([]);
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -38,11 +40,12 @@ export default function ClanTeammates({ userId, membershipType }) {
                     clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
                 });
 
-                let activity = [];
-                for (const character of Object.values(userData)) {
-                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 30);
-                    activity = activity.concat(activityChar || []);
-                }
+                const activityPerCharacter = await Promise.all(
+                    Object.values(userData).map(character =>
+                        getRecentActivities(membershipType, userId, character.characterId, 30)
+                    )
+                );
+                let activity = activityPerCharacter.flatMap(activityChar => activityChar || []);
 
                 activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
                 let jugadoresClan = [], peopleLimit = 6;
@@ -54,11 +57,18 @@ export default function ClanTeammates({ userId, membershipType }) {
                         if (
                             clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId)
                         ) {
-                            const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
-                            const manifest = await getManifest();
-                            const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
-                            const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
-                            const matchingMetric = Object.values(metricsData.data).find(metric =>
+                            const [activityName, metricsData, honor, emblemaBig, guardianRank] = await Promise.all([
+                                getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition"),
+                                (async () => {
+                                    const manifest = await getManifest();
+                                    const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
+                                    return bungieApiClient.getPublic(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
+                                })(),
+                                fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                                fetchEmblema(entry.player.emblemHash, { getItemManifest }),
+                                fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, { getCompsProfile, getItemManifest }),
+                            ]);
+                            const matchingMetric = Object.values(metricsData).find(metric =>
                                 metric.modeType == act.activityDetails.mode
                             );
                             jugadoresClan.push({
@@ -70,9 +80,9 @@ export default function ClanTeammates({ userId, membershipType }) {
                                 membershipId: entry.player.destinyUserInfo.membershipId,
                                 membershipType: entry.player.destinyUserInfo.membershipType,
                                 light: entry.player.lightLevel,
-                                honor: await fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
-                                emblemaBig: await fetchEmblema(entry.player.emblemHash),
-                                guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                                honor,
+                                emblemaBig,
+                                guardianRank,
                                 mode: matchingMetric ? matchingMetric.displayProperties.name : '',
                                 activityName: activityName.displayProperties.name,
                                 date: new Date(act.period).toLocaleDateString('es-ES', {
@@ -82,7 +92,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                                     hour: '2-digit',
                                     minute: '2-digit'
                                 }),
-                                duration: formatDuration(act.values.activityDurationSeconds.basic.value),
+                                duration: formatDurationVerbose(act.values.activityDurationSeconds.basic.value),
                                 iconActivity: matchingMetric ? matchingMetric.displayProperties.icon : '',
                                 pgcrImg: activityName.pgcrImage,
                             });
@@ -97,6 +107,7 @@ export default function ClanTeammates({ userId, membershipType }) {
                 setJugadoresClan(jugadoresClan);
                 saveCache(cacheKey, jugadoresClan);
             } catch (error) {
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setJugadoresClan(staleCached);
             } finally {
@@ -114,25 +125,6 @@ export default function ClanTeammates({ userId, membershipType }) {
         }
     }
 
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
     useEffect(() => {
         if (jugadorSelected === null) return;
         function handleClickOutside(event) {
@@ -145,20 +137,6 @@ export default function ClanTeammates({ userId, membershipType }) {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [jugadorSelected]);
-
-    const formatDuration = (seconds) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        let horas = h > 1 ? 'horas' : 'hora';
-        let minutos = m != 1 ? 'minutos' : 'minuto';
-        let segundos = s != 1 ? 'segundos' : 'segundo';
-        if (h > 0) {
-            return `${h} ${horas} ${m} ${minutos}`;
-        } else {
-            return `${m} ${minutos} ${s} ${segundos}`;
-        }
-    }
 
     return (
         <div>

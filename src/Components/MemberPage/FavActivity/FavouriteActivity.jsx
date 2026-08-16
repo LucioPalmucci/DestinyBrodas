@@ -9,12 +9,16 @@ import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
 import crucibleLogo from "../../../assets/cruciblelogo.png";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
+import { bungieApiClient, useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import ActivitiesComp from "./ActivitiesComp";
+import { getClassIconByName } from "../../../utils/classAssets";
+import { ActivityModeAggregator } from "../../../domain/services/ActivityModeAggregator";
+import { WeaponStatsCalculator } from "../../../domain/services/WeaponStatsCalculator";
+import { BungieApiClient } from "../../../infrastructure/api/BungieApiClient";
 
 
-export default function FavouriteActivity({ membershipType, userId }) {
+export default function FavouriteActivity({ membershipType, userId, onApiError }) {
     const [modeDataPVE, setModeDataPVE] = useState([]);
     const [modeDataPVP, setModeDataPVP] = useState([]);
     const [mostUsedWeaponPVP, setMostUsedWeaponPVP] = useState(null);
@@ -23,28 +27,6 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const cacheKey = `favActivity_${membershipType}_${userId}`;
 
     const { getCompsProfile, getItemManifest, getAggregateActivityStats, getProfileChars, getManifest, getManifestData, getCharacterManyActivities, getCarnageReport, getProfileGeneralProgressions, getGeneralStats } = useBungieAPI();
-
-    //Armas e iconos
-    const weaponTranslations = {
-        'AutoRifle': { name: 'Fusil Automático', icon: 'icon-AutoRifle' },
-        'BeamRifle': { name: 'Fusil de Rastreo', icon: 'icon-BeamRifle' },
-        'Bow': { name: 'Arco', icon: 'icon-Bow' },
-        'FusionRifle': { name: 'Fusil de Fusion', icon: 'icon-FusionRifle' },
-        'Glaive': { name: 'Guja', icon: 'icon-Glaive' },
-        'GrenadeLauncher': { name: 'Lanzagranadas', icon: 'icon-GrenadeLauncher' },
-        'HandCannon': { name: 'Cañón de Mano', icon: 'icon-HandCannon' },
-        'MachineGun': { name: 'Ametralladora', icon: 'icon-MachineGun' },
-        'PulseRifle': { name: 'Fusil de Pulsos', icon: 'icon-PulseRifle' },
-        'RocketLauncher': { name: 'Lanzacohetes', icon: 'icon-RocketLauncher' },
-        'ScoutRifle': { name: 'Fusil de Explorador', icon: 'icon-ScoutRifle' },
-        'Shotgun': { name: 'Escopeta', icon: 'icon-Shotgun' },
-        'SideArm': { name: 'Pistola', icon: 'icon-SideArm' },
-        'Sniper': { name: 'Francotirador', icon: 'icon-Sniper' },
-        'Submachinegun': { name: 'Subfusil', icon: 'icon-Submachinegun' },
-        'Sword': { name: 'Espada', icon: 'icon-Sword' },
-        'TraceRifle': { name: 'Fusil de Rastreo', icon: 'icon-TraceRifle' },
-        'N/A': { name: '', icon: 'icon-na' }
-    };
 
     useEffect(() => {
         const fetchGeneralStats = async () => {
@@ -92,7 +74,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                         allActivities.push(...Object.values(act));
                         return {
                             class: charClass,
-                            classImg: charImg(charClass),
+                            classImg: getClassIconByName(charClass),
                             id: characterId,
                             act,
                         };
@@ -145,6 +127,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
                     console.error('[CACHE] save error', e);
                 }
             } catch (error) {
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCache = loadCache(cacheKey, null);
                 if (staleCache) setUpCache(staleCache);
             }
@@ -179,7 +162,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
             characterCompletions[character.id].totalCompletions = await mostPlayedCharacter(mode, character) || mode.modeData?.characterCompletions?.[character.id]?.completions || 0;
             characterCompletions[character.id].percentage = mode.name == "Competitivo" ? mode.modeData.characterCompletions[character.id]?.percentage : ((characterCompletions[character.id].totalCompletions / mode.completions) * 100).toFixed(1) || 0;
             characterCompletions[character.id].character = character.class;
-            characterCompletions[character.id].classImg = charImg(characterCompletions[character.id].character);
+            characterCompletions[character.id].classImg = getClassIconByName(characterCompletions[character.id].character);
         }
         characterCompletions = Object.values(characterCompletions).sort((a, b) => b.totalCompletions - a.totalCompletions);
 
@@ -209,8 +192,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function activityHashes(mode, pvp, manifest){
         const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
-        const activityRes = await axios.get(activityUrl);
-        const activityData = activityRes.data;
+        const activityData = await bungieApiClient.getPublic(activityUrl);
 
         const filteredActivities = Object.values(activityData).filter(
             (activity) => pvp ? activity.activityTypeHash == mode : activity.directActivityModeHash == mode
@@ -607,56 +589,13 @@ export default function FavouriteActivity({ membershipType, userId }) {
         }
     }
 
-    function charImg(character) {
-        switch (character) {
-            case "Hechicero": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-                colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
-            })
-            case "Titán": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-                colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
-            })
-            case "Cazador": return ({
-                link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-                colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
-            })
-        }
-    }
-
     async function getMostUsedWeapons(membershipType, userId) {
         const responseGeneral = await getGeneralStats(membershipType, userId);
-        let mostUsedWeapon = null;
-        Object.values(responseGeneral.mergedAllCharacters.results.allPvP.allTime).forEach(weapon => {
-            if (weapon.statId && weapon.statId.includes("weapon") && !weapon.statId.includes("Super") && !weapon.statId.includes("Melee") && !weapon.statId.includes("Grenade")) {
-                if (!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
-                    mostUsedWeapon = weapon;
-                }
-            }
-        });
-        let weaponInfo = { name: '', icon: 'icon-na' };
-        if (mostUsedWeapon) {
-            const weaponType = mostUsedWeapon.statId.replace("weaponKills", "");
-            weaponInfo = weaponTranslations[weaponType] || {};
-        }
-        return mostUsedWeapon ? {
-            name: weaponInfo.name,
-            icon: weaponInfo.icon,
-            kills: mostUsedWeapon.basic.value
-        } : null;
+        return WeaponStatsCalculator.pickMostUsedWeapon(responseGeneral);
     }
 
     // helper para insertar o reemplazar por mode
-    const upsertByMode = (list, item) => {
-        const arr = Array.isArray(list) ? list.slice() : [];
-        const idx = arr.findIndex(x => x?.mode === item?.mode);
-        if (idx >= 0) {
-            arr[idx] = item;
-        } else {
-            arr.push(item);
-        }
-        return arr;
-    };
+    const upsertByMode = (list, item) => ActivityModeAggregator.upsertByMode(list, item);
 
     // Expected slot order for each side (keeps positions until all loaded)
     const expectedPVE = ["Mazmorras", "Portal", "Incursiones", "Gambito"];
@@ -665,21 +604,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const getSlotItems = (side) => {
         const source = side === 'PVE' ? modeDataPVE : modeDataPVP;
         const expected = side === 'PVE' ? expectedPVE : expectedPVP;
-
-        const slots = expected.map(name => {
-            const found = Array.isArray(source) ? source.find(x => x?.mode === name) : null;
-            return found || { mode: name, loading: true };
-        });
-        const allLoaded = slots.every(s => !s.loading);
-        if (allLoaded) {
-            const totalCompletions = slots.reduce((sum, s) => sum + (s.completions || 0), 0);
-            const slotsWithPct = slots.map(s => ({
-                ...s,
-                percentage: totalCompletions > 0 ? Number(((s.completions || 0) / totalCompletions * 100).toFixed(1)) : 0
-            }));
-            return slotsWithPct.slice().sort((a, b) => (b.completions || 0) - (a.completions || 0));
-        }
-        return slots;
+        return ActivityModeAggregator.getSlotItems(source, expected);
     };
 
     const slotsPVE = getSlotItems('PVE');

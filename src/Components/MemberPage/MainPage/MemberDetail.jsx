@@ -18,6 +18,8 @@ import SimpleLoadout from '../Lodaut/SimpleLodaut';
 import ClanTeammates from '../Teammates/ClanTeamates';
 import TriumphScore from '../TriumphScore/TriumphScore';
 import ReportLinks from './ReportLinks';
+import { getClassIconByType } from '../../../utils/classAssets';
+import { BungieApiClient } from '../../../infrastructure/api/BungieApiClient';
 
 function MemberDetail() {
     const { membershipType, membershipId } = useParams();
@@ -50,8 +52,7 @@ function MemberDetail() {
                 })
             } catch (error) {
                 console.error('Error fetching member detail clan members:', error);
-                const status = error.status;
-                if (status == 503 || status == 500) {
+                if (BungieApiClient.isServiceDownError(error)) {
                     setShowApiModal(true);
                 }
                 return;
@@ -70,11 +71,13 @@ function MemberDetail() {
     useEffect(() => {
         const fetchMemberDetail = async () => {
             try {
-                const responseProfile = await getCompsProfile(membershipType, membershipId);
-                const membershipsResponse = await getUserMembershipsById(membershipId, membershipType);
+                const [responseProfile, membershipsResponse, responselight] = await Promise.all([
+                    getCompsProfile(membershipType, membershipId),
+                    getUserMembershipsById(membershipId, membershipType),
+                    getCompChars(membershipType, membershipId),
+                ]);
                 const RankNum = responseProfile.profile.data.currentGuardianRank;
                 const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-                const responselight = await getCompChars(membershipType, membershipId);
 
                 const mostRecentCharacter = Object.values(responselight).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
@@ -89,23 +92,7 @@ function MemberDetail() {
                 setEmblem(mostRecentCharacter.emblemBackgroundPath);
                 const clase = mostRecentCharacter.classType;
 
-                switch (clase) {
-                    case 2: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/571dd4d71022cbef932b9be873d431a9.png`,
-                        colore: "brightness(0) saturate(100%) invert(82%) sepia(14%) saturate(5494%) hue-rotate(341deg) brightness(105%) contrast(98%)"
-                    })
-                        break;
-                    case 0: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/707adc0d9b7b1fb858c16db7895d80cf.png`,
-                        colore: "brightness(0) saturate(100%) invert(21%) sepia(52%) saturate(4147%) hue-rotate(335deg) brightness(83%) contrast(111%)"
-                    })
-                        break;
-                    case 1: setClassImg({
-                        link: `${API_CONFIG.BUNGIE_API}/common/destiny2_content/icons/9bb43f897531bb6395bfefc82f2ec267.png`,
-                        colore: "brightness(0) saturate(100%) invert(24%) sepia(29%) saturate(5580%) hue-rotate(199deg) brightness(95%) contrast(95%)"
-                    })
-                        break;
-                }
+                setClassImg(getClassIconByType(clase));
 
                 if (member?.isOnline) {
                     setActivity("");
@@ -115,11 +102,8 @@ function MemberDetail() {
 
             } catch (error) {
                 console.error('Error fetching member details:', error);
-                const status = error?.status;
-                if (status == 503 || status == 500) {
+                if (BungieApiClient.isServiceDownError(error)) {
                     setShowApiModal(true);
-                } else {
-                    setError('Error al cargar los detalles del miembro.');
                 }
             } finally {
                 setLoading(false);
@@ -184,18 +168,18 @@ function MemberDetail() {
                         )}
                         <TriumphScore userId={membershipId} membershipType={membershipType} />
                         <Commendations userId={membershipId} membershipType={membershipType} />
-                        <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} />
+                        <SimpleLoadout userId={membershipId} membershipType={membershipType} name={userMemberships.bungieNetUser.displayName} seasonHash={memberDetail.profile.data.currentSeasonHash} rank={guardianRank.rankNumber} light={currentLight} onApiError={() => setShowApiModal(true)} />
                         <FavouriteWeapons userId={membershipId} membershipType={membershipType} />
                     </div>
                     <div className='w-[60%] space-y-6'>
                         <div className='flex items-center'>
                             <div className='flex space-x-6 w-full'>
                                 <div className='space-y-6 w-full'>
-                                    <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} />
-                                    <ClanTeammates userId={membershipId} membershipType={membershipType} />
+                                    <CurrentActivity type={membershipType} id={membershipId} isOnline={member?.isOnline} onApiError={() => setShowApiModal(true)} />
+                                    <ClanTeammates userId={membershipId} membershipType={membershipType} onApiError={() => setShowApiModal(true)} />
                                 </div>
                                 <div className='w-full'>
-                                    <FavouriteActivity userId={membershipId} membershipType={membershipType} />
+                                    <FavouriteActivity userId={membershipId} membershipType={membershipType} onApiError={() => setShowApiModal(true)} />
                                 </div>
                             </div>
                         </div>

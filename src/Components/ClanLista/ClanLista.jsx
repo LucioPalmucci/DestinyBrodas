@@ -1,3 +1,4 @@
+import pLimit from 'p-limit';
 import { useEffect, useState } from 'react';
 import { useBungieAPI } from "../APIservices/BungieAPIcalls";
 import Spinner from '../CSS/Spinner';
@@ -197,19 +198,27 @@ export default function ClanLista() {
     );
 
     async function lightLevel(members) {
-        const membersWithLight = await Promise.all(members.map(async (member) => {
+        const limit = pLimit(10);
+        const membersWithLight = await Promise.all(members.map(member => limit(async () => {
             try {
                 const characterIds = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
                 const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
                 });
 
-                return { ...member, PowerLevel: characterIds[mostRecentCharacter.characterId].light };
+                // Se pasan PowerLevel, equippedEmblem y mostRecentCharacterId para que
+                // MemberCard no tenga que volver a pedir getCompChars (ya resuelto acá).
+                return {
+                    ...member,
+                    PowerLevel: characterIds[mostRecentCharacter.characterId].light,
+                    equippedEmblem: characterIds[mostRecentCharacter.characterId].emblemPath,
+                    mostRecentCharacterId: mostRecentCharacter.characterId,
+                };
             } catch (error) {
                 console.error('Error fetching light level:', error);
                 return { ...member, PowerLevel: 0 };
             }
-        }));
+        })));
         return membersWithLight;
     }
 }

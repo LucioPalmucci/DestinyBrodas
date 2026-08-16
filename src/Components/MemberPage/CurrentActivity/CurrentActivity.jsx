@@ -7,8 +7,10 @@ import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/Index.css";
 import CaruselTemmate from "./CaruselTemmate";
 import PopUpTeammate from "./PopUpTeammate";
+import { fetchClan, fetchEmblema, fetchGuardianRank } from "../../../utils/playerInfoFetchers";
+import { BungieApiClient } from "../../../infrastructure/api/BungieApiClient";
 
-export default function CurrentActivity({ type, id, isOnline }) {
+export default function CurrentActivity({ type, id, isOnline, onApiError }) {
     const [activity, setActivity] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
     const [online, setOnline] = useState(isOnline);
@@ -16,6 +18,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
     const popupRef = useRef(null);
     const [numColumns, setColums] = useState(0);
     const { getCompCharsActs, getParty, getItemManifest, getUserMembershipsById, getCharsAndEquipment, getCommendations, getClanUser, getCompChars, getCompsProfile } = useBungieAPI();
+    const bungieApi = { getCompsProfile, getItemManifest, getClanUser };
 
     const cacheKey = `CurrentActivity_${type}_${id}`;
     const CACHE_TTL = 150 * 60 * 1000; // 5 minutes
@@ -120,6 +123,7 @@ export default function CurrentActivity({ type, id, isOnline }) {
                 });
 
             } catch (error) {
+                if (BungieApiClient.isServiceDownError(error)) onApiError?.();
                 const staleCached = loadCache(cacheKey, null);
                 if (staleCached) setUpCache(staleCached);
             }
@@ -182,13 +186,19 @@ export default function CurrentActivity({ type, id, isOnline }) {
             const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
 
             console.log("Emblema del jugador:", activity2?.logo);
+            const [guardianRank, honor, emblemaBig, clan] = await Promise.all([
+                fetchGuardianRank(member.membershipId, successfulPlatform, bungieApi),
+                getCommendations(successfulPlatform, member.membershipId),
+                fetchEmblema(emblemPath.emblemHash, bungieApi),
+                fetchClan(member.membershipId, successfulPlatform, bungieApi),
+            ]);
             return {
                 membershipId: member.membershipId,
                 membershipType: successfulPlatform,
-                guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform),
-                honor: await getCommendations(successfulPlatform, member.membershipId),
-                emblemaBig: await fetchEmblema(emblemPath.emblemHash),
-                clan: await fetchClan(member.membershipId, successfulPlatform),
+                guardianRank,
+                honor,
+                emblemaBig,
+                clan,
                 emblemPath: emblemPath.emblemPath,
                 clase: emblemPath.clase,
                 light: emblemPath.light,
@@ -257,39 +267,6 @@ export default function CurrentActivity({ type, id, isOnline }) {
             return null;
         }
     };
-
-    const fetchGuardianRank = async (id, type) => {
-        try {
-            const responseProfile = await getCompsProfile(type, id);
-            const RankNum = responseProfile.profile.data.currentGuardianRank;
-            const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-            return ({
-                title: guardianRankResponse.displayProperties.name,
-                num: RankNum,
-            });
-        } catch (error) {
-            //console.error('Error al cargar datos del popup del jugador:', error);
-        }
-    }
-
-    const fetchEmblema = async (emblem) => {
-        const emblemaResponse = await getItemManifest(emblem, "DestinyInventoryItemDefinition");
-        return emblemaResponse.secondaryIcon;
-    }
-
-    const fetchClan = async (id, type) => {
-        try {
-            const userClan = await getClanUser(type, id);
-            if (userClan?.results && userClan.results.length > 0 && userClan.results[0]?.group?.name) {
-                return userClan.results[0].group.name;
-            } else {
-                return "No pertenece a ningún clan";
-            }
-        } catch (error) {
-            console.error('Error al cargar el clan del usuario:', error);
-            return "No pertenece a ningún clan";
-        }
-    }
 
     useEffect(() => {
         if (jugadorSelected === null) return;
