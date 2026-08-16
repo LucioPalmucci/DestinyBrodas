@@ -1,8 +1,7 @@
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import tower from "../../../assets/tower.webp";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from '../../APIservices/BungieAPIcalls';
+import { bungieApiClient, useBungieAPI } from '../../APIservices/BungieAPIcalls';
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import "../../CSS/index.css"; // Importar estilos globales
 import "../../CSS/player.css";
@@ -59,8 +58,8 @@ export default function ClanTeammates({ userId, membershipType }) {
                             const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
                             const manifest = await getManifest();
                             const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
-                            const metricsData = await axios.get(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
-                            const matchingMetric = Object.values(metricsData.data).find(metric =>
+                            const metricsData = await bungieApiClient.getPublic(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
+                            const matchingMetric = Object.values(metricsData).find(metric =>
                                 metric.modeType == act.activityDetails.mode
                             );
                             jugadoresClan.push({

@@ -1,6 +1,5 @@
-import axios from 'axios';
 import { useCallback } from 'react';
-import { useBungieAPI } from '../../../APIservices/BungieAPIcalls';
+import { bungieApiClient, useBungieAPI } from '../../../APIservices/BungieAPIcalls';
 import { getClassIconUrlByHash as getUserClassSymbol } from '../../../../utils/classAssets';
 const usePlayersBasicData = () => {
     const { getManifest, getCarnageReport, getCommendations, getCompsProfile, getItemManifest, getClanUser, getAggregateActivityStats, getCompChars } = useBungieAPI();
@@ -216,8 +215,7 @@ const usePlayersBasicData = () => {
         let difficultyName = null;
         if (activity.difficultyCollection) {
             const diffUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDifficultyTierCollectionDefinition}`;
-            const diffRes = await axios.get(diffUrl);
-            const diffData = diffRes.data;
+            const diffData = await bungieApiClient.getPublic(diffUrl);
 
             const filteredActivities = Object.values(diffData).find((difficultyItem) => difficultyItem.hash == activity.difficultyCollection);
 
@@ -250,8 +248,7 @@ const usePlayersBasicData = () => {
     const getAllFeats = async (activity, carnageReportResponse, manifest) => {
         let feats = [];
         const diffUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivitySelectableSkullCollectionDefinition}`;
-        const diffRes = await axios.get(diffUrl);
-        const diffData = diffRes.data;
+        const diffData = await bungieApiClient.getPublic(diffUrl);
         //const featsManifest = await getItemManifest(361405014, "DestinyActivitySelectableSkullCollectionDefinition");
 
         diffData[361405014].selectableActivitySkulls.forEach(skull => {

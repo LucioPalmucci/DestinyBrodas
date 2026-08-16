@@ -9,7 +9,7 @@ import strikesBG from "../../../assets/ActivityModes/strikes.png";
 import trialsBG from "../../../assets/ActivityModes/trials.png";
 import crucibleLogo from "../../../assets/cruciblelogo.png";
 import { API_CONFIG } from "../../../config";
-import { useBungieAPI } from "../../APIservices/BungieAPIcalls";
+import { bungieApiClient, useBungieAPI } from "../../APIservices/BungieAPIcalls";
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import ActivitiesComp from "./ActivitiesComp";
 import { getClassIconByName } from "../../../utils/classAssets";
@@ -189,8 +189,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function activityHashes(mode, pvp, manifest){
         const activityUrl = `https://www.bungie.net${manifest.jsonWorldComponentContentPaths.es.DestinyActivityDefinition}`;
-        const activityRes = await axios.get(activityUrl);
-        const activityData = activityRes.data;
+        const activityData = await bungieApiClient.getPublic(activityUrl);
 
         const filteredActivities = Object.values(activityData).filter(
             (activity) => pvp ? activity.activityTypeHash == mode : activity.directActivityModeHash == mode
