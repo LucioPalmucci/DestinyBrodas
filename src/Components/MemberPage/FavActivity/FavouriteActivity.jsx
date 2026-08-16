@@ -13,7 +13,8 @@ import { bungieApiClient, useBungieAPI } from "../../APIservices/BungieAPIcalls"
 import { loadCache, saveCache } from "../../Cache/componentsCache";
 import ActivitiesComp from "./ActivitiesComp";
 import { getClassIconByName } from "../../../utils/classAssets";
-import { weaponTranslations } from "../../../utils/weaponTranslations";
+import { ActivityModeAggregator } from "../../../domain/services/ActivityModeAggregator";
+import { WeaponStatsCalculator } from "../../../domain/services/WeaponStatsCalculator";
 
 
 export default function FavouriteActivity({ membershipType, userId }) {
@@ -588,37 +589,11 @@ export default function FavouriteActivity({ membershipType, userId }) {
 
     async function getMostUsedWeapons(membershipType, userId) {
         const responseGeneral = await getGeneralStats(membershipType, userId);
-        let mostUsedWeapon = null;
-        Object.values(responseGeneral.mergedAllCharacters.results.allPvP.allTime).forEach(weapon => {
-            if (weapon.statId && weapon.statId.includes("weapon") && !weapon.statId.includes("Super") && !weapon.statId.includes("Melee") && !weapon.statId.includes("Grenade")) {
-                if (!mostUsedWeapon || weapon.basic.value > mostUsedWeapon.basic.value) {
-                    mostUsedWeapon = weapon;
-                }
-            }
-        });
-        let weaponInfo = { name: '', icon: 'icon-na' };
-        if (mostUsedWeapon) {
-            const weaponType = mostUsedWeapon.statId.replace("weaponKills", "");
-            weaponInfo = weaponTranslations[weaponType] || {};
-        }
-        return mostUsedWeapon ? {
-            name: weaponInfo.name,
-            icon: weaponInfo.icon,
-            kills: mostUsedWeapon.basic.value
-        } : null;
+        return WeaponStatsCalculator.pickMostUsedWeapon(responseGeneral);
     }
 
     // helper para insertar o reemplazar por mode
-    const upsertByMode = (list, item) => {
-        const arr = Array.isArray(list) ? list.slice() : [];
-        const idx = arr.findIndex(x => x?.mode === item?.mode);
-        if (idx >= 0) {
-            arr[idx] = item;
-        } else {
-            arr.push(item);
-        }
-        return arr;
-    };
+    const upsertByMode = (list, item) => ActivityModeAggregator.upsertByMode(list, item);
 
     // Expected slot order for each side (keeps positions until all loaded)
     const expectedPVE = ["Mazmorras", "Portal", "Incursiones", "Gambito"];
@@ -627,21 +602,7 @@ export default function FavouriteActivity({ membershipType, userId }) {
     const getSlotItems = (side) => {
         const source = side === 'PVE' ? modeDataPVE : modeDataPVP;
         const expected = side === 'PVE' ? expectedPVE : expectedPVP;
-
-        const slots = expected.map(name => {
-            const found = Array.isArray(source) ? source.find(x => x?.mode === name) : null;
-            return found || { mode: name, loading: true };
-        });
-        const allLoaded = slots.every(s => !s.loading);
-        if (allLoaded) {
-            const totalCompletions = slots.reduce((sum, s) => sum + (s.completions || 0), 0);
-            const slotsWithPct = slots.map(s => ({
-                ...s,
-                percentage: totalCompletions > 0 ? Number(((s.completions || 0) / totalCompletions * 100).toFixed(1)) : 0
-            }));
-            return slotsWithPct.slice().sort((a, b) => (b.completions || 0) - (a.completions || 0));
-        }
-        return slots;
+        return ActivityModeAggregator.getSlotItems(source, expected);
     };
 
     const slotsPVE = getSlotItems('PVE');
