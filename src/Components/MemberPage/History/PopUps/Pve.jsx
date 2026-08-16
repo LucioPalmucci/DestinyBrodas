@@ -1,6 +1,6 @@
 import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import abandonaLeft from "../../../../assets/abandonaLeft.png";
 import check from "../../../../assets/check.png";
 import checkpoint from "../../../../assets/checkpoint.png";
@@ -11,12 +11,14 @@ import swap from "../../../../assets/swap.png";
 import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
+import ClosePopupButton from './ClosePopupButton';
+import DurationCircle from './DurationCircle';
+import { useCloseOnOutsideClick } from './Hooks/useCloseOnOutsideClick';
 import PopUp from './Player';
 
 export default function Pve({ actComplete, userId, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
-    const [bgLoaded, setBgLoaded] = useState(false);
     const [bgError, setBgError] = useState(false);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
@@ -29,17 +31,7 @@ export default function Pve({ actComplete, userId, onClose, playerReady }) {
         }
     };
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (popupRef.current && !popupRef.current.contains(event.target)) {
-                setJugadorSelected(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+    useCloseOnOutsideClick(popupRef, setJugadorSelected);
 
     return (
         <div
@@ -70,10 +62,7 @@ export default function Pve({ actComplete, userId, onClose, playerReady }) {
                     <div className='w-[28%]'>
                         <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg px-3.5 w-fit' title='Duración de la actividad'>
                             <div className='flex items-center space-x-2'>
-                                <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
-                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
-                                    <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
-                                </svg>
+                                <DurationCircle r={r} circunference={circunference} />
                                 <p>{actComplete.duration}</p>
                             </div>
                         </div>
@@ -196,10 +185,7 @@ export default function Pve({ actComplete, userId, onClose, playerReady }) {
                                     </div>
                                     <div className='flex bg-black/25 py-3.5 h-[50px] px-0 rounded-lg text-center justify-center items-center'>
                                         <div className='w-24 flex items-center justify-center space-x-1' title={"Presente en el " + person.percentagePlayed + "% de la actividad"}>
-                                            <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
-                                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
-                                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': person.dashoffset }} />
-                                            </svg>
+                                            <DurationCircle r={r} circunference={circunference} to={person.dashoffset} />
                                             <p>{person.timePlayed}</p>
                                         </div>
                                     </div>
@@ -247,16 +233,7 @@ export default function Pve({ actComplete, userId, onClose, playerReady }) {
                     </div>
                 )}
             </div>
-            <button
-                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClose?.();
-                }}
-                aria-label="Cerrar"
-            >
-                ✕
-            </button>
+            <ClosePopupButton onClose={onClose} />
         </div>
     );
 }

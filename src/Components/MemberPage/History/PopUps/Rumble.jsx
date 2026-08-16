@@ -1,48 +1,26 @@
 import { faCalendar, faClock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import abandonaLeft from '../../../../assets/abandonaLeft.png';
 import medal from "../../../../assets/medal-solid.svg";
 import skull from "../../../../assets/skull-solid.svg";
 import { API_CONFIG } from '../../../../config';
 import '../../../CSS/circleProgress.css';
 import '../../../CSS/mvp.css';
+import ClosePopupButton from './ClosePopupButton';
+import DurationCircle from './DurationCircle';
 import { useCountUp } from './Hooks/countUp';
+import { useCloseOnOutsideClick } from './Hooks/useCloseOnOutsideClick';
 import PopUp from './Player';
-import usePlayersBasicData from './playersBasicData';
 
 export default function Rumble({ actComplete, userId, onClose, playerReady }) {
     const [jugadorSelected, setJugadorSelected] = useState(null);
     const popupRef = useRef(null);
-    const [leftWidth, setLeftWidth] = useState(null);
-    const [bgLoaded, setBgLoaded] = useState(false);
     const [bgError, setBgError] = useState(false);
-    const fetchPlayersBasicData = usePlayersBasicData();
     const scoreFirstPlace = useCountUp(actComplete?.firstPlace?.score ?? 0, 1000);
     const scoreSecondPlace = useCountUp(actComplete?.secondPlace?.score ?? 0, 1000);
     const r = 6.5;
     const circunference = 2 * Math.PI * r;
-
-    /*useEffect(() => {
-        setBgLoaded(false);
-        setBgError(false);
-
-        const img = new Image();
-        img.src = activity?.pgcrImage || "";
-        img.onload = () => setBgLoaded(true);
-        img.onerror = () => {
-            setBgError(true);
-            setBgLoaded(true); // evita loader infinito
-        };
-
-    }, [activity?.pgcrImage]);
-
-    useEffect(() => {
-        (async () => {
-            if (!activity?.people) return;
-            setActComplete(activity);
-        })();
-    }, [activity, userId]);*/
 
     const handlePlayerClick = (person, personIndex) => {
         if (jugadorSelected === personIndex) {
@@ -52,18 +30,7 @@ export default function Rumble({ actComplete, userId, onClose, playerReady }) {
         }
     };
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (popupRef.current && !popupRef.current.contains(event.target)) {
-                setJugadorSelected(null);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
+    useCloseOnOutsideClick(popupRef, setJugadorSelected);
 
     return (
         <div
@@ -119,10 +86,7 @@ export default function Rumble({ actComplete, userId, onClose, playerReady }) {
                     </div>
                     <div className='flex flex-col items-center bg-black/25 p-2 rounded-lg' title='Duración de la actividad'>
                         <div className='flex items-center space-x-1'>
-                            <svg width="16" height="16" viewBox="0 0 16 16" className='-rotate-90 transform hidden md:block'>
-                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-zinc-800' strokeLinecap="round" strokeDasharray={circunference} strokeDashoffset={0} />
-                                <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeWidth="3" className='text-green-500 circle-progress' strokeLinecap="round" style={{ '--circ': circunference, '--from': circunference, '--to': 0 }} />
-                            </svg>
+                            <DurationCircle r={r} circunference={circunference} />
                             <p className='fade-in'>{actComplete.duration}</p>
                         </div>
                     </div>
@@ -237,16 +201,7 @@ export default function Rumble({ actComplete, userId, onClose, playerReady }) {
                     </div>
                 </div>
             </div>
-            <button
-                className="absolute -top-8 -right-8 bg-neutral-700 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-neutral-800 cursor-pointer shadow-lg"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onClose?.();
-                }}
-                aria-label="Cerrar"
-            >
-                ✕
-            </button>
+            <ClosePopupButton onClose={onClose} />
         </div>
     );
 }
