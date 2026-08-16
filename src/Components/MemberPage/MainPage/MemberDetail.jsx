@@ -71,11 +71,13 @@ function MemberDetail() {
     useEffect(() => {
         const fetchMemberDetail = async () => {
             try {
-                const responseProfile = await getCompsProfile(membershipType, membershipId);
-                const membershipsResponse = await getUserMembershipsById(membershipId, membershipType);
+                const [responseProfile, membershipsResponse, responselight] = await Promise.all([
+                    getCompsProfile(membershipType, membershipId),
+                    getUserMembershipsById(membershipId, membershipType),
+                    getCompChars(membershipType, membershipId),
+                ]);
                 const RankNum = responseProfile.profile.data.currentGuardianRank;
                 const guardianRankResponse = await getItemManifest(RankNum, "DestinyGuardianRankDefinition");
-                const responselight = await getCompChars(membershipType, membershipId);
 
                 const mostRecentCharacter = Object.values(responselight).reduce((latest, current) => {
                     return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;

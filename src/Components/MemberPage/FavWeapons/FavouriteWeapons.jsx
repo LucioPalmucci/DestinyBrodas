@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import pLimit from 'p-limit';
 import { useEffect, useState } from "react";
 import crownIcon from "../../../assets/crown-solid.svg";
 import { API_CONFIG } from "../../../config";
@@ -32,24 +33,31 @@ const DestinyTopWeapons = ({ userId, membershipType }) => {
                 let precisionKills = { pve: {}, pvp: {} };
                 let precisionPro = { pve: {}, pvp: {} };
 
-                for (const characterId of characterIds) {
-                    const activitiesRes = await getRecentActivities(membershipType, userId, characterId, 20);
+                const activitiesPerCharacter = await Promise.all(
+                    characterIds.map(characterId => getRecentActivities(membershipType, userId, characterId, 20))
+                );
+                const allActivities = activitiesPerCharacter.flat();
 
-                    for (const activity of activitiesRes) {
-                        const pgcrRes = await getCarnageReport(activity.activityDetails.instanceId);
+                const limit = pLimit(10);
+                const pgcrResults = await Promise.all(
+                    allActivities.map(activity => limit(async () => ({
+                        activity,
+                        pgcrRes: await getCarnageReport(activity.activityDetails.instanceId),
+                    })))
+                );
 
-                        const playerEntry = pgcrRes.entries.find(
-                            (entry) => entry.player.destinyUserInfo.membershipId === userId
-                        );
+                for (const { activity, pgcrRes } of pgcrResults) {
+                    const playerEntry = pgcrRes.entries.find(
+                        (entry) => entry.player.destinyUserInfo.membershipId === userId
+                    );
 
-                        if (playerEntry?.extended?.weapons) {
-                            const mode = activity.activityDetails.modes.includes(5) ? "pvp" : "pve";
-                            for (const weapon of playerEntry.extended.weapons) {
-                                const weaponId = weapon.referenceId;
-                                weaponKills[mode][weaponId] = (weaponKills[mode][weaponId] || 0) + weapon.values.uniqueWeaponKills.basic.value;
-                                precisionKills[mode][weaponId] = (precisionKills[mode][weaponId] || 0) + weapon.values.uniqueWeaponPrecisionKills.basic.value;
-                                precisionPro[mode][weaponId] = (precisionKills[mode][weaponId] / weaponKills[mode][weaponId]) || 0;
-                            }
+                    if (playerEntry?.extended?.weapons) {
+                        const mode = activity.activityDetails.modes.includes(5) ? "pvp" : "pve";
+                        for (const weapon of playerEntry.extended.weapons) {
+                            const weaponId = weapon.referenceId;
+                            weaponKills[mode][weaponId] = (weaponKills[mode][weaponId] || 0) + weapon.values.uniqueWeaponKills.basic.value;
+                            precisionKills[mode][weaponId] = (precisionKills[mode][weaponId] || 0) + weapon.values.uniqueWeaponPrecisionKills.basic.value;
+                            precisionPro[mode][weaponId] = (precisionKills[mode][weaponId] / weaponKills[mode][weaponId]) || 0;
                         }
                     }
                 }

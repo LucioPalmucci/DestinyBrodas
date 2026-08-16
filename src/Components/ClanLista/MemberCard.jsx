@@ -15,7 +15,7 @@ export default function MemberCard({ member }) {
     const [killsPvE, setKillsPvE] = useState(null);
     const [killsPvP, setKillsPvP] = useState(null);
     const [showBaseLight, setShowBaseLight] = useState(false);
-    const { getGeneralStats, getCompChars, getCompCharsActs, getItemManifest, getFullCharacterProfile } = useBungieAPI();
+    const { getGeneralStats, getCompCharsActs, getItemManifest, getFullCharacterProfile } = useBungieAPI();
 
     //Mayor cantidad de kills con arma PVP y PVE
     const getMaxWeaponKill = (AllTime, mode) => {
@@ -45,24 +45,18 @@ export default function MemberCard({ member }) {
         const fetchUserInfo = async () => {
             try {
                 const responseGeneral = await getGeneralStats(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
-                const characters = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
-                const mostRecentCharacter = Object.values(characters).reduce((latest, current) => {
-                    return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
-                });
-
-                let totalLight = characters[mostRecentCharacter.characterId].light;
+                // member.PowerLevel ya viene calculado desde ClanLista (evita repetir getCompChars).
                 setArtifactLight(await getAritfactBonusLevel())
-                setLight(totalLight);
+                setLight(member.PowerLevel);
 
                 const AllTimePVE = responseGeneral.mergedAllCharacters.results.allPvE.allTime;
                 const AllTimePVP = responseGeneral.mergedAllCharacters.results.allPvP.allTime;
                 setPveWeapon(getMaxWeaponKill(AllTimePVE, "PVE"));
                 setPvpWeapon(getMaxWeaponKill(AllTimePVP, "PVP"));
-                setEquippedEmblem(mostRecentCharacter.emblemPath);
+                setEquippedEmblem(member.equippedEmblem);
 
                 if (member.isOnline) { //Si esta en linea, llama al metodo del RecentActivity.js
                     setActivity(await fetchActivity(member));
-                    console.log("activity ", await fetchActivity(member));
                 }
 
             } catch (error) {
@@ -82,18 +76,16 @@ export default function MemberCard({ member }) {
 
     const fetchActivity = async (member) => {
         try {
-            const characterIds = await getCompChars(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId);
-            const mostRecentCharacter = Object.values(characterIds).reduce((latest, current) => {
-                return new Date(current.dateLastPlayed) > new Date(latest.dateLastPlayed) ? current : latest;
-            });
-
-            const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, mostRecentCharacter.characterId);
+            // member.mostRecentCharacterId ya viene calculado desde ClanLista (evita repetir getCompChars).
+            const activityResponse = await getCompCharsActs(member.destinyUserInfo.membershipType, member.destinyUserInfo.membershipId, member.mostRecentCharacterId);
             const currentActivityHash = activityResponse.currentActivityHash;
             const currentActivityMode = activityResponse.currentActivityModeHash;
             const currentPlaylist = activityResponse.currentPlaylistActivityHash;
-            const responseMode = await getItemManifest(currentActivityMode, "DestinyActivityModeDefinition");
-            const responseName = await getItemManifest(currentActivityHash, "DestinyActivityDefinition");
-            const responsePlaylist = await getItemManifest(currentPlaylist, "DestinyActivityDefinition");
+            const [responseMode, responseName, responsePlaylist] = await Promise.all([
+                getItemManifest(currentActivityMode, "DestinyActivityModeDefinition"),
+                getItemManifest(currentActivityHash, "DestinyActivityDefinition"),
+                getItemManifest(currentPlaylist, "DestinyActivityDefinition"),
+            ]);
             const name = responseName?.displayProperties?.name || 'En órbita';
             const type = responseMode?.displayProperties?.name;
             const playlist = responsePlaylist?.displayProperties?.name;

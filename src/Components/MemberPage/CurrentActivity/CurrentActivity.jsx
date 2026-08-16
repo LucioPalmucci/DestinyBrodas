@@ -184,13 +184,19 @@ export default function CurrentActivity({ type, id, isOnline }) {
             const emblemPath = await getPartyEmblem(member.membershipId, successfulPlatform);
 
             console.log("Emblema del jugador:", activity2?.logo);
+            const [guardianRank, honor, emblemaBig, clan] = await Promise.all([
+                fetchGuardianRank(member.membershipId, successfulPlatform, bungieApi),
+                getCommendations(successfulPlatform, member.membershipId),
+                fetchEmblema(emblemPath.emblemHash, bungieApi),
+                fetchClan(member.membershipId, successfulPlatform, bungieApi),
+            ]);
             return {
                 membershipId: member.membershipId,
                 membershipType: successfulPlatform,
-                guardianRank: await fetchGuardianRank(member.membershipId, successfulPlatform, bungieApi),
-                honor: await getCommendations(successfulPlatform, member.membershipId),
-                emblemaBig: await fetchEmblema(emblemPath.emblemHash, bungieApi),
-                clan: await fetchClan(member.membershipId, successfulPlatform, bungieApi),
+                guardianRank,
+                honor,
+                emblemaBig,
+                clan,
                 emblemPath: emblemPath.emblemPath,
                 clase: emblemPath.clase,
                 light: emblemPath.light,

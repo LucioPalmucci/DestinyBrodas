@@ -39,11 +39,12 @@ export default function ClanTeammates({ userId, membershipType }) {
                     clanMemmbersIDs.push(member.destinyUserInfo.membershipId);
                 });
 
-                let activity = [];
-                for (const character of Object.values(userData)) {
-                    let activityChar = await getRecentActivities(membershipType, userId, character.characterId, 30);
-                    activity = activity.concat(activityChar || []);
-                }
+                const activityPerCharacter = await Promise.all(
+                    Object.values(userData).map(character =>
+                        getRecentActivities(membershipType, userId, character.characterId, 30)
+                    )
+                );
+                let activity = activityPerCharacter.flatMap(activityChar => activityChar || []);
 
                 activity.sort((a, b) => new Date(b.period) - new Date(a.period)); // Más recientes primero
                 let jugadoresClan = [], peopleLimit = 6;
@@ -55,10 +56,17 @@ export default function ClanTeammates({ userId, membershipType }) {
                         if (
                             clanMemmbersIDs.includes(entry.player.destinyUserInfo.membershipId)
                         ) {
-                            const activityName = await getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition");
-                            const manifest = await getManifest();
-                            const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
-                            const metricsData = await bungieApiClient.getPublic(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
+                            const [activityName, metricsData, honor, emblemaBig, guardianRank] = await Promise.all([
+                                getItemManifest(act.activityDetails.directorActivityHash, "DestinyActivityDefinition"),
+                                (async () => {
+                                    const manifest = await getManifest();
+                                    const manifestUrl = manifest.jsonWorldComponentContentPaths.es.DestinyActivityModeDefinition;
+                                    return bungieApiClient.getPublic(`${API_CONFIG.BUNGIE_API}${manifestUrl}`);
+                                })(),
+                                fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
+                                fetchEmblema(entry.player.emblemHash, { getItemManifest }),
+                                fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, { getCompsProfile, getItemManifest }),
+                            ]);
                             const matchingMetric = Object.values(metricsData).find(metric =>
                                 metric.modeType == act.activityDetails.mode
                             );
@@ -71,9 +79,9 @@ export default function ClanTeammates({ userId, membershipType }) {
                                 membershipId: entry.player.destinyUserInfo.membershipId,
                                 membershipType: entry.player.destinyUserInfo.membershipType,
                                 light: entry.player.lightLevel,
-                                honor: await fetchCommendations(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType),
-                                emblemaBig: await fetchEmblema(entry.player.emblemHash, { getItemManifest }),
-                                guardianRank: await fetchGuardianRank(entry.player.destinyUserInfo.membershipId, entry.player.destinyUserInfo.membershipType, { getCompsProfile, getItemManifest }),
+                                honor,
+                                emblemaBig,
+                                guardianRank,
                                 mode: matchingMetric ? matchingMetric.displayProperties.name : '',
                                 activityName: activityName.displayProperties.name,
                                 date: new Date(act.period).toLocaleDateString('es-ES', {
